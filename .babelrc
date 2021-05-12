@@ -1,0 +1,9 @@
+// .babelrc: babel config file
+{
+    "presets": [ 
+        // @babel/preset-env converts the latest JavaScript syntax
+        "@babel/preset-env",
+        // @babel/preset-react converts the JSX
+        "@babel/preset-react" 
+    ]
+}
