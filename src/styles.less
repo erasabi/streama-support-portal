@@ -1,5 +1,8 @@
 @topnav-color:  #000000;
-@body-color: #25292b;
+@body-backgroundColor: #25292b;
+@button-primary: #258eb8;
+@button-secondary: #2576b8;
+@default-font-size: 15px;
 
 // ensure that all HTML elements have the box-sizing property set to border-box. This makes sure that the padding and border are included in the total width and height of the elements.
 * {
@@ -10,8 +13,8 @@ body {
     margin: 0px;
     height: 100%;
     font-family: "Lato","Helvetica Neue",Helvetica,Arial,sans-serif;
-    font-size: 15px;
-    background-color: @body-color;
+    font-size: @default-font-size;
+    background-color: @body-backgroundColor;
 }
 
 .row::after {
@@ -24,30 +27,9 @@ body {
 [class*="col-"] {
   float: left;
   padding: 15px;
-  // border: 1px solid red;
+  // uncomment the below line when making static page changes
+  border: 1px solid red;
 }
-
-// @media (media query): It uses the @mesdia rule to include a block of CSS properties only if a certain condition is true.
-//  - used to change grid based on screen size
-//  - best practice is to design for mobile first
-//  - so default to giving each element its own row
-
-// 5 MOST COMMON BREAKPOINTS FOR MEDIA QUERIES
-//   /* Extra small devices (phones, 600px and down) */
-//   @media only screen and (max-width: 600px) {...}
-
-//   /* Small devices (portrait tablets and large phones, 600px and up) */
-//   @media only screen and (min-width: 600px) {...}
-
-//   /* Medium devices (landscape tablets, 768px and up) */
-//   @media only screen and (min-width: 768px) {...}
-
-//   /* Large devices (laptops/desktops, 992px and up) */
-//   @media only screen and (min-width: 992px) {...}
-
-//   /* Extra large devices (large laptops and desktops, 1200px and up) */
-//   @media only screen and (min-width: 1200px) {...}
-
 
 // media query for tablets: 
 //    use this general one to allow multiple columns at tablet size
@@ -96,17 +78,19 @@ body {
   max-height: 3rem;
   overflow: hidden;
 }
-
-/* Change color on hover */
-.topnav a:hover {
-  background-color: #ddd;
-  color: black;
-}
-
 .topnav-logo {
   float: left;
   padding: 0px 5px;
   height: 2.5rem;
+}
+
+form {
+  border-radius: 5px;
+  background-color: @body-backgroundColor;
+  padding: 20px;
+}
+.form-container {
+  padding-top: 5%;
 }
 
 input[type=text] {
@@ -121,57 +105,23 @@ input[type=text] {
   background-repeat: no-repeat;
   padding: 12px 20px 12px 40px;
 }
+.search-padding {
+  padding-right: 2px;
+}
 
-input[type=button], input[type=reset] {
-  background-color: #258eb8;
+input[type=button] {
+  background-color: @button-primary;
   border: none;
   color: white;
-  padding: 16px 32px;
+  padding: 14px 32px;
   text-decoration: none;
+  font-size: 16px;
   border-radius: 8px;
   cursor: pointer;
 }
-
-.form-container {
-  padding-top: 5%;
-  margin: auto;
-  width: 80%;
+input[type=button]:hover {
+  background-color: @button-secondary;
 }
-
-form {
-  border-radius: 5px;
-  background-color: #464545;
-  padding: 20px;
-}
-
 .button-padding {
   padding-left: 0;
 }
-
-// ul {
-//   height: 2rem;
-//   list-style-type: none;
-//   margin: 0;
-//   padding: 0.75rem 0;
-//   height: 100%;
-//   overflow: hidden;
-//   font-weight: 300;
-//   font-size: 0.75rem;
-// }
-
-// li {
-//   float: left;
-//   padding: 0px 4px;
-// }
-
-// li a {
-//   display: block;
-//   color: white;
-//   text-align: center;
-//   text-decoration: none;
-// }
-
-// /* Change the link color to #111 (black) on hover */
-// li a:hover {
-//   background-color: #111;
-// }
