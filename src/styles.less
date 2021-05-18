@@ -1,5 +1,5 @@
 @topnav-color:  #000000;
-@body-backgroundColor: #25292b;
+@body-backgroundColor: #111111;
 @button-primary: #258eb8;
 @button-secondary: #2576b8;
 @default-font-size: 15px;
@@ -28,7 +28,7 @@ body {
   float: left;
   padding: 15px;
   // uncomment the below line when making static page changes
-  border: 1px solid red;
+  // border: 1px solid red;
 }
 
 // media query for tablets: 
@@ -96,10 +96,11 @@ form {
 input[type=text] {
   width: 100%;
   box-sizing: border-box;
-  border: 2px solid #ccc;
+  border: 1px solid rgb(24, 24, 24);
   border-radius: 4px;
   font-size: 16px;
-  background-color: white;
+  background-color: #222121;
+  color: white;
   // background-image: url('searchicon.png');
   background-position: 10px 10px; 
   background-repeat: no-repeat;
@@ -124,4 +125,51 @@ input[type=button]:hover {
 }
 .button-padding {
   padding-left: 0;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+ul li {
+  border: 1px solid rgb(24, 24, 24);
+  margin-top: -1px; /* Prevent double borders */
+  background-color: #222121;
+  color: white;
+  padding: 6px;
+  height: 5rem;
+}
+
+.poster {
+  float: left;
+  padding: 0px 0px;
+  height: 4rem;
+  max-width: 3.5rem;
+}
+
+.resultTitle {
+  padding: 20px;
+  overflow: hidden;
+}
+
+.requestedMediaItem {
+  float: left;
+  padding: 15px;
+  height: 12rem;
+}
+
+.requestedMediaList {
+  padding: 1rem 3rem;
+  margin: 2rem 5rem;
+  background-color: #222121;
+  border-radius: 8px;
+}
+
+.requestedMediaListTitle {
+  color: rgb(255, 40, 40);
+  font-size: 1.5rem;
+  padding-bottom: 15px;
+  text-align: center;
 }
