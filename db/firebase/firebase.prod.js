@@ -28,15 +28,19 @@ const getAllMediaRequest = async () => {
     const mediaRequestsRef = db.collection('media_requests');
     // get all documents in this collection
     //   - returns an array of docs
-    const response = await mediaRequestsRef.get();
+    const fetchData = async () => {
+        let docs = [];
+        await mediaRequestsRef.get()
+            // if successfull get array of collection data 
+            .then(function (result) {
+                result.forEach(doc => {
+                    docs.push(doc.data());
+                });
+            });
+        return docs;
+    };
 
-    // access the data in these docs using the .data() method
-    let docs = [];
-    response.forEach(doc => {
-        docs.push(doc.data());
-    });
-
-    return docs;
+    return await fetchData();
 }
 
 const addMediaRequest = async (props) => {
@@ -100,8 +104,9 @@ const addMediaRequest = async (props) => {
     }
 
     const mediaRequestsRef = db.collection('media_requests');
-    const response = await mediaRequestsRef.doc(id).set({...mediaRequest});
-    return response;
+    await mediaRequestsRef.doc(id).set({...mediaRequest});
+
+    return await mediaRequestsRef.get();
 }
 
 export { firebase, getAllMediaRequest, addMediaRequest };
