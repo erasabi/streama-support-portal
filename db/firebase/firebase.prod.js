@@ -2,12 +2,12 @@ import Firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/auth';
 import bcrypt from 'bcryptjs';
-import { firebaseConfig } from '../../config/auth';
+import { AUTH_FIREBASE } from '../../config/auth';
 
 // 1) when seeding the database you'll have to uncomment this!
 // import { seedDatabase } from './seed';
 
-const config = firebaseConfig;
+const config = AUTH_FIREBASE;
 
 const firebase = Firebase.initializeApp(config);
 // 2) when seeding the database you'll have to uncomment this!
