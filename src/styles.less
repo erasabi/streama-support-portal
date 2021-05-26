@@ -3,6 +3,8 @@
 @button-primary: #258eb8;
 @button-secondary: #2576b8;
 @default-font-size: 15px;
+@default-inputBar-backgroundColor: #222121;
+@default-color-red: #ff2828;
 
 // ensure that all HTML elements have the box-sizing property set to border-box. This makes sure that the padding and border are included in the total width and height of the elements.
 * {
@@ -99,7 +101,7 @@ input[type=text] {
   border: 1px solid rgb(24, 24, 24);
   border-radius: 4px;
   font-size: 16px;
-  background-color: #222121;
+  background-color: @default-inputBar-backgroundColor;
   color: white;
   // background-image: url('searchicon.png');
   background-position: 10px 10px; 
@@ -136,7 +138,7 @@ ul {
 ul li {
   border: 1px solid rgb(24, 24, 24);
   margin-top: -1px; /* Prevent double borders */
-  background-color: #222121;
+  background-color: @default-inputBar-backgroundColor;
   color: white;
   padding: 6px;
   height: 5rem;
@@ -158,17 +160,21 @@ ul li {
   float: left;
   padding: 15px;
   height: 12rem;
+
+}
+
+.requestedMediaRow {
+  padding: 0 5rem;
 }
 
 .requestedMediaList {
-  padding: 1rem 3rem;
-  margin: 2rem 5rem;
-  background-color: #222121;
+  background-color: @default-inputBar-backgroundColor;
+  width: 100%;
   border-radius: 8px;
 }
 
 .requestedMediaListTitle {
-  color: rgb(255, 40, 40);
+  color: @default-color-red;
   font-size: 1.5rem;
   padding-bottom: 15px;
   text-align: center;
