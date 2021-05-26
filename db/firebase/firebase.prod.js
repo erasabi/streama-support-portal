@@ -1,25 +1,13 @@
 import Firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/auth';
-// import md5 from 'crypto-js/md5';
-// import SHA256 from 'crypto-js/sha256';
-// import CryptoJS from 'crypto-js';
 import bcrypt from 'bcryptjs';
-
+import { firebaseConfig } from '../../config/auth';
 
 // 1) when seeding the database you'll have to uncomment this!
 // import { seedDatabase } from './seed';
 
-const config = {
-    //   databaseURL: '',
-    apiKey: process.env.API_KEY,
-    authDomain: process.env.PROJECT_ID + ".firebaseapp.com",
-    projectId: process.env.PROJECT_ID,
-    storageBucket: process.env.PROJECT_ID + ".appspot.com",
-    messagingSenderId: process.env.MESSAGE_SENDER_ID,
-    appId: process.env.APP_ID,
-    measurementId: process.env.MEASUREMENT_ID
-};
+const config = firebaseConfig;
 
 const firebase = Firebase.initializeApp(config);
 // 2) when seeding the database you'll have to uncomment this!
