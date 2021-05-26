@@ -116,7 +116,7 @@ function App() {
   }
 
   // conditionally render search results MediaResults list 
-  function SearchSuggestions() {
+  const SearchSuggestions = () => {
     let results = <div></div>;
     if (!query.hide && query.results && query.results.length > 0) {
       results = query.results.map(result => {
@@ -154,7 +154,7 @@ function App() {
       {/* SearchBar */}
       <div className="row">
         <form className="form-container" >
-          <div className="col-s-8 col-10 search-padding">
+          <div className="col-xs-9 col-s-8 col-10 search-padding">
             <input 
               type="text" 
               autoComplete="off"
@@ -164,18 +164,16 @@ function App() {
               onChange={(e) => {handleSearchInput(e.target.value)}} />
               <SearchSuggestions />
           </div>
-          <div className="col-s-4 col-2 button-padding">
-            <input type="button" value="Request" id="searchButton" onClick={() => {handleRequestSubmit()}}></input>
+          <div className="col-xs-3 col-s-4 col-2 buttonPadding">
+            <input type="button" value="Request" onClick={() => {handleRequestSubmit()}}></input>
           </div>
         </form>        
       </div>
       {/* Requested Media List */}
-      <div className="row">
-        <div className="requestedMediaRow">
-          <div className="col-s-12 col-12 requestedMediaList">
-            <div className="requestedMediaListTitle">Coming soon to Elanflix</div>
-            <RequestedMediaList />
-          </div>
+      <div className="row requestedMediaRow">
+        <div className="col-s-12 col-12 requestedMediaList">
+          <div className="requestedMediaListTitle">Coming soon to Elanflix</div>
+          <RequestedMediaList />
         </div>
       </div>
     </React.Fragment>

@@ -33,6 +33,24 @@ body {
   // border: 1px solid red;
 }
 
+// media query for smartphones: 
+//    use this general one to allow multiple columns at smartphone size
+@media only screen and (min-width: 175px) {
+  /* For tablets: */
+  .col-xs-1 {width: 8.33%;}
+  .col-xs-2 {width: 16.66%;}
+  .col-xs-3 {width: 25%;}
+  .col-xs-4 {width: 33.33%;}
+  .col-xs-5 {width: 41.66%;}
+  .col-xs-6 {width: 50%;}
+  .col-xs-7 {width: 58.33%;}
+  .col-xs-8 {width: 66.66%;}
+  .col-xs-9 {width: 75%;}
+  .col-xs-10 {width: 83.33%;}
+  .col-xs-11 {width: 91.66%;}
+  .col-xs-12 {width: 100%;}
+}
+
 // media query for tablets: 
 //    use this general one to allow multiple columns at tablet size
 @media only screen and (min-width: 600px) {
@@ -116,7 +134,8 @@ input[type=button] {
   background-color: @button-primary;
   border: none;
   color: white;
-  padding: 14px 32px;
+  border: 14px 32px;
+  padding: 14px 8%;
   text-decoration: none;
   font-size: 16px;
   border-radius: 8px;
@@ -125,7 +144,7 @@ input[type=button] {
 input[type=button]:hover {
   background-color: @button-secondary;
 }
-.button-padding {
+.buttonPadding {
   padding-left: 0;
 }
 
@@ -163,8 +182,15 @@ ul li {
 
 }
 
-.requestedMediaRow {
-  padding: 0 5rem;
+@media only screen and (min-width: 175px) {
+  .requestedMediaRow {
+    padding: 0 2rem;
+  }
+}
+@media only screen and (min-width: 600px) {
+  .requestedMediaRow {
+    padding: 0 5rem;
+  }
 }
 
 .requestedMediaList {
