@@ -94,6 +94,7 @@ function App() {
     updatedSearch.value = {};
     updatedSearch.mediaResults = await addMediaRequest(search);
     updatedSearch.buttonSelected = true;
+    updatedSearch.suggestionSelected = false;
     setSearch(updatedSearch);
   }
 
