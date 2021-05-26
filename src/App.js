@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { addMediaRequest, getAllMediaRequest } from '../db/firebase/firebase.prod';
-
+import { addMediaRequest, getAllMediaRequest  } from '../db/firebase/firebase.prod';
 
 function App() {
   // SearchBar State
@@ -12,7 +11,7 @@ function App() {
       value: {},
       suggestionSelected: false,
       mediaResults: [],
-      buttonSelected: true
+      buttonSelected: false
   });
   // SearchResults Dropdown State
   const [query, setQuery] = useState({
@@ -24,7 +23,6 @@ function App() {
   useEffect(async () => {
     let updatedSearch = {...search};
     updatedSearch.mediaResults = await getAllMediaRequest();
-
     setSearch(updatedSearch);
   }, []);
 
@@ -43,11 +41,15 @@ function App() {
         });
       }
     }
-    // when input does not merit query hide any previous results
-    setQuery({
-        results: [],
-        hide: true
-    });
+    else {
+      // when input does not merit query hide any previous results
+      if (query.hide === false) {
+        setQuery({
+            results: [],
+            hide: true
+        });          
+      }
+    }
   }, [search.input, search.suggestionSelected]);
 
 
@@ -107,7 +109,7 @@ function App() {
             <img
               className="requestedMediaItem"
               src={"http://image.tmdb.org/t/p/w1280/" + result.posterPath}
-              onError={(e) => { e.target.src = "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg" }} />
+              onError={(e) => { e.target.src = "../public/No-Image-Placeholder.svg" }} />
           </div>
         )
       });
@@ -131,7 +133,7 @@ function App() {
               onError={(e) => { e.target.src = "https://cdn.browshot.com/static/images/not-found.png" }} />
             <div className="resultTitle">
               {result.title ? result.title : result.name} ({result.release_date ? parseInt(result.release_date) : parseInt(result.first_air_date)})
-          </div>
+            </div>
           </li>
         )
       });
@@ -172,7 +174,7 @@ function App() {
       {/* Requested Media List */}
       <div className="row requestedMediaRow">
         <div className="col-s-12 col-12 requestedMediaList">
-          <div className="requestedMediaListTitle">Coming soon to Elanflix</div>
+          <div className="requestedMediaListTitle">Coming Soon</div>
           <RequestedMediaList />
         </div>
       </div>
