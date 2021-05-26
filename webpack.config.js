@@ -1,9 +1,11 @@
 // webpack.config.js: holds configuration settings for webpack bundler
 
 const HtmlWebPackPlugin = require("html-webpack-plugin");
-const { webpack } = require("webpack");
+const webpack = require("webpack");
+const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
 
 module.exports = {
+
     // mode: tells webpack we're in development
     "mode": "development",
     // "entry" is our main JavaScript file, or the ‘entry point’. In React, this is the file where we use our renderer.
@@ -64,6 +66,13 @@ module.exports = {
         new HtmlWebPackPlugin({
             template: "./src/index.html",
             filename: "./index.html"
+        }),
+        // allows us to create polyfills for plugins 
+        // needed for bcrypt to work in react code
+        new NodePolyfillPlugin(),
+        // provides bcrypt plugin to webpack
+        new webpack.ProvidePlugin({
+            bcryptjs: 'bcryptjs',
         })
     ]
 }

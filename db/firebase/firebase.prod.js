@@ -1,7 +1,11 @@
 import Firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/auth';
-import { v4 as uuidv4 } from 'uuid';
+// import md5 from 'crypto-js/md5';
+// import SHA256 from 'crypto-js/sha256';
+// import CryptoJS from 'crypto-js';
+import bcrypt from 'bcryptjs';
+
 
 // 1) when seeding the database you'll have to uncomment this!
 // import { seedDatabase } from './seed';
@@ -44,8 +48,6 @@ const getAllMediaRequest = async () => {
 }
 
 const addMediaRequest = async (props) => {
-    const id = uuidv4();
-
     // all search.value properties
     // MOVIE
     // {
@@ -81,16 +83,20 @@ const addMediaRequest = async (props) => {
         // vote_count: 423
     // }
     let mediaRequest = {
-        id: id,
+        id: '',
         title: '',
         year: '',
         posterPath: ''
     };
-
+    const salt = "$2a$05$jRvzuDokuXN4fNW9SkGQbe";
     if (props.value && (props.value.title || props.value.name)) {
         mediaRequest.title = props.value.title || props.value.name;
         if (props.value.release_date || props.value.first_air_date) {
             mediaRequest.year = parseInt(props.value.release_date) || parseInt(props.value.first_air_date);
+            mediaRequest.id = bcrypt.hashSync((mediaRequest.title += mediaRequest.year), salt).replace(/\//g, "");
+        }
+        else {
+            mediaRequest.id = bcrypt.hashSync((mediaRequest.title), salt).replace(/\//g, "");
         }
         if (props.value.poster_path) {
             mediaRequest.posterPath = props.value.poster_path;
@@ -104,7 +110,7 @@ const addMediaRequest = async (props) => {
     }
 
     const mediaRequestsRef = db.collection('media_requests');
-    await mediaRequestsRef.doc(id).set({...mediaRequest});
+    await mediaRequestsRef.doc(mediaRequest.id).set({...mediaRequest});
 
     return await mediaRequestsRef.get();
 }
