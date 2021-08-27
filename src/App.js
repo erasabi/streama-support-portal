@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { addMediaRequest, getAllMediaRequest  } from '../db/firebase/firebase.prod';
 
 function App() {
   // SearchBar State
@@ -22,7 +21,8 @@ function App() {
   // On Mount: fetch & display already requested media
   useEffect(async () => {
     let updatedSearch = {...search};
-    updatedSearch.mediaResults = await getAllMediaRequest();
+    await axios.get('http://127.0.0.1:3000/requests/all')
+      .then(response => updatedSearch.mediaResults = response.data);
     setSearch(updatedSearch);
   }, []);
 
@@ -60,7 +60,8 @@ function App() {
     if (search.buttonSelected) {
       updatedSearch.input = '';
       updatedSearch.value = {};
-      updatedSearch.mediaResults = await getAllMediaRequest();
+      await axios.get('http://127.0.0.1:3000/requests/all')
+        .then(response => updatedSearch.mediaResults = response.data);
       updatedSearch.buttonSelected = false;
 
       setSearch(updatedSearch);
@@ -75,8 +76,17 @@ function App() {
     setSearch(updatedSearch);
   }
 
+  async function addMediaRequest(search) {
+    const body = { id: search.value.id, title: search.value.title || search.value.name, posterPath: search.value.poster_path };
+
+    await axios.put('http://127.0.0.1:3000/requests', body)
+      .then(response => console.dir(response));
+
+    return await axios.get('http://127.0.0.1:3000/requests/all')
+  }
+
   // handles changes to search suggestion dropdown 
-  function handleSuggestionSelected(result) {
+  async function handleSuggestionSelected(result) {
     let updatedSearch = { ...search };
 
     // change searchbar value to selected media
@@ -92,7 +102,8 @@ function App() {
 
     updatedSearch.input = '';
     updatedSearch.value = {};
-    updatedSearch.mediaResults = await addMediaRequest(search);
+    await addMediaRequest(search)
+      .then(response => updatedSearch.mediaResults = response.data);
     updatedSearch.buttonSelected = true;
     updatedSearch.suggestionSelected = false;
     setSearch(updatedSearch);
@@ -141,7 +152,6 @@ function App() {
     }
     return <div>{results ? <ul>{results}</ul> : null}</div>
   }
-
 
   return (
     <React.Fragment>
