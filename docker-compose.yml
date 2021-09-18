@@ -1,0 +1,36 @@
+version: "3.7"
+
+services:
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports: 
+      - '5432:5432'
+    volumes:
+      - backend-db:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile.development
+    environment:
+      DB_SCHEMA: postgres
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: postgres
+    depends_on:
+      - postgres
+    ports:
+      - '3000:3000'
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile.development
+    ports:
+      - '8081:8081'
+
+volumes:
+  backend-db:

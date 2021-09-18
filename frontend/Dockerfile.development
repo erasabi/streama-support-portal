@@ -1,0 +1,26 @@
+FROM node:12.13.0-alpine
+RUN mkdir -p /app
+# RUN mkdir -p /opt/app
+# WORKDIR /opt/app
+# RUN adduser -S app
+
+
+# # set working directory
+WORKDIR /app
+
+# add `/app/node_modules/.bin` to $PATH
+ENV PATH /app/node_modules/.bin:$PATH
+
+# install app dependencies
+COPY ./frontend/package.json ./
+COPY ./frontend/package-lock.json ./
+RUN npm install --silent
+RUN npm install react-scripts@3.4.1 -g --silent
+
+# add app
+COPY ./frontend/ ./
+# RUN chown -R app /opt/app
+# USER app
+
+# start app
+CMD ["npm", "run", "start"]

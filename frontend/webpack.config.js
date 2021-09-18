@@ -5,7 +5,10 @@ const webpack = require("webpack");
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
 
 module.exports = {
-
+    // set custom port 
+    "devServer": {
+        "port": 8080
+    },
     // mode: tells webpack we're in development
     "mode": "development",
     // "entry" is our main JavaScript file, or the ‘entry point’. In React, this is the file where we use our renderer.

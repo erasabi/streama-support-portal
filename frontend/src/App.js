@@ -18,10 +18,14 @@ function App() {
       hide: false
   });
 
+  var config = {
+    headers: { 'Access-Control-Allow-Origin': '*' }
+  };
+  
   // On Mount: fetch & display already requested media
   useEffect(async () => {
     let updatedSearch = {...search};
-    await axios.get('http://127.0.0.1:3000/requests/all')
+    await axios.get('http://localhost:3000/requests/all', config)
       .then(response => updatedSearch.mediaResults = response.data);
     setSearch(updatedSearch);
   }, []);
@@ -31,7 +35,13 @@ function App() {
   //  - if a searchSuggestion is selected
   useEffect(async () => {
     // query MovieDB API for media when user types into searchbar
-    if (!search.suggestionSelected && search.input && search.input.length > 2) {
+    // if (!search.suggestionSelected && search.input && search.input.length > 2) {
+    if (search.suggestionSelected && search.input !== search.value.title) {
+      let updatedSearch = { ...search };
+      updatedSearch.suggestionSelected = false;
+      setSearch(updatedSearch);
+    }
+    else if (!search.suggestionSelected && search.input && search.input.length > 2) {
       const response = await axios.get('https://api.themoviedb.org/3/search/multi?api_key=11cce9d83563a5188d7201b2514f7286&language=en-US&include_adult=false&sort_by="vote_count.desc"&query=' + search.input);
 
       if (response.data && response.data.total_pages && response.data.total_pages > 0) {
@@ -60,7 +70,7 @@ function App() {
     if (search.buttonSelected) {
       updatedSearch.input = '';
       updatedSearch.value = {};
-      await axios.get('http://127.0.0.1:3000/requests/all')
+      await axios.get('http://localhost:3000/requests/all', config)
         .then(response => updatedSearch.mediaResults = response.data);
       updatedSearch.buttonSelected = false;
 
@@ -79,10 +89,9 @@ function App() {
   async function addMediaRequest(search) {
     const body = { id: search.value.id, title: search.value.title || search.value.name, posterPath: search.value.poster_path };
 
-    await axios.put('http://127.0.0.1:3000/requests', body)
-      .then(response => console.dir(response));
+    await axios.put('http://localhost:3000/requests', body, config);
 
-    return await axios.get('http://127.0.0.1:3000/requests/all')
+    return await axios.get('http://localhost:3000/requests/all', config)
   }
 
   // handles changes to search suggestion dropdown 
@@ -158,7 +167,7 @@ function App() {
       <div className="row">
         <div className="header">
           <div className="col-12 topnav">
-            <a href="http://www.elanflix.com">
+            <a href="https://tosecurityandbeyond.mynetgear.com/">
               <img className="topnav-logo" src={"https://freepngimg.com/thumb/arrow/7-2-arrow-png-picture-thumb.png"} />              
             </a>
           </div>
@@ -174,11 +183,18 @@ function App() {
               id="searchText"
               value={search.input}
               placeholder="Name the movie or show you'd like..."
+              style={{ borderColor: (!search.suggestionSelected && (search.input.length > 0)) ? "#ff2828" : "" }}
               onChange={(e) => {handleSearchInput(e.target.value)}} />
               <SearchSuggestions />
           </div>
           <div className="col-xs-3 col-s-4 col-2 buttonPadding">
-            <input type="button" value="Request" onClick={() => {handleRequestSubmit()}}></input>
+            <input 
+              type="button" 
+              value="Request" 
+              disabled={!search.suggestionSelected} 
+              style={{ backgroundColor: !search.suggestionSelected ? "grey" : ""}} 
+              onClick={() => {handleRequestSubmit()}}>
+            </input>
           </div>
         </form>        
       </div>
