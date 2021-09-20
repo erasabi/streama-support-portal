@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+
 function App() {
   // SearchBar State
   const [search, setSearch] = useState({
@@ -25,7 +26,7 @@ function App() {
   // On Mount: fetch & display already requested media
   useEffect(async () => {
     let updatedSearch = {...search};
-    await axios.get('http://localhost:3000/requests/all', config)
+    await axios.get('https://tosecurityandbeyond.mynetgear.com/2hbd2p59ckzbax6kzswj46s3r39j8/requests/all', config)
       .then(response => updatedSearch.mediaResults = response.data);
     setSearch(updatedSearch);
   }, []);
@@ -36,7 +37,7 @@ function App() {
   useEffect(async () => {
     // query MovieDB API for media when user types into searchbar
     // if (!search.suggestionSelected && search.input && search.input.length > 2) {
-    if (search.suggestionSelected && search.input !== search.value.title) {
+    if (search.suggestionSelected && search.input !== (search.value.title || search.value.name)) {
       let updatedSearch = { ...search };
       updatedSearch.suggestionSelected = false;
       setSearch(updatedSearch);
@@ -70,7 +71,7 @@ function App() {
     if (search.buttonSelected) {
       updatedSearch.input = '';
       updatedSearch.value = {};
-      await axios.get('http://localhost:3000/requests/all', config)
+      await axios.get('https://tosecurityandbeyond.mynetgear.com/2hbd2p59ckzbax6kzswj46s3r39j8/requests/all', config)
         .then(response => updatedSearch.mediaResults = response.data);
       updatedSearch.buttonSelected = false;
 
@@ -89,9 +90,9 @@ function App() {
   async function addMediaRequest(search) {
     const body = { id: search.value.id, title: search.value.title || search.value.name, posterPath: search.value.poster_path };
 
-    await axios.put('http://localhost:3000/requests', body, config);
+    await axios.put('https://tosecurityandbeyond.mynetgear.com/2hbd2p59ckzbax6kzswj46s3r39j8/requests', body, config);
 
-    return await axios.get('http://localhost:3000/requests/all', config)
+    return await axios.get('https://tosecurityandbeyond.mynetgear.com/2hbd2p59ckzbax6kzswj46s3r39j8/requests/all', config)
   }
 
   // handles changes to search suggestion dropdown 
@@ -129,8 +130,8 @@ function App() {
             value={result.title}>
             <img
               className="requestedMediaItem"
-              src={"http://image.tmdb.org/t/p/w1280/" + result.posterPath}
-              onError={(e) => { e.target.src = "../public/No-Image-Placeholder.svg" }} />
+              src={"https://image.tmdb.org/t/p/w1280/" + result.posterPath}
+              onError={(e) => { e.target.src = "/NoImagePlaceholder.svg" }} />
           </div>
         )
       });
@@ -146,11 +147,11 @@ function App() {
         return (
           <li
             key={result.id}
-            value={result.title}
+            value={result.title || result.name}
             onClick={() => {handleSuggestionSelected(result)}}>
             <img
               className="poster"
-              src={"http://image.tmdb.org/t/p/w1280/" + result.poster_path}
+              src={"https://image.tmdb.org/t/p/w1280/" + result.poster_path}
               onError={(e) => { e.target.src = "https://cdn.browshot.com/static/images/not-found.png" }} />
             <div className="resultTitle">
               {result.title ? result.title : result.name} ({result.release_date ? parseInt(result.release_date) : parseInt(result.first_air_date)})
