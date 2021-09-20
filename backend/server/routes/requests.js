@@ -28,18 +28,18 @@ router.put("/", function(req, res) {
         });
 });
 
-// router.delete("/:id", function(req, res) {
-//     db.Request.destroy({
-//         where: {
-//             id: req.params.id
-//         }
-//     })
-//         .then( () => {
-//             res.status(200).send();
-//         })
-//         .catch( err => {
-//             res.status(500).send(JSON.stringify(err));
-//         });
-// });
+router.delete("/:id", function(req, res) {
+    db.Request.destroy({
+        where: {
+            id: req.params.id
+        }
+    })
+        .then( () => {
+            res.status(200).send();
+        })
+        .catch( err => {
+            res.status(500).send(JSON.stringify(err));
+        });
+});
 
 module.exports = router;

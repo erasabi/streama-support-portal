@@ -119,6 +119,20 @@ function App() {
     setSearch(updatedSearch);
   }
 
+  // handle delete of media when admin clicks on the associated media image 
+  async function deleteRequestedMedia(result) {
+    await axios.delete("https://tosecurityandbeyond.mynetgear.com/2hbd2p59ckzbax6kzswj46s3r39j8/requests/" + result.id, config)
+      .then(() => {
+        let updatedSearch = { ...search };
+
+        updatedSearch.input = '';
+        updatedSearch.value = {};
+        updatedSearch.buttonSelected = true;
+        updatedSearch.suggestionSelected = false;
+        setSearch(updatedSearch);
+      });
+  }
+
   // loops though fetch media list and renders requested MediaList component so user can see what has been requested
   const RequestedMediaList = () => {
     let mediaList = <div></div>;
@@ -127,16 +141,19 @@ function App() {
         return (
           <div
             key={result.id}
-            value={result.title}>
+            value={result.title}
+          >
             <img
               className="requestedMediaItem"
+              onClick={() => {deleteRequestedMedia(result)}}
               src={"https://image.tmdb.org/t/p/w1280/" + result.posterPath}
-              onError={(e) => { e.target.src = "/NoImagePlaceholder.svg" }} />
+              onError={(e) => { e.target.src = "/NoImagePlaceholder.svg" }}
+            />
           </div>
         )
       });
     }
-    return <div>{mediaList ? <div>{mediaList}</div> : null}</div>;
+    return <div>{mediaList ? <div >{mediaList}</div> : null}</div>;
   }
 
   // conditionally render search results MediaResults list 
