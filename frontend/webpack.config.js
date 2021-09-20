@@ -7,7 +7,7 @@ const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
 module.exports = {
     // set custom port 
     "devServer": {
-        "port": 8080
+        "port": 8081
     },
     // mode: tells webpack we're in development
     "mode": "development",
