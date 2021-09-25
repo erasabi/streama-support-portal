@@ -1,6 +1,5 @@
 // App.js: begining of React root component loaded from root index.html
-
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import axios from 'axios';
 
 
@@ -166,10 +165,17 @@ function App() {
             key={result.id}
             value={result.title || result.name}
             onClick={() => {handleSuggestionSelected(result)}}>
-            <img
-              className="poster"
-              src={"https://image.tmdb.org/t/p/w1280/" + result.poster_path}
-              onError={(e) => { e.target.src = "https://cdn.browshot.com/static/images/not-found.png" }} />
+            { result.poster_path ? (
+              <img
+                className="poster"
+                src={"https://image.tmdb.org/t/p/w1280/" + result.poster_path}
+              />
+            ) : (
+              <img
+                className="poster"
+                  src={"/not-found.png"}
+              />
+            )}
             <div className="resultTitle">
               {result.title ? result.title : result.name} ({result.release_date ? parseInt(result.release_date) : parseInt(result.first_air_date)})
             </div>
@@ -203,7 +209,9 @@ function App() {
               placeholder="Name the movie or show you'd like..."
               style={{ borderColor: (!search.suggestionSelected && (search.input.length > 0)) ? "#ff2828" : "" }}
               onChange={(e) => {handleSearchInput(e.target.value)}} />
-              <SearchSuggestions />
+              <Suspense>
+                <SearchSuggestions />
+              </Suspense>
           </div>
           <div className="col-xs-3 col-s-4 col-2 buttonPadding">
             <input 
