@@ -39,7 +39,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack",
-    "start": "webpack serve --mode development --open --hot"
+    "start": "webpack serve --mode development --open --hot",
+    "lint": "eslint src/**/*.js"
   },
   "repository": {
     "type": "git",

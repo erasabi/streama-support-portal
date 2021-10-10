@@ -8,7 +8,6 @@ import './styles.less';
 
 
 ReactDOM.render(
-  // add this to have strict typechecking and fail on any warnings
   <React.StrictMode>
     <Provider store={store}>
       <App />

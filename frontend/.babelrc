@@ -9,7 +9,7 @@
             //  - using axios
             {
                 "targets": {
-                    "node": "10"
+                    "node": "12"
                 }
             }            
         ],
