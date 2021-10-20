@@ -10,16 +10,46 @@ const sequelize = new Sequelize(process.env.DB_SCHEMA || 'postgres',
                                         ssl: process.env.DB_SSL == "true"
                                     }
                                 });
+
 const Request = sequelize.define('Request', {
     title: {
         type: Sequelize.STRING,
-        allowNull: true
+        allowNull: false
     },
     posterPath: {
         type: Sequelize.STRING,
         allowNull: true
     },
+    originalTitle: {
+        type: Sequelize.STRING,
+        allowNull: true
+    },
+    releaseDate: {
+        type: Sequelize.STRING,
+        allowNull: true
+    },
+    adult: {
+        type: Sequelize.BOOLEAN,
+        allowNull: true
+    },
+    mediaType: {
+        type: Sequelize.STRING,
+        allowNull: true
+    },
+    queueStatus: {
+        type: Sequelize.STRING,
+        allowNull: true
+    },
+    queueMessage: {
+        type: Sequelize.STRING,
+        allowNull: true
+    },
+    requestUser: {
+        type: Sequelize.STRING,
+        allowNull: true
+    },
 });
+
 module.exports = {
     sequelize: sequelize,
     Request: Request
