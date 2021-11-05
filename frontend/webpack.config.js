@@ -3,6 +3,11 @@
 const HtmlWebPackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
+const envConfig = require("./config/config");
+
+console.dir(process.env.NODE_ENV);
+
+if (envConfig.DEBUG === true) console.dir(envConfig);
 
 module.exports = {
     // set custom port 
@@ -10,7 +15,7 @@ module.exports = {
         "port": 8081
     },
     // mode: tells webpack we're in development
-    "mode": "development",
+    "mode": envConfig.NODE_ENV,
     // "entry" is our main JavaScript file, or the ‘entry point’. In React, this is the file where we use our renderer.
     "entry": "./src/index.js",
     // "output" tells Webpack where to put our bundled code and what to name the file.Here, we’re telling Webpack to create 
@@ -76,6 +81,8 @@ module.exports = {
         // provides bcrypt plugin to webpack
         new webpack.ProvidePlugin({
             bcryptjs: 'bcryptjs',
-        })
+        }),
+        // allows env files
+        new webpack.EnvironmentPlugin(envConfig),
     ]
 }

@@ -39,7 +39,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack",
-    "start": "webpack serve --mode development --open --hot",
+    "start": "APP_ENV=development webpack serve --mode development --open --hot",
+    "start:local": "APP_ENV=local webpack serve --open --hot",
+    "start:dev": "APP_ENV=development webpack serve --mode development --open --hot",
+    "start:prod": "APP_ENV=production webpack serve --mode none --open",
     "lint": "eslint src/**/*.js"
   },
   "repository": {
@@ -54,13 +57,16 @@
   "homepage": "https://github.com/erasabi/streama-support-portal#readme",
   "dependencies": {
     "@reduxjs/toolkit": "^1.6.2",
-    "axios": "^0.21.1",
+    "axios": "^0.21.4",
     "bcryptjs": "^2.4.3",
+    "dotenv": "^10.0.0",
     "firebase": "^8.6.1",
     "node-polyfill-webpack-plugin": "^1.1.2",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "react-redux": "^7.2.5"
+    "react-redux": "^7.2.6",
+    "redux": "^4.1.2",
+    "redux-thunk": "^2.4.0"
   },
   "devDependencies": {
     "@babel/core": "^7.14.0",
