@@ -23,20 +23,28 @@
 
 .modalTitle {
     color: #ff2828;
-    font-size: 8vh;
     text-align: center;    
 }
 
 .modalContent {
     color: white;
-    font-weight: 300;    
+    font-weight: 300;
+    margin: 10px 0px;    
 }
 
-.modalContentUpdatable { 
+.modalContentUpdatable {
     color: white;
-    padding: 0px 0;
-    font-size: 25px;
     text-align: left;
+    margin: 10px 0px;  
+    > div { 
+        float: left;
+        padding-right: 10px;
+        text-align: left;
+    }
+    > input {
+        float: left;
+        max-width: 85%;
+    }
 }
 
 .buttonCancel {
@@ -48,6 +56,7 @@
 
 div.buttonCancel > input {
     background-color: orange;
+    padding: 15px;
 }
 
 .buttonDelete {
@@ -59,6 +68,7 @@ div.buttonCancel > input {
 
 div.buttonDelete > input {
     background-color: red;
+    padding: 15px;
 }
 
 .buttonUpdate {
@@ -66,6 +76,9 @@ div.buttonDelete > input {
     display: flex;
     justify-content: left;
     align-items: left    
+}
+div.buttonUpdate > input {
+    padding: 15px;
 }
 
 
