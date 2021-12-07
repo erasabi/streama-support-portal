@@ -1,4 +1,4 @@
-version: "3.7"
+version: "3.8"  # docker engine version
 
 services:
   postgres:
@@ -16,10 +16,10 @@ services:
       context: .
       dockerfile: ./backend/Dockerfile.development
     environment:
-      DB_SCHEMA: postgres
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_HOST: postgres
+      DB_SCHEMA: "${DB_SCHEMA}"
+      DB_USER: "${DB_USER}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_HOST: "${DB_HOST}"
     depends_on:
       - postgres
     ports:
@@ -29,6 +29,8 @@ services:
     build:
       context: .
       dockerfile: ./frontend/Dockerfile.development
+    environment:
+      API_ENDPOINT: "${API_ENDPOINT}"
     ports:
       - '8081:8081'
 
