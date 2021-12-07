@@ -1,10 +1,11 @@
+# updating to node 16 or greater causes breaking error
 FROM node:12.13.0-alpine
-RUN mkdir -p /opt/app
-WORKDIR /opt/app
-RUN adduser -S app
+RUN mkdir -p /opt/app-backend
+WORKDIR /opt/app-backend
+RUN adduser -S app-backend
 COPY ./backend/server/ .
 RUN npm install
-RUN chown -R app /opt/app
-USER app
+RUN chown -R app-backend /opt/app-backend
+USER app-backend
 EXPOSE 3000
 CMD [ "npm", "run", "pm2" ]
