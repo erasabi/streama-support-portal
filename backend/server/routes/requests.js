@@ -51,4 +51,30 @@ router.delete("/:id", function(req, res) {
         });
 });
 
+router.put("/:id", function (req, res) {
+    db.Request.update({
+        title: req.body.title || '',
+        posterPath: req.body.posterPath || '',
+        originalTitle: req.body.originalTitle || null,
+        releaseDate: req.body.releaseDate || null,
+        adult: req.body.adult || false,
+        mediaType: req.body.mediaType || null,
+        queueStatus: req.body.queueStatus || null,
+        queueMessage: req.body.queueMessage || null,
+        requestUser: req.body.requestUser || null,
+    },
+    {
+        where: {
+            id: req.params.id
+        }
+    })
+        .then(response => {
+            console.dir(JSON.stringify(response));
+            res.status(200).send(JSON.stringify(response));
+        })
+        .catch(err => {
+            res.status(500).send(JSON.stringify(err));
+        });
+});
+
 module.exports = router;
