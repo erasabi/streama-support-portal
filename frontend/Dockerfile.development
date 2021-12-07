@@ -1,26 +1,26 @@
-FROM node:12.13.0-alpine
-RUN mkdir -p /app
-# RUN mkdir -p /opt/app
-# WORKDIR /opt/app
-# RUN adduser -S app
+FROM node:16-alpine
 
+# create directory for app use
+RUN mkdir -p /opt/app-frontend
 
-# # set working directory
-WORKDIR /app
+# create user to run app
+RUN adduser -S app-frontend
 
-# add `/app/node_modules/.bin` to $PATH
-ENV PATH /app/node_modules/.bin:$PATH
+# set working directory
+WORKDIR /opt/app-frontend
 
-# install app dependencies
+# add `/opt/app-frontend/node_modules/.bin` to $PATH
+ENV PATH /opt/app-frontend/node_modules/.bin:$PATH
+
+# install app-frontend dependencies
 COPY ./frontend/package.json ./
 COPY ./frontend/package-lock.json ./
 RUN npm install --silent
-RUN npm install react-scripts@3.4.1 -g --silent
 
-# add app
+# add app-frontend
 COPY ./frontend/ ./
-# RUN chown -R app /opt/app
-# USER app
+RUN chown -R app-frontend /opt/app-frontend
+USER app-frontend
 
-# start app
+# start app-frontend
 CMD ["npm", "run", "start"]
