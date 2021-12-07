@@ -2,7 +2,7 @@
 import { createStore, applyMiddleware } from 'redux'
 import thunk from 'redux-thunk';
 import axios from 'axios';
-
+import { API_ENDPOINT, API_REQUEST_CONFIG } from '../config/index';
 
 // CREATE THE ACTION
 // - actions describe the reason to change the state
@@ -28,10 +28,8 @@ export const handleSearchInput = (value) => {
 // handles changes to searchbar input
 export const handleRequestedMedia = () => {
     return (dispatch) => {
-        axios.get('https://tosecurityandbeyond.mynetgear.com/2hbd2p59ckzbax6kzswj46s3r39j8/requests/all')
+        axios.get(`${API_ENDPOINT}/requests/all`, API_REQUEST_CONFIG)
             .then((res) => {
-                // console.dir('elan');
-                // console.dir(res);
                 dispatch({ type: 'UPDATE_REQUESTED_MEDIA', mediaResults: res.data });
             })
             .catch(() => {
@@ -50,7 +48,7 @@ export const handleSuggestedMediaSelected = (value) => {
 // handles changes to searchbar input
 export const handleRequestSubmit = () => {
     return (dispatch) => {
-        axios.get('https://tosecurityandbeyond.mynetgear.com/2hbd2p59ckzbax6kzswj46s3r39j8/requests/all')
+        axios.get(`${API_ENDPOINT}/requests/all`, API_REQUEST_CONFIG)
             .then((res) => {
                 dispatch({ type: 'REFRESH_PORTAL', mediaResults: res.data });
             })
