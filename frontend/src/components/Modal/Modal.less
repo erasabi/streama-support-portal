@@ -1,0 +1,72 @@
+@default-inputBar-backgroundColor: #222121;
+
+.modalLayout {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    height: 100vh;
+    width: 100vw;
+    padding: 5vh 5vw;
+    background-color: #111111;    
+}
+
+.modalContainer {
+    padding: 25px 50px;
+    background-color: @default-inputBar-backgroundColor;
+    height: 100%;
+    padding: 25px;
+    width: 100%;
+    background-color: #414141;
+    border-radius: 25px;
+}
+
+
+.modalTitle {
+    color: #ff2828;
+    font-size: 8vh;
+    text-align: center;    
+}
+
+.modalContent {
+    color: white;
+    font-weight: 300;    
+}
+
+.modalContentUpdatable { 
+    color: white;
+    padding: 0px 0;
+    font-size: 25px;
+    text-align: left;
+}
+
+.buttonCancel {
+    float: right;
+    display: flex;
+    justify-content: right;
+    align-items: right;
+}
+
+div.buttonCancel > input {
+    background-color: orange;
+}
+
+.buttonDelete {
+    float: left;
+    display: flex;
+    justify-content: left;
+    align-items: left; 
+}
+
+div.buttonDelete > input {
+    background-color: red;
+}
+
+.buttonUpdate {
+    float: left;
+    display: flex;
+    justify-content: left;
+    align-items: left    
+}
+
+
+    

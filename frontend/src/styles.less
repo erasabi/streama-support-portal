@@ -4,7 +4,6 @@
 @button-secondary: #2576b8;
 @default-font-size: 15px;
 @default-inputBar-backgroundColor: #222121;
-@default-color-red: #ff2828;
 
 // ensure that all HTML elements have the box-sizing property set to border-box. This makes sure that the padding and border are included in the total width and height of the elements.
 * {
@@ -13,7 +12,7 @@
 
 body {
     margin: 0px;
-    height: 100%;
+    height: 100vh;
     font-family: "Lato","Helvetica Neue",Helvetica,Arial,sans-serif;
     font-size: @default-font-size;
     background-color: @body-backgroundColor;
@@ -95,13 +94,13 @@ body {
 /* Style the top navigation bar */
 .topnav {
   padding: 0px;
-  max-height: 3rem;
+  max-height: 4rem;
   overflow: hidden;
 }
 .topnav-logo {
   float: left;
-  padding: 0px 5px;
-  height: 2.5rem;
+  margin: 5px;
+  height: 3.5rem;
 }
 
 form {
@@ -110,7 +109,7 @@ form {
   padding: 20px;
 }
 .form-container {
-  padding-top: 5%;
+  padding: 5rem 5rem 0 5rem;
 }
 
 input[type=text] {
@@ -126,6 +125,7 @@ input[type=text] {
   background-repeat: no-repeat;
   padding: 12px 20px 12px 40px;
 }
+
 .search-padding {
   padding-right: 2px;
 }
@@ -141,9 +141,11 @@ input[type=button] {
   border-radius: 8px;
   cursor: pointer;
 }
+
 input[type=button]:hover {
   background-color: @button-secondary;
 }
+
 .buttonPadding {
   padding-left: 0;
 }
@@ -173,35 +175,4 @@ ul li {
 .resultTitle {
   padding: 20px;
   overflow: hidden;
-}
-
-.requestedMediaItem {
-  float: left;
-  padding: 15px;
-  height: 12rem;
-
-}
-
-@media only screen and (min-width: 175px) {
-  .requestedMediaRow {
-    padding: 0 2rem;
-  }
-}
-@media only screen and (min-width: 600px) {
-  .requestedMediaRow {
-    padding: 0 5rem;
-  }
-}
-
-.requestedMediaList {
-  background-color: @default-inputBar-backgroundColor;
-  width: 100%;
-  border-radius: 8px;
-}
-
-.requestedMediaListTitle {
-  color: @default-color-red;
-  font-size: 1.5rem;
-  padding-bottom: 15px;
-  text-align: center;
 }
