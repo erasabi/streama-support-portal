@@ -1,10 +1,35 @@
 @default-inputBar-backgroundColor: #222121;
 @default-color-red: #ff2828;
 
-.requestedMediaList {
+
+.requestedMediaItemContainer {
+  position: relative;
+  float: left;
+  width: 140px;
+  margin: 0 0.5%;
+}
+
+.requestedMediaItemImg {
+  padding: 0px;
+  height: 12rem;
+}
+
+.requestedMediaItemStatus {
+    position: absolute;
+    background-color: #b90000d9;
+    width: 128px;
+    text-align: center;
+    color: white;
+    top: 80px;
+    font-size: 20px;
+}
+
+.requestedMediaListContainer {
+  float: left;
   background-color: @default-inputBar-backgroundColor;
   width: 100%;
   border-radius: 8px;
+  padding: 10px;
 }
 
 .requestedMediaListTitle {
@@ -14,32 +39,8 @@
   text-align: center;
 }
 
-.requestedMediaItemContainer {
-  width: 160px;
-}
-
-.requestedMediaItem {
-  float: left;
-  padding: 0px;
-  height: 12rem;
-  position: relative;
-  z-index: 0;
-}
-
-.requestedMediaItemStatus {
-    position: absolute;
-    z-index: 1;
-    background-color: #b90000d9;
-    width: 128px;
-    text-align: center;
-    color: white;
-    margin-top: 80px;
-    font-size: 20px;
-}
-
 .requestedMediaRow {
-    position: relative;
-    z-index: 1;
+  position: relative;
 }
 
 @media only screen and (min-width: 175px) {

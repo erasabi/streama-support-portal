@@ -10,22 +10,21 @@ function RequestedMediaList(props) {
         mediaList = props.mediaResults.map(result => {
             return (
                 <div
-                    className="col-xs-3 col-s-2 col-2"
+                    className="requestedMediaItemContainer"
                     key={result.id}
                     value={result.title}
-                    style={{ width: '160px' }}
                 >
-                <img
-                    className="requestedMediaItem"
-                    onClick={() => (props.openModal(result))}
-                    src={"https://image.tmdb.org/t/p/w1280/" + result.posterPath}
-                    onError={(e) => { e.target.src = "/NoImagePlaceholder.png" }}
-                />
-                { result.queueStatus && (
-                    <div className="requestedMediaItemStatus">
-                        {result.queueStatus}
-                    </div>
-                )}
+                    <img
+                        className="requestedMediaItemImg"
+                        onClick={() => (props.openModal(result))}
+                        src={"https://image.tmdb.org/t/p/w1280/" + result.posterPath}
+                        onError={(e) => { e.target.src = "/NoImagePlaceholder.png" }}
+                    />
+                    { result.queueStatus && (
+                        <div className="requestedMediaItemStatus">
+                            {result.queueStatus}
+                        </div>
+                    )}
                 </div>
             )
         });
@@ -34,10 +33,10 @@ function RequestedMediaList(props) {
     }  
     return (
         <div className="row requestedMediaRow">
-        <div className="col-s-12 col-12 requestedMediaList">
-            <div className="requestedMediaListTitle">Coming Soon</div>
-            <RequestedMediaListItems />
-        </div>
+            <div className="requestedMediaListContainer">
+                <div className="requestedMediaListTitle">Coming Soon</div>
+                <RequestedMediaListItems />
+            </div>
         </div>
     );
 }
