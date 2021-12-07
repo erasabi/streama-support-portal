@@ -5,10 +5,6 @@ const webpack = require("webpack");
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
 const envConfig = require("./config/config");
 
-console.dir(process.env.NODE_ENV);
-
-if (envConfig.DEBUG === true) console.dir(envConfig);
-
 module.exports = {
     // set custom port 
     "devServer": {
