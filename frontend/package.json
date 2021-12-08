@@ -43,7 +43,8 @@
     "start:local": "APP_ENV=local webpack serve --open --hot",
     "start:dev": "APP_ENV=development webpack serve --mode development --open --hot",
     "start:prod": "APP_ENV=production webpack serve --mode none --open",
-    "lint": "eslint src/**/*.js"
+    "lint": "eslint src/**/*.js",
+    "destroy": "./scripts/docker-nuke.sh"
   },
   "repository": {
     "type": "git",
