@@ -1,9 +1,9 @@
 import axios from 'axios';
-import { API_ENDPOINT, API_REQUEST_CONFIG } from '../config/index';
+import { API_ENDPOINT, STREAMA_ENDPOINT, API_REQUEST_CONFIG } from '../config/index';
 
 export async function getUser() {
     let user = 'Anonymous';
-    await axios.get(`${API_ENDPOINT}/user/current.json`, { withCredentials: true }, API_REQUEST_CONFIG
+    await axios.get(`${STREAMA_ENDPOINT}/user/current.json`, { withCredentials: true }, API_REQUEST_CONFIG
     ).then((res) => {
         user = res.data.profiles[0];
     }).catch((err) => {
@@ -14,7 +14,7 @@ export async function getUser() {
 
 export async function getMediaRequestUser() {
     let user = 'Anonymous';
-    await axios.get(`${API_ENDPOINT}/user/current.json`, { withCredentials: true }, API_REQUEST_CONFIG
+    await axios.get(`${STREAMA_ENDPOINT}/user/current.json`, { withCredentials: true }, API_REQUEST_CONFIG
     ).then((res) => {
         user = res.data.profiles[0].user.username;
     }).catch((err) => {
