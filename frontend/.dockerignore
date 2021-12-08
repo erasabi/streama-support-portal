@@ -1,3 +1,6 @@
+# in case docker's node version and the env that installed these modules differ 
 frontend/node_modules/
+# in case docker's npm install does not get corrupted by another env's package-lock.json
 frontend/node_modules/package-lock.json
+# prevents non-docker env files from being copied over
 frontend/*.env.*
