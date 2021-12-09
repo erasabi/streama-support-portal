@@ -1,4 +1,0 @@
-# in case docker's node version and the env that installed these modules differ 
-backend/server/node_modules/
-# in case docker's npm install does not get corrupted by another env's package-lock.json
-backend/server/package-lock.json
