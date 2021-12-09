@@ -14,7 +14,6 @@ ENV PATH /opt/app-frontend/node_modules/.bin:$PATH
 
 # install app-frontend dependencies
 COPY ./frontend/package.json ./
-COPY ./frontend/package-lock.json ./
 RUN npm install --silent
 
 # add app-frontend
