@@ -1,8 +1,17 @@
-// requests.js
-
 var express = require('express');
 var router = express.Router();
 var db = require('../database');
+
+const getDbConnectionStatus = async () => {
+    try {
+        await db.sequelize.authenticate();
+        console.log('Connection has been established successfully.');
+    } catch (error) {
+        console.error('Unable to connect to the database:', error);
+    }
+};
+
+getDbConnectionStatus();
 
 router.get("/all", function(req, res) {
     db.Request.findAll()
@@ -29,7 +38,6 @@ router.put("/", function (req, res) {
         requestUser: req.body.requestUser || null,
     })
         .then(response => {
-            console.dir(JSON.stringify(response));
             res.status(200).send(JSON.stringify(response));
         })
         .catch(err => {
@@ -69,7 +77,6 @@ router.put("/:id", function (req, res) {
         }
     })
         .then(response => {
-            console.dir(JSON.stringify(response));
             res.status(200).send(JSON.stringify(response));
         })
         .catch(err => {
