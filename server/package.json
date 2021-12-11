@@ -8,7 +8,7 @@
     "test": "jest",
     "pm2": "pm2 start processes.json --no-daemon",
     "pm2:debug": "DEBUG=* pm2 start processes.json --no-daemon",
-    "migrate": "node ./bin/migrate.js"
+    "migrate": "sequelize-cli db:migrate"
   },
   "dependencies": {
     "clean-css": "^5.2.2",

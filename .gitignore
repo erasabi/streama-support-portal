@@ -246,5 +246,5 @@ dist
 ###########################################################
 0_config/
 db/database.env
-frontend/.env*
+client/.env*
 .env*

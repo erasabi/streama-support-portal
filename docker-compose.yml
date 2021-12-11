@@ -9,12 +9,12 @@ services:
     ports: 
       - '5432:5432'
     volumes:
-      - backend-db:/var/lib/postgresql/data
+      - server-db:/var/lib/postgresql/data
 
-  backend:
+  server:
     build:
       context: .
-      dockerfile: ./backend/Dockerfile.development
+      dockerfile: ./server/Dockerfile.development
     environment:
       DB_SCHEMA: "${DB_SCHEMA}"
       DB_USER: "${DB_USER}"
@@ -25,10 +25,10 @@ services:
     ports:
       - '3000:3000'
 
-  frontend:
+  client:
     build:
       context: .
-      dockerfile: ./frontend/Dockerfile.development
+      dockerfile: ./client/Dockerfile.development
     environment:
       STREAMA_ENDPOINT: "${STREAMA_ENDPOINT}"
       API_ENDPOINT: "${API_ENDPOINT}"
@@ -36,4 +36,4 @@ services:
       - '8081:8081'
 
 volumes:
-  backend-db:
+  server-db: # named volumes can be managed easier using docker-compose
