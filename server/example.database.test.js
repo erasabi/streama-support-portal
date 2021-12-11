@@ -11,7 +11,7 @@ beforeAll(async () => {
     await db.sequelize.sync();
 });
 
-it('create person', async () => {
+it('create media request', async () => {
     expect.assertions(2);
     const request = await db.Request.create(mockRequestedMediaItem);
     expect(request.id).toEqual(1);
@@ -25,7 +25,7 @@ it('get requested media', async () => {
     expect(requests.title).toEqual('The Matrix');
 });
 
-it('delete person', async () => {
+it('delete media request', async () => {
     expect.assertions(1);
     await db.Request.destroy({
         where: {
