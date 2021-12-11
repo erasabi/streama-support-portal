@@ -3,12 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "pm2 start processes.json --no-daemon",
-    "start:prod": "node ./bin/www",
+    "start": "node ./server.js",
+    "start:debug": "DEBUG=* node ./server.js",
     "test": "jest",
-    "pm2": "pm2 start processes.json --no-daemon",
-    "pm2:debug": "DEBUG=* pm2 start processes.json --no-daemon",
-    "migrate": "sequelize-cli db:migrate"
+    "migrate": "sequelize-cli db:migrate",
+    "migrate:undo": "sequelize-cli db:migrate:undo"
   },
   "dependencies": {
     "clean-css": "^5.2.2",
@@ -21,7 +20,6 @@
     "node-notifier": "^10.0.0",
     "pg": "^8.7.1",
     "pg-hstore": "^2.3.4",
-    "pm2": "^5.1.2",
     "pug": "^3.0.2",
     "sequelize": "^6.11.0",
     "sequelize-cli": "^6.3.0"
