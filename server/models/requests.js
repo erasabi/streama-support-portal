@@ -45,10 +45,10 @@ module.exports = (Datatype, DataTypes) => {
       type: Datatype.STRING(20)
     },
     "queueStatus": {
-      type: Datatype.STRING(20)
+      type: Datatype.STRING(40)
     },
     "queueMessage": {
-      type: Datatype.STRING(20)
+      type: Datatype.STRING(120)
     },
     "requestUser": {
       type: Datatype.STRING(60)

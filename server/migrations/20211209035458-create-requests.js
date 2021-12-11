@@ -1,4 +1,5 @@
 'use strict';
+
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.createTable('Requests', {
@@ -33,10 +34,10 @@ module.exports = {
         type: Sequelize.STRING(20)
       },
       "queueStatus": {
-        type: Sequelize.STRING(20)
+        type: Sequelize.STRING(40)
       },
       "queueMessage": {
-        type: Sequelize.STRING(20)
+        type: Sequelize.STRING(120)
       },
       "requestUser": {
         type: Sequelize.STRING(60)

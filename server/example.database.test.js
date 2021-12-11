@@ -1,34 +1,41 @@
 const db = require('./database');
+
+const mockRequestedMediaItem = {
+    id: 1,
+    title: 'The Matrix',
+}
+
 beforeAll(async () => {
-    await db.sequelize.sync({ force: true });
+    // connect to database 
+    // using sequelize.sync({force: true}): adds a DROP TABLE IF EXISTS before trying to create the table
+    await db.sequelize.sync();
 });
-test('create person', async () => {
-    expect.assertions(1);
-    const person = await db.Person.create({
-        id: 1,
-        firstName: 'Bobbie',
-        lastName: 'Draper',
-        email: 'bdraper@mars.com'
-    });
-    expect(person.id).toEqual(1);
-    // expect(person.firstName).toEqual('Bobbie');
-});
-test('get person', async () => {
+
+it('create person', async () => {
     expect.assertions(2);
-    const person = await db.Person.findByPk(1);
-    expect(person.firstName).toEqual('Bobbie');
-    expect(person.lastName).toEqual('Draper');
+    const request = await db.Request.create(mockRequestedMediaItem);
+    expect(request.id).toEqual(1);
+    expect(request.title).toEqual('The Matrix');
 });
-test('delete person', async () => {
+
+it('get requested media', async () => {
     expect.assertions(1);
-    await db.Person.destroy({
+    const requests = await db.Request.findByPk(1);
+
+    expect(requests.title).toEqual('The Matrix');
+});
+
+it('delete person', async () => {
+    expect.assertions(1);
+    await db.Request.destroy({
         where: {
             id: 1
         }
     });
-    const person = await db.Person.findByPk(1);
-    expect(person).toBeNull();
+    const request = await db.Request.findByPk(1);
+    expect(request).toBeNull();
 });
+
 afterAll(async () => {
     await db.sequelize.close();
 });
