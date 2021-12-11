@@ -1,6 +1,7 @@
-var express = require('express');
-var router = express.Router();
-var db = require('../database');
+let express = require('express');
+let router = express.Router();
+let db = require('../database');
+// let db = require('../models');
 
 const getDbConnectionStatus = async () => {
     try {
@@ -10,7 +11,6 @@ const getDbConnectionStatus = async () => {
         console.error('Unable to connect to the database:', error);
     }
 };
-
 getDbConnectionStatus();
 
 router.get("/all", function(req, res) {
@@ -37,12 +37,12 @@ router.put("/", function (req, res) {
         queueMessage: req.body.queueMessage || null,
         requestUser: req.body.requestUser || null,
     })
-        .then(response => {
-            res.status(200).send(JSON.stringify(response));
-        })
-        .catch(err => {
-            res.status(500).send(JSON.stringify(err));
-        });
+    .then(response => {
+        res.status(200).send(JSON.stringify(response));
+    })
+    .catch(err => {
+        res.status(500).send(JSON.stringify(err));
+    });
 });
 
 router.delete("/:id", function(req, res) {
