@@ -14,6 +14,7 @@ const getDbConnectionStatus = async () => {
 getDbConnectionStatus();
 
 router.get("/all", function(req, res) {
+    console.log('test');
     db.Request.findAll()
         .then( requests => {
             res.status(200).send(JSON.stringify(requests));

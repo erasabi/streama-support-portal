@@ -34,9 +34,9 @@ module.exports = {
                 "exclude": /node_modules/,
                 "loader": "eslint-loader",
                 "options": {
-                  "emitWarning": true,
-                  "failOnError": false,
-                  "failOnWarning": false
+                    "emitWarning": true,
+                    "failOnError": false,
+                    "failOnWarning": false
                 }
             },
             {

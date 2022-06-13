@@ -21,5 +21,8 @@ COPY ./client/ ./
 RUN chown -R app-client /opt/app-client
 USER app-client
 
+# build app-client
+RUN npm build
+
 # start app-client
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "start:prod"]

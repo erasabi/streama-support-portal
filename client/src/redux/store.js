@@ -3,6 +3,8 @@ import { createStore, applyMiddleware } from 'redux'
 import thunk from 'redux-thunk';
 import axios from 'axios';
 import { API_ENDPOINT, API_REQUEST_CONFIG } from '../config/index';
+import { getRequestedMedia } from '/src/api'
+
 
 // CREATE THE ACTION
 // - actions describe the reason to change the state
@@ -10,7 +12,7 @@ import { API_ENDPOINT, API_REQUEST_CONFIG } from '../config/index';
 // handles changes to searchbar input
 export const handleSearchInput = (value) => {
     return (dispatch) => {
-        if(value.length > 2){
+        if (value.length > 2) {
             axios.get('https://api.themoviedb.org/3/search/multi?api_key=11cce9d83563a5188d7201b2514f7286&language=en-US&include_adult=false&sort_by="vote_count.desc"&query=' + value)
                 .then((res) => {
                     dispatch({ type: 'SEARCH_MEDIA_SUGGESTIONS', value: value, queryResults: res.data.results });
@@ -47,14 +49,14 @@ export const handleSuggestedMediaSelected = (value) => {
 
 // handles changes to searchbar input
 export const handleRequestSubmit = () => {
-    return (dispatch) => {
-        axios.get(`${API_ENDPOINT}/requests/all`, API_REQUEST_CONFIG)
-            .then((res) => {
-                dispatch({ type: 'REFRESH_PORTAL', mediaResults: res.data });
-            })
-            .catch(() => {
-                dispatch({ type: 'REFRESH_PORTAL', mediaResults: [] });
-            })
+
+    return async (dispatch) => {
+        try {
+            const res = await getRequestedMedia()
+            dispatch({ type: 'REFRESH_PORTAL', mediaResults: res.data });
+        } catch (error) {
+            dispatch({ type: 'REFRESH_PORTAL', mediaResults: [] });
+        }
     }
 }
 
@@ -66,7 +68,7 @@ export const handleRequestSubmit = () => {
 // result:
 // - reducer makes a change to the state
 
-// create JSON initial state
+// create initial state
 const initialState = {
     input: '',
     value: {},
@@ -75,19 +77,11 @@ const initialState = {
     mediaResults: [],
     buttonSelected: false,
     buttonDisabled: true,
-  }
+}
 
 // create reducer
 export const portalReducer = (state = initialState, action) => {
     switch (action.type) {
-        case 'UPDATE_SEARCH':
-        return {
-            ...state,
-            input: action.value || '',
-            value: {},
-            suggestionSelected: false,
-            buttonDisabled: true,
-        }
         case 'SEARCH_MEDIA_SUGGESTIONS':
             return {
                 ...state,

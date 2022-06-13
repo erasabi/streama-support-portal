@@ -1,4 +1,4 @@
-version: "3.8"  # docker engine version
+version: "3.8" # docker engine version
 
 services:
   postgres:
@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_USER: "${DB_USER}"
       POSTGRES_PASSWORD: "${DB_PASSWORD}"
-    ports: 
+    ports:
       - '5432:5432'
     volumes:
       - server-db:/var/lib/postgresql/data
@@ -14,7 +14,7 @@ services:
   server:
     build:
       context: .
-      dockerfile: ./server/Dockerfile.development
+      dockerfile: ./server/Dockerfile
     environment:
       DB_SCHEMA: "${DB_SCHEMA}"
       DB_USER: "${DB_USER}"
@@ -28,7 +28,7 @@ services:
   client:
     build:
       context: .
-      dockerfile: ./client/Dockerfile.development
+      dockerfile: ./client/Dockerfile
     environment:
       STREAMA_ENDPOINT: "${STREAMA_ENDPOINT}"
       API_ENDPOINT: "${API_ENDPOINT}"

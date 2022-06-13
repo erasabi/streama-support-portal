@@ -1,8 +1,6 @@
 // eslint-disable-next-line no-unused-vars
-import React, { Suspense, useState, useEffect } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
-// eslint-disable-next-line no-unused-vars
-import { addMediaRequest, deleteMediaRequest, updateMediaRequest } from '../../handlers/handle-media-requests';
 import './Dialog.less';
 
 const Detail = (content) => {
@@ -24,56 +22,56 @@ const Detail2 = (title, content) => {
 function Modal(props) {
     return (
         <div className="row dialogContainer">
-          <form className="modal-container"
+            <form className="modal-container"
                 style={{
                     padding: '20px',
                     backgroundColor: '#414141',
                     borderRadius: '25px',
                     fontSize: '1.75rem'
                 }}
-          >
-            <div className="row">
-                {Detail(props.title)}
-            </div>
-            <div className="row">
-                <div className="col-xs-12 col-s-12 col-12"
-                    style={{
-                        padding: "20px 0",
-                        textAlign: "center",
-                    }}
-                >
-                    {props.releaseDate && (
-                        Detail2('Released', props.releaseDate)
-                    )}
-                    {props.mediaType && (
-                        Detail2('Media Type', props.mediaType)
-                    )}
-                    {props.queueStatus && (
-                       Detail2('Status', props.queueStatus)
-                    )}
-                    {props.queueMessage && (
-                        Detail2('Status Details', props.queueMessage)
-                    )}
+            >
+                <div className="row">
+                    {Detail(props.title)}
                 </div>
-            </div>
-            {/* Buttons */}
-            <div className="row">
-                <div className="col-xs-12 col-s-12 col-12"
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                    }}
-                >
-                    <input
-                        type="button"
-                        value="Close"
-                        onClick={()=>{props.onClose()}}
+                <div className="row">
+                    <div className="col-xs-12 col-s-12 col-12"
+                        style={{
+                            padding: "20px 0",
+                            textAlign: "center",
+                        }}
+                    >
+                        {props.releaseDate && (
+                            Detail2('Released', props.releaseDate)
+                        )}
+                        {props.mediaType && (
+                            Detail2('Media Type', props.mediaType)
+                        )}
+                        {props.queueStatus && (
+                            Detail2('Status', props.queueStatus)
+                        )}
+                        {props.queueMessage && (
+                            Detail2('Status Details', props.queueMessage)
+                        )}
+                    </div>
+                </div>
+                {/* Buttons */}
+                <div className="row">
+                    <div className="col-xs-12 col-s-12 col-12"
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <input
+                            type="button"
+                            value="Close"
+                            onClick={() => { props.onClose() }}
                         >
-                    </input>
+                        </input>
+                    </div>
                 </div>
-            </div>
-          </form>
+            </form>
         </div>
     );
 }

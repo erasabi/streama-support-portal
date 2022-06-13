@@ -1,17 +1,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-// conditionally render search results MediaResults list 
-// eslint-disable-next-line no-unused-vars
 function SearchSuggestions(props) {
+  const { queryResults, onSelect } = props
   let results = <div></div>;
 
-  if (props.queryResults && props.queryResults.length > 0) {
-    results = props.queryResults.map(result => {
+  if (queryResults && queryResults.length > 0) {
+    results = queryResults.map(result => {
       return (
         <li
           key={result.id}
-          onClick={() => { props.handleSuggestedMediaSelected(result) }}
+          onClick={() => { onSelect(result) }}
         >
           {result.poster_path ? (
             <img
@@ -37,6 +36,7 @@ function SearchSuggestions(props) {
 SearchSuggestions.propTypes = {
   queryResults: PropTypes.array,
   handleSuggestedMediaSelected: PropTypes.func,
+  onSelect: PropTypes.func,
 };
 
 export default SearchSuggestions;

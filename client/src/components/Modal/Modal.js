@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import PropTypes from 'prop-types';
-import { deleteMediaRequest, updateMediaRequest } from '../../handlers/handle-media-requests';
+import { deleteMediaRequest, updateMediaRequest } from '/src/api';
 import { userContext } from '../../context/user';
 import Dialog from '../Dialog/Dialog';
 import './Modal.less';
@@ -11,121 +11,107 @@ function AdminModal(props) {
         queueMessage: props.queueMessage || '',
     });
 
-    // {
-    //     id: req.body.id,
-    //     title: req.body.title || '',
-    //     posterPath: req.body.posterPath || '',
-    //     createdAt: req.body.createdAt || '',
-    //     originalTitle: req.body.originalTitle || null,
-    //     releaseDate: req.body.releaseDate || null,
-    //     adult: req.body.adult || false,
-    //     mediaType: req.body.mediaType || null,
-    //     queueStatus: req.body.queueStatus || null,
-    //     queueMessage: req.body.queueMessage || null,
-    //     requestUser: req.body.requestUser || null,
-    // }
-
     return (
         <div className="row modalLayout">
-          <form className="modalContainer">
-            <div className="row">
-                <div className="col-xs-12 col-s-12 col-12">
+            <form className="modalContainer">
+                <div className="row">
+                    <div className="col-xs-12 col-s-12 col-12">
                         <div className="font-size-xs-h1 font-size-h1 modalTitle">{props.title}</div>
-                </div>
-            </div>
-            <div 
-                className="col-xs-12 col-s-12 col-12"
-                style={{ padding: "0" }}
-            >
-                {props.requestUser && (
-                    <div className="row">
-                        <h2 className="font-size-xs-h2 font-size-h2 modalContent">Requested body: {props.requestUser}</h2>
                     </div>
-                )}
-                {props.createdAt && (
-                    <div className="row">
-                        <h2 className="font-size-xs-h2 font-size-h2 modalContent">Created: {props.createdAt}</h2>
+                </div>
+                <div
+                    className="col-xs-12 col-s-12 col-12"
+                    style={{ padding: "0" }}
+                >
+                    {props.requestUser && (
+                        <div className="row">
+                            <h2 className="font-size-xs-h2 font-size-h2 modalContent">Requested body: {props.requestUser}</h2>
+                        </div>
+                    )}
+                    {props.createdAt && (
+                        <div className="row">
+                            <h2 className="font-size-xs-h2 font-size-h2 modalContent">Created: {props.createdAt}</h2>
+                        </div>
+                    )}
+                    {props.releaseDate && (
+                        <div className="row">
+                            <h2 className="font-size-xs-h2 font-size-h2 modalContent">Released: {props.releaseDate}</h2>
+                        </div>
+                    )}
+                    {props.mediaType && (
+                        <div className="row">
+                            <h2 className="font-size-xs-h2 font-size-h2 modalContent">Media Type: {props.mediaType}</h2>
+                        </div>
+                    )}
+                </div>
+                {/* Queue Status */}
+                <div className="row">
+                    <div className="font-size-xs-h2 font-size-h2 modalContentUpdatable">
+                        <div>Queue Status:</div>
+                        <input
+                            type="text"
+                            autoComplete="off"
+                            id="titleText"
+                            value={dialog.queueStatus}
+                            placeholder=""
+                            style={{
+                                backgroundColor: '#b5b4b4', borderColor: (props.queueStatus && !props.queueStatus.Empty) ? "#ff2828" : ""
+                            }}
+                            onChange={(e) => (setDialog({ ...dialog, queueStatus: e.target.value }))}
+                        />
                     </div>
-                )}
-                {props.releaseDate && (
-                    <div className="row">
-                        <h2 className="font-size-xs-h2 font-size-h2 modalContent">Released: {props.releaseDate}</h2>
+                </div>
+                {/* Status Details */}
+                <div className="row">
+                    <div className="font-size-xs-h2 font-size-h2 modalContentUpdatable">
+                        <div> Status Details: </div>
+                        <input
+                            type="text"
+                            autoComplete="off"
+                            id="titleText"
+                            value={dialog.queueMessage}
+                            placeholder=""
+                            style={{
+                                backgroundColor: '#b5b4b4', borderColor: (props.queueMessage && !props.queueMessage.Empty) ? "#ff2828" : ""
+                            }}
+                            onChange={(e) => (setDialog({ ...dialog, queueMessage: e.target.value }))}
+                        />
                     </div>
-                )}
-                {props.mediaType && (
-                    <div className="row">
-                        <h2 className="font-size-xs-h2 font-size-h2 modalContent">Media Type: {props.mediaType}</h2>
+                </div>
+                {/* Buttons */}
+                <div className="row" style={{ padding: "20px 0px" }}>
+                    <div className="col-xs-4 col-s-4 col-4 buttonCancel">
+                        <input
+                            type="button"
+                            value="Cancel"
+                            onClick={() => { props.onClose() }}
+                        >
+                        </input>
                     </div>
-                )}
-            </div>
-            {/* Queue Status */}
-            <div className="row">
-                <div className="font-size-xs-h2 font-size-h2 modalContentUpdatable">
-                    <div>Queue Status:</div>        
-                    <input
-                        type="text"
-                        autoComplete="off"
-                        id="titleText"
-                        value={dialog.queueStatus}
-                        placeholder=""
-                        style={{
-                            backgroundColor: '#b5b4b4', borderColor: (props.queueStatus && !props.queueStatus.Empty) ? "#ff2828" : "" 
-                        }}
-                        onChange={(e) => (setDialog({ ...dialog, queueStatus: e.target.value}))}
-                    />
+                    <div className="col-xs-4 col-s-4 col-4 buttonDelete">
+                        <input
+                            type="button"
+                            value="Delete"
+                            onClick={() => {
+                                deleteMediaRequest(props, props.id);
+                                props.onClose();
+                            }}
+                        >
+                        </input>
+                    </div>
+                    <div className="col-xs-4 col-s-4 col-4 buttonUpdate">
+                        <input
+                            type="button"
+                            value="Update"
+                            onClick={() => {
+                                updateMediaRequest(props, props.id, dialog);
+                                props.onClose();
+                            }}
+                        >
+                        </input>
+                    </div>
                 </div>
-            </div>
-            {/* Status Details */}
-            <div className="row">
-                <div className="font-size-xs-h2 font-size-h2 modalContentUpdatable">
-                    <div> Status Details: </div>
-                    <input
-                        type="text"
-                        autoComplete="off"
-                        id="titleText"
-                        value={dialog.queueMessage}
-                        placeholder=""
-                        style={{
-                            backgroundColor: '#b5b4b4', borderColor: (props.queueMessage && !props.queueMessage.Empty) ? "#ff2828" : ""
-                        }}
-                        onChange={(e) => (setDialog({ ...dialog, queueMessage: e.target.value}))}
-                    />                
-                </div>
-            </div>
-            {/* Buttons */}
-            <div className="row" style={{ padding: "20px 0px" }}>
-                <div className="col-xs-4 col-s-4 col-4 buttonCancel">
-                    <input
-                        type="button"
-                        value="Cancel"
-                        onClick={() => {props.onClose()}}
-                    >
-                    </input>
-                </div>
-                <div className="col-xs-4 col-s-4 col-4 buttonDelete">
-                    <input
-                        type="button"
-                        value="Delete"
-                        onClick={() => {
-                            deleteMediaRequest(props, props.id);
-                            props.onClose();
-                        }}
-                    >
-                    </input>
-                </div>
-                <div className="col-xs-4 col-s-4 col-4 buttonUpdate">
-                    <input
-                        type="button"
-                        value="Update"
-                        onClick={() => {
-                            updateMediaRequest(props, props.id, dialog);
-                            props.onClose();
-                        }}
-                    >
-                    </input>
-                </div>
-            </div>
-          </form>
+            </form>
         </div>
     );
 }
@@ -154,7 +140,7 @@ AdminModal.propTypes = {
 function Modal(props) {
     const userProfile = useContext(userContext);
     return (
-        (userProfile?.user?.authorities?.filter(e => e.displayName === 'Admin').length > 0) 
+        (userProfile?.user?.authorities?.filter(e => e.displayName === 'Admin').length > 0)
             ? AdminModal(props)
             : Dialog(props)
     );
