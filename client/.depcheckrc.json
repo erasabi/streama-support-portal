@@ -1,0 +1,5 @@
+{
+	"directory": ".",
+	"skip-missing": false,
+	"ignores": ["src", "webpack-dev-server", "prop-types", "fs-extra"]
+}
