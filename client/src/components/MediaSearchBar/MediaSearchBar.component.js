@@ -67,6 +67,7 @@ function MediaSearchBar() {
 			}
 			await addMediaRequest(body)
 			dispatch(handleRequestSubmit())
+			disableSearchBtn.setValue(true)
 		} catch (error) {
 			console.warn(error)
 		}
