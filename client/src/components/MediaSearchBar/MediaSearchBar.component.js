@@ -1,88 +1,52 @@
 import React from 'react'
-import axios from 'axios'
 import styled from 'styled-components'
 import { debounce } from 'lodash'
 import { useDispatch, useSelector } from 'react-redux'
 import SearchSuggestions from './SearchSuggestions.component'
 import { addMediaRequest, searchMediaSuggestions } from '/src/api'
-import { API_REQUEST_CONFIG, STREAMA_ENDPOINT } from '/src/constants'
 import useInput from '/src/hooks/useInput.hook'
 import { handleRequestSubmit } from '/src/redux'
 import SearchBar from '/src/styles/SearchBar/SearchBar.component'
 
-async function getMediaRequestUser() {
-	let user = 'Anonymous'
-
-	await axios
-		.get(
-			`${STREAMA_ENDPOINT}/user/current.json`,
-			{ withCredentials: true },
-			API_REQUEST_CONFIG
-		)
-		.then((res) => {
-			user = res.data.profiles[0].user.username
-		})
-		.catch((err) => {
-			console.warn(err)
-		})
-	return user
+async function fetchSearchResults(value, callback) {
+	try {
+		if (value.length > 2) {
+			const { data } = await searchMediaSuggestions(value)
+			callback(data.results)
+		}
+	} catch (error) {
+		console.warn(error)
+		callback(null)
+	}
 }
+const debouncedFetchSearchResults = debounce(fetchSearchResults, 500)
 
 function MediaSearchBar() {
 	const dispatch = useDispatch()
 	const state = useSelector((state) => state)
-	const searchValue = useInput('')
+	const search = useInput('')
 	const disableSearchBtn = useInput(true)
 	const searchResults = useInput(null)
 
-	async function fetchSearchResults() {
-		try {
-			if (searchValue.value.length > 2) {
-				const { data } = await searchMediaSuggestions(searchValue.value)
-				searchResults.setValue(data.results)
-			}
-		} catch (error) {
-			console.warn(error)
-			searchResults.setValue(null)
-		}
-	}
-
-	const debouncedFetchSearchResults = debounce(fetchSearchResults, 500)
-
 	async function onRequest() {
 		try {
-			const value = state.value
-			const body = {
-				id: value.id,
-				title: value.title || value.name,
-				posterPath: value.poster_path,
-				createdAt: new Date().toUTCString(),
-				originalTitle: value.original_name || value.original_title || null,
-				releaseDate: value.release_date || value.first_air_date || null,
-				adult: value.adult || false,
-				mediaType: value.media_type || null,
-				queueStatus: value.queueStatus || null,
-				queueMessage: value.queueMessage || null,
-				requestUser: (await getMediaRequestUser()) || null
-			}
-			await addMediaRequest(body)
-			dispatch(handleRequestSubmit())
-			disableSearchBtn.setValue(true)
+			await addMediaRequest(state.value)
+			search.setValue('')
 		} catch (error) {
 			console.warn(error)
 		}
-		searchValue.setValue('')
+		dispatch(handleRequestSubmit())
 	}
 
 	const onChange = (value) => {
-		debouncedFetchSearchResults()
-		searchValue.setValue(value)
+		debouncedFetchSearchResults(value, searchResults.setValue)
+		search.setValue(value)
 		disableSearchBtn.setValue(true)
 	}
 
 	const onSelectSuggestedMedia = (selectedMedia) => {
 		dispatch({ type: 'SELECT_MEDIA_SUGGESTION', value: selectedMedia })
-		searchValue.setValue(
+		search.setValue(
 			selectedMedia.title ||
 				selectedMedia.original_title ||
 				selectedMedia.name ||
@@ -97,7 +61,7 @@ function MediaSearchBar() {
 			<SearchBar
 				placeholder="Search by Movie or Show"
 				disableSearchBtn={disableSearchBtn.value}
-				value={searchValue.value}
+				value={search.value}
 				onChange={onChange}
 				onSubmit={onRequest}
 				dropdownComponent={

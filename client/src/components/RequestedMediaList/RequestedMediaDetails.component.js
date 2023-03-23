@@ -40,7 +40,7 @@ function RequestedMediaDetails(props) {
 	const userProfile = useContext(UserContext)
 	const isAuth = userProfile?.user
 		? isAdmin(userProfile?.user) || isSuperUser(userProfile?.user)
-		: false
+		: !false
 	let { handleModal } = useContext(ModalContext)
 	const [dialog, setDialog] = useState({
 		queueStatus: props.queueStatus || '',
