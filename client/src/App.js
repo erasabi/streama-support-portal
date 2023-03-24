@@ -7,7 +7,7 @@ import {
 	handleSearchInput,
 	handleSuggestedMediaSelected
 } from './redux'
-import Header from './styles/Header'
+import { default as Header } from './components/Header'
 import RequestedMediaList from './components/RequestedMediaList'
 import MediaSearchBar from './components/MediaSearchBar'
 import { UserProvider } from '/src/hooks/userContext.hook'
