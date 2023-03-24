@@ -27,10 +27,15 @@ const baseTheme = {
 			card: darkGray,
 			input: {
 				text: darkGray
-			}
+			},
+			scrollbar: darkGray
 		},
 		text: {
 			button: white
+		},
+		scrollbar: {
+			track: darkGray,
+			thumb: lightGray
 		}
 	},
 	font: {

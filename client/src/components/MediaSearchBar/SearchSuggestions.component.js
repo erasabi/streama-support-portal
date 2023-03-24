@@ -3,36 +3,39 @@ import PropTypes from 'prop-types'
 import styled from 'styled-components'
 import ImageNotFound from '/src/media/images/image-not-found.png'
 import { TMDB_ENDPOINT } from '/src/constants'
+import Scrollbar from './Scrollbar'
 
 function SearchSuggestions(props) {
 	const { queryResults, onSelect } = props
 
 	return queryResults && queryResults.length > 0 ? (
 		<Wrapper>
-			{queryResults.map((result) => (
-				<li
-					key={result.id}
-					onClick={() => {
-						onSelect(result)
-					}}
-				>
-					<img
-						className="poster"
-						src={
-							result.poster_path
-								? TMDB_ENDPOINT + result.poster_path
-								: ImageNotFound
-						}
-					/>
-					<div className="resultTitle">
-						{result.title ? result.title : result.name} (
-						{result.release_date
-							? parseInt(result.release_date)
-							: parseInt(result.first_air_date)}
-						)
-					</div>
-				</li>
-			))}
+			<Scrollbar className="scrollbar">
+				{queryResults.map((result) => (
+					<li
+						key={result.id}
+						onClick={() => {
+							onSelect(result)
+						}}
+					>
+						<img
+							className="poster"
+							src={
+								result.poster_path
+									? TMDB_ENDPOINT + result.poster_path
+									: ImageNotFound
+							}
+						/>
+						<div className="resultTitle">
+							{result.title ? result.title : result.name} (
+							{result.release_date
+								? parseInt(result.release_date)
+								: parseInt(result.first_air_date)}
+							)
+						</div>
+					</li>
+				))}
+			</Scrollbar>
 			)
 		</Wrapper>
 	) : null
@@ -47,6 +50,7 @@ SearchSuggestions.propTypes = {
 export default SearchSuggestions
 
 const Wrapper = styled.ul`
+	height: 50%;
 	list-style-type: none;
 	margin: 0;
 	padding: 0;
@@ -61,6 +65,10 @@ const Wrapper = styled.ul`
 		height: 5rem;
 		margin-top: -1px;
 		padding: 6px;
+		&:hover {
+			background-color: white;
+			color: ${(props) => props.theme.color.background.card};
+		}
 	}
 
 	.poster {

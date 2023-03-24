@@ -39,6 +39,9 @@ function MediaSearchBar() {
 	}
 
 	const onChange = (value) => {
+		if (value.length < 1) {
+			searchResults.setValue(null)
+		}
 		debouncedFetchSearchResults(value, searchResults.setValue)
 		search.setValue(value)
 		disableSearchBtn.setValue(true)
