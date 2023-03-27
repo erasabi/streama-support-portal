@@ -1,4 +1,5 @@
-/* eslint-disable react/prop-types */
+// Header using 'Compound Component' design pattern
+
 import React from 'react'
 import styled from 'styled-components'
 
@@ -18,7 +19,7 @@ const Container = styled.header`
 	background-color: ${(props) => props.theme.color.background.header};
 	display: flex;
 	flex-direction: row;
-	height: 60px;
+	height: 70px;
 	padding: 4px 16px;
 `
 

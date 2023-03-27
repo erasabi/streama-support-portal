@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 import React from 'react'
 import useModal from './useModal.hook'
 import Modal from './Modal.component'

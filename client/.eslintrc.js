@@ -4,6 +4,7 @@ resource links:
 	settings: https://eslint.org/docs/latest/use/configure/configuration-files#adding-shared-settings
 	extends: https://eslint.org/docs/latest/use/configure/configuration-files#extending-configuration-files
 	env: https://eslint.org/docs/latest/use/configure/language-options#specifying-environments
+	ignorePatterns: https://eslint.org/docs/latest/use/configure/ignore#ignorepatterns-in-config-files
 */
 
 const fs = require('fs')
@@ -53,6 +54,10 @@ module.exports = {
 	rules: {
 		'better-styled-components/sort-declarations-alphabetically': 2
 	},
+	// ignorePatterns: config ESLint to ignore files/dirs while linting by specifying one or more glob patterns
+	// disregard eslint for:
+	// 	- compounds styled components
+	ignorePatterns: ['src/styles'],
 	// overrides:
 	// 	- disable rules inside of a configuration file for a group of files
 	// 	- use the overrides key along with a files key
