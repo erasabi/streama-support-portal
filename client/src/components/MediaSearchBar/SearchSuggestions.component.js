@@ -3,39 +3,39 @@ import PropTypes from 'prop-types'
 import styled from 'styled-components'
 import ImageNotFound from '/src/media/images/image-not-found.png'
 import { TMDB_ENDPOINT } from '/src/constants'
-import Scrollbar from './Scrollbar'
+import Container from '../../styles/Scrollbar'
 
-function SearchSuggestions(props) {
-	const { queryResults, onSelect } = props
-
+function SearchSuggestions({ queryResults, onSelect, ...restProps }) {
 	return queryResults && queryResults.length > 0 ? (
-		<Wrapper>
-			<Scrollbar className="scrollbar">
-				{queryResults.map((result) => (
-					<li
-						key={result.id}
-						onClick={() => {
-							onSelect(result)
-						}}
-					>
-						<img
-							className="poster"
-							src={
-								result.poster_path
-									? TMDB_ENDPOINT + result.poster_path
-									: ImageNotFound
-							}
-						/>
-						<div className="resultTitle">
-							{result.title ? result.title : result.name} (
-							{result.release_date
-								? parseInt(result.release_date)
-								: parseInt(result.first_air_date)}
-							)
-						</div>
-					</li>
-				))}
-			</Scrollbar>
+		<Wrapper {...restProps}>
+			<Container>
+				<Container.ScrollX>
+					{queryResults.map((result) => (
+						<li
+							key={result.id}
+							onClick={() => {
+								onSelect(result)
+							}}
+						>
+							<img
+								className="poster"
+								src={
+									result.poster_path
+										? TMDB_ENDPOINT + result.poster_path
+										: ImageNotFound
+								}
+							/>
+							<div className="resultTitle">
+								{result.title ? result.title : result.name} (
+								{result.release_date
+									? parseInt(result.release_date)
+									: parseInt(result.first_air_date)}
+								)
+							</div>
+						</li>
+					))}
+				</Container.ScrollX>
+			</Container>
 			)
 		</Wrapper>
 	) : null
@@ -53,10 +53,21 @@ const Wrapper = styled.ul`
 	height: 50%;
 	list-style-type: none;
 	margin: 0;
+	minimum-width: 200px;
 	padding: 0;
 	position: absolute;
-	width: inherit;
+
 	z-index: 1;
+
+	@media only screen and (min-width: 390px) {
+		width: 250px;
+	}
+	@media only screen and (min-width: 600px) {
+		width: 400px;
+	}
+	@media only screen and (min-width: 1200px) {
+		width: 800px;
+	}
 
 	li {
 		background-color: ${(props) => props.theme.color.background.card};
@@ -81,5 +92,9 @@ const Wrapper = styled.ul`
 	.resultTitle {
 		overflow: hidden;
 		padding: 20px;
+	}
+
+	.scrollbar {
+		height: 50%;
 	}
 `

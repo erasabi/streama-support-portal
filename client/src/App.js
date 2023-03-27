@@ -54,6 +54,10 @@ const mapDispatchToProps = (dispatch) => {
 export default connect(mapDispatchToProps)(App)
 
 const PageContainer = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+
 	@media only screen and (min-width: 175px) {
 		padding: calc(1em + 1rem) 2rem 0 2rem;
 	}

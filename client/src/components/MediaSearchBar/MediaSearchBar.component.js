@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from 'react'
 import styled from 'styled-components'
 import { debounce } from 'lodash'
@@ -61,19 +62,21 @@ function MediaSearchBar() {
 
 	return (
 		<Wrapper>
-			<SearchBar
-				placeholder="Search by Movie or Show"
-				disableSearchBtn={disableSearchBtn.value}
-				value={search.value}
-				onChange={onChange}
-				onSubmit={onRequest}
-				dropdownComponent={
+			<SearchBar>
+				<SearchBar.Dropdown>
+					<SearchBar.TextInput
+						placeholder="Search by Movie or Show"
+						disableSearchBtn={disableSearchBtn.value}
+						value={search.value}
+						onChange={(e) => onChange(e.target.value)}
+					/>
 					<SearchSuggestions
 						queryResults={searchResults.value}
 						onSelect={onSelectSuggestedMedia}
 					/>
-				}
-			/>
+				</SearchBar.Dropdown>
+				<SearchBar.Button onClick={onRequest} />
+			</SearchBar>
 		</Wrapper>
 	)
 }
@@ -81,9 +84,9 @@ function MediaSearchBar() {
 export default MediaSearchBar
 
 const Wrapper = styled.div`
+	display: flex;
 	margin: 0 auto;
 	minimum-width: 200px;
-	padding: 15px 0px;
 
 	@media only screen and (min-width: 390px) {
 		width: 250px;

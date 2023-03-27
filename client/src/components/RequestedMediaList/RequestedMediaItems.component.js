@@ -29,7 +29,7 @@ const RequestedMediaListItems = ({ items, onClick }) => {
 
 export default RequestedMediaListItems
 
-const ItemStatus = styled.div`
+const ItemStatus = styled.p`
 	background-color: ${(props) =>
 		props.$status === 'Not Yet Available'
 			? '#3939bab0'
