@@ -41,4 +41,5 @@ const TextInput = styled.input.attrs({ type: 'text' })`
 	background-position: 10px 10px;
 	background-repeat: no-repeat;
 	padding: 2px 10px;
+	text-overflow: ellipsis;
 `
