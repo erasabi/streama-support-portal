@@ -1,3 +1,5 @@
+/* eslint-disable no-undef */
+/* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
 import { useContext } from 'react'
 import { UserContext } from '/src/hooks/userContext.hook'
@@ -5,7 +7,13 @@ import { ADMIN_SECRETS, SUPERUSER_SECRETS } from '/src/constants'
 import PropTypes from 'prop-types'
 import React, { useState } from 'react'
 import styled from 'styled-components'
-import { Button, ButtonArray, ModalContext } from '/src/styles'
+import {
+	Button,
+	ButtonArray,
+	ModalContext,
+	Searchbar,
+	Dropdown
+} from '/src/styles'
 import { deleteMediaRequest, updateMediaRequest } from '/src/api'
 const QueueStatusOptions = [
 	'Not Yet Available',
@@ -39,16 +47,37 @@ function RequestedMediaDetails(props) {
 	const userProfile = useContext(UserContext)
 	const isAuth = userProfile?.user
 		? isAdmin(userProfile?.user) || isSuperUser(userProfile?.user)
-		: !false
+		: false
 	let { handleModal } = useContext(ModalContext)
 	const [dialog, setDialog] = useState({
 		queueStatus: props.queueStatus || '',
 		queueMessage: props.queueMessage || ''
 	})
-	const [openDropdown, setOpenDropdown] = useState(false)
 
-	function onDropdownSelect(value) {
+	const QueueStatusSelect = () => {
+		return !dialog.queueStatus ? (
+			<Dropdown>
+				<Dropdown.Options style={{ height: '50vh' }}>
+					{QueueStatusOptions.map((result, index) => (
+						<Dropdown.Option
+							style={{ '--background-color': '#8d8b8b', fontSize: '20px' }}
+							key={index}
+							onClick={() => onSelectQueueStatus(result)}
+						>
+							{result}
+						</Dropdown.Option>
+					))}
+				</Dropdown.Options>
+			</Dropdown>
+		) : null
+	}
+
+	function onSelectQueueStatus(value) {
 		setDialog({ ...dialog, queueStatus: value })
+	}
+
+	function onChange(e) {
+		setDialog({ ...dialog, queueStatus: e.target.value })
 	}
 
 	return (
@@ -62,22 +91,17 @@ function RequestedMediaDetails(props) {
 				{isAuth && (
 					<div className="modalContentUpdatable">
 						<h2>Queue Status:</h2>
-						<div>
-							<input
-								type="text"
-								autoComplete="off"
-								id="titleText"
-								value={dialog.queueStatus}
-								placeholder=""
-								onChange={(e) =>
-									setDialog({ ...dialog, queueStatus: e.target.value })
-								}
-								onFocus={() => setOpenDropdown(true)}
-							/>
-							{dialog?.queueStatus?.length === 0 && openDropdown && (
-								<Dropdown onClick={onDropdownSelect} />
-							)}
-						</div>
+						<SearchbarContainer>
+							<Searchbar>
+								<Searchbar.TextInput
+									style={{ '--background-color': '#726f6f' }}
+									placeholder="Queue Status"
+									value={dialog.queueStatus}
+									onChange={onChange}
+								/>
+							</Searchbar>
+							<QueueStatusSelect />
+						</SearchbarContainer>
 					</div>
 				)}
 			</div>
@@ -136,15 +160,8 @@ const Wrapper = styled.div`
 
 	.modalContentUpdatable {
 		align-items: center;
-		color: white;
 		display: flex;
-		flex-direction: row;
-		font-weight: 300;
 		gap: 10px;
-	}
-
-	input[type='text'] {
-		--background-color: #726f6f;
 	}
 `
 
@@ -155,38 +172,6 @@ const MediaDetail = ({ label, value }) =>
 		</h2>
 	) : null
 
-function Dropdown({ options = QueueStatusOptions, onClick }) {
-	return (
-		<DropdownContainer>
-			{options.map((option) => (
-				<DropdownItem key={option} onClick={() => onClick(option)}>
-					{option}
-				</DropdownItem>
-			))}
-		</DropdownContainer>
-	)
-}
-
-Dropdown.propTypes = {
-	options: PropTypes.array,
-	onClick: PropTypes.func
-}
-
-const DropdownContainer = styled.div`
-	position: absolute;
-	z-index: 1;
-`
-
-const DropdownItem = styled.div`
-	background-color: #6e6c6c;
-	border: black solid 1px;
-	box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-	color: white;
-	font-size: 18px;
-	min-width: 160px;
-	padding: 12px 16px;
-	&:hover {
-		background-color: white;
-		color: #6e6c6c;
-	}
+const SearchbarContainer = styled.div`
+	width: 250px;
 `

@@ -65,28 +65,30 @@ function MediaSearchbar() {
 		const results =
 			suggestions.value && suggestions.value.length > 0 ? suggestions.value : []
 
-		return (
-			<Dropdown.Options style={{ height: '50vh' }}>
-				{results.map((result) => (
-					<Dropdown.Option key={result.id} onClick={onSelectSuggestedMedia}>
-						<Dropdown.Image
-							src={
-								result.poster_path
-									? TMDB_ENDPOINT + result.poster_path
-									: ImageNotFound
-							}
-						/>
-						<Dropdown.Title>
-							{result.title ? result.title : result.name} (
-							{result.release_date
-								? parseInt(result.release_date)
-								: parseInt(result.first_air_date)}
-							)
-						</Dropdown.Title>
-					</Dropdown.Option>
-				))}
-			</Dropdown.Options>
-		)
+		return suggestions.value ? (
+			<Dropdown>
+				<Dropdown.Options style={{ height: '50vh' }}>
+					{results.map((result) => (
+						<Dropdown.Option key={result.id} onClick={onSelectSuggestedMedia}>
+							<Dropdown.Image
+								src={
+									result.poster_path
+										? TMDB_ENDPOINT + result.poster_path
+										: ImageNotFound
+								}
+							/>
+							<Dropdown.Title>
+								{result.title ? result.title : result.name} (
+								{result.release_date
+									? parseInt(result.release_date)
+									: parseInt(result.first_air_date)}
+								)
+							</Dropdown.Title>
+						</Dropdown.Option>
+					))}
+				</Dropdown.Options>
+			</Dropdown>
+		) : null
 	}, [suggestions.value])
 
 	return (
@@ -94,7 +96,6 @@ function MediaSearchbar() {
 			<Searchbar>
 				<Searchbar.TextInput
 					placeholder="Search by Movie or Show"
-					disableSearchBtn={disableSearchBtn.value}
 					value={search.value}
 					onChange={(e) => onChange(e.target.value)}
 				/>
@@ -103,7 +104,7 @@ function MediaSearchbar() {
 					onClick={onRequest}
 				/>
 			</Searchbar>
-			<Dropdown>{MemoizedSuggestedMedia}</Dropdown>
+			{MemoizedSuggestedMedia}
 		</Wrapper>
 	)
 }

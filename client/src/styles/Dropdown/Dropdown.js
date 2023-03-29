@@ -62,19 +62,24 @@ const Option = styled.li`
 	flex-direction: row;
 	align-items: center;
 	gap: 10px;
-	height: 75px;
-	background-color: ${(props) => props.theme.color.background.card};
+	background-color: var(
+		--background-color,
+		${(props) => props.theme.color.background.card}
+	);
 	border: 0.5px solid rgb(24, 24, 24); /* Prevent double borders */
 	color: white;
 	padding: 6px;
 	&:hover {
 		background-color: white;
-		color: ${(props) => props.theme.color.background.card};
+		color: var(
+			--background-color,
+			${(props) => props.theme.color.background.card}
+		);
 	}
 `
 
 const Image = styled.img`
-	height: 100%;
+	height: 75px;
 	padding: 0px 0px;
 `
 
