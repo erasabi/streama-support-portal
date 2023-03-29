@@ -1,6 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
-import Button from '../Button'
+import { default as ButtonBase } from '../Button'
 
 function SearchBar({ children, ...restProps }) {
 	return <Container {...restProps}>{children}</Container>
@@ -13,24 +13,22 @@ SearchBar.TextInput = function SearchBarTextInput({ ...restProps }) {
 }
 
 SearchBar.Button = function SearchBarButton({ ...restProps }) {
-	return <SearchBarBtn {...restProps}>Request</SearchBarBtn>
+	return <Button {...restProps}>Request</Button>
 }
 
-SearchBar.Dropdown = function SearchBarDropdown({ children, ...restProps }) {
-	return <Dropdown {...restProps}>{children}</Dropdown>
-}
+const Container = styled.div`
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+`
 
-const SearchBarBtn = styled(Button)`
+const Button = styled(ButtonBase)`
 	background-color: ${(props) => (props.disabled ? 'grey' : '#4a4aff')};
 `
 
-const Dropdown = styled.div`
-	width: inherit;
-`
-
 const TextInput = styled.input.attrs({ type: 'text' })`
-	height: 100%;
-	width: inherit;
+	height: 40px;
+	width: 100%;
 	box-sizing: border-box;
 	border: 1px solid rgb(24, 24, 24);
 	border-radius: 4px;
@@ -43,11 +41,4 @@ const TextInput = styled.input.attrs({ type: 'text' })`
 	background-position: 10px 10px;
 	background-repeat: no-repeat;
 	padding: 2px 10px;
-`
-
-const Container = styled.div`
-	display: flex;
-	flex-direction: row;
-	justify-content: center;
-	width: 100%;
 `
