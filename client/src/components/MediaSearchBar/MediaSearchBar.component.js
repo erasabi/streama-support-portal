@@ -5,8 +5,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { addMediaRequest, searchMediaSuggestions } from '/src/api'
 import useInput from '/src/hooks/useInput.hook'
 import { handleRequestSubmit } from '/src/redux'
-import SearchBar from '/src/styles/Searchbar'
-import Dropdown from '/src/styles/Dropdown'
+import { Searchbar, Dropdown } from '/src/styles'
 import { TMDB_ENDPOINT } from '/src/constants'
 import ImageNotFound from '/src/media/images/image-not-found.png'
 
@@ -23,7 +22,7 @@ async function fetchSearchResults(value, callback) {
 }
 const debouncedFetchSearchResults = debounce(fetchSearchResults, 500)
 
-function MediaSearchBar() {
+function MediaSearchbar() {
 	const dispatch = useDispatch()
 	const state = useSelector((state) => state)
 	const search = useInput('')
@@ -67,7 +66,7 @@ function MediaSearchBar() {
 			suggestions.value && suggestions.value.length > 0 ? suggestions.value : []
 
 		return (
-			<Dropdown.Options style={{ height: '500px' }}>
+			<Dropdown.Options style={{ height: '50vh' }}>
 				{results.map((result) => (
 					<Dropdown.Option key={result.id} onClick={onSelectSuggestedMedia}>
 						<Dropdown.Image
@@ -92,38 +91,41 @@ function MediaSearchBar() {
 
 	return (
 		<Wrapper>
-			<SearchBar>
-				<SearchBar.TextInput
+			<Searchbar>
+				<Searchbar.TextInput
 					placeholder="Search by Movie or Show"
 					disableSearchBtn={disableSearchBtn.value}
 					value={search.value}
 					onChange={(e) => onChange(e.target.value)}
 				/>
-				<SearchBar.Button
+				<Searchbar.Button
 					disabled={disableSearchBtn.value}
 					onClick={onRequest}
 				/>
-			</SearchBar>
+			</Searchbar>
 			<Dropdown>{MemoizedSuggestedMedia}</Dropdown>
 		</Wrapper>
 	)
 }
 
-export default MediaSearchBar
+export default MediaSearchbar
 
 const Wrapper = styled.div`
 	display: flex;
 	flex-direction: column;
 	margin: 0 auto;
-	minimum-width: 200px;
 
-	@media only screen and (min-width: 390px) {
-		width: 250px;
+	// phones
+	@media only screen and (max-width: 600px) {
+		min-width: 200px;
 	}
+	// tablets
 	@media only screen and (min-width: 600px) {
 		width: 400px;
 	}
+
+	// desktops
 	@media only screen and (min-width: 1200px) {
-		width: 800px;
+		width: 600px;
 	}
 `

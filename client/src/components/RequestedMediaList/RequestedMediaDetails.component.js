@@ -5,10 +5,8 @@ import { ADMIN_SECRETS, SUPERUSER_SECRETS } from '/src/constants'
 import PropTypes from 'prop-types'
 import React, { useState } from 'react'
 import styled from 'styled-components'
-import { ButtonArray } from '/src/styles'
-import Button from '/src/styles/Button'
+import { Button, ButtonArray, ModalContext } from '/src/styles'
 import { deleteMediaRequest, updateMediaRequest } from '/src/api'
-import { ModalContext } from '/src/styles/Modal'
 const QueueStatusOptions = [
 	'Not Yet Available',
 	'Rolling Episodes',

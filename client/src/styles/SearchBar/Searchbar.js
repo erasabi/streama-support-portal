@@ -2,17 +2,17 @@ import React from 'react'
 import styled from 'styled-components'
 import { default as ButtonBase } from '../Button'
 
-function SearchBar({ children, ...restProps }) {
+function Searchbar({ children, ...restProps }) {
 	return <Container {...restProps}>{children}</Container>
 }
 
-export default SearchBar
+export default Searchbar
 
-SearchBar.TextInput = function SearchBarTextInput({ ...restProps }) {
+Searchbar.TextInput = function SearchbarTextInput({ ...restProps }) {
 	return <TextInput autoComplete="off" {...restProps} />
 }
 
-SearchBar.Button = function SearchBarButton({ ...restProps }) {
+Searchbar.Button = function SearchbarButton({ ...restProps }) {
 	return <Button {...restProps}>Request</Button>
 }
 

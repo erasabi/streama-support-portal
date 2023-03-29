@@ -11,7 +11,7 @@ import { default as Header } from './components/Header'
 import RequestedMediaList from './components/RequestedMediaList'
 import MediaSearchBar from './components/MediaSearchBar'
 import { UserProvider } from '/src/hooks/userContext.hook'
-import ModalProvider from '/src/styles/Modal'
+import { ModalProvider } from '/src/styles/Modal'
 import ErrorBoundary from './components/ErrorBoundary'
 
 function App() {
