@@ -33,6 +33,7 @@ function MediaSearchBar() {
 		try {
 			await addMediaRequest(state.value)
 			search.setValue('')
+			disableSearchBtn.setValue(true)
 		} catch (error) {
 			console.warn(error)
 		}
@@ -75,7 +76,10 @@ function MediaSearchBar() {
 						onSelect={onSelectSuggestedMedia}
 					/>
 				</SearchBar.Dropdown>
-				<SearchBar.Button onClick={onRequest} />
+				<SearchBar.Button
+					disabled={disableSearchBtn.value}
+					onClick={onRequest}
+				/>
 			</SearchBar>
 		</Wrapper>
 	)

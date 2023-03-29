@@ -2,27 +2,22 @@ import React from 'react'
 import styled from 'styled-components'
 
 // all exported styled components must be made into react component to avoid circular dependency errors
-const Container = ({ children, ...restProps }) => (
-	<ContainerBase {...restProps}>{children}</ContainerBase>
-)
+const Scrollbar = () => {}
 
-export default Container
+export default Scrollbar
 
-const ContainerBase = styled.div`
-	height: 100%;
-	width: 100%;
-`
-Container.ScrollX = function ScrollbarVertical({ children, ...restProps }) {
+Scrollbar.X = function ScrollbarX({ children, ...restProps }) {
 	return <ScrollX {...restProps}>{children}</ScrollX>
 }
 
 const ScrollX = styled.div`
+	height: var(--height, inherit);
+	width: var(--width, inherit);
+	// max-height: (y limit to trigger overflow)
+	max-height: var(--max-height, ${(props) => props.$maxHeight});
 	// overflow-y: handling overflow
 	// 	- auto: scrollbar that hides when no overflow
 	overflow-y: auto; // handling overflow
-	// max-height: (y limit to trigger overflow)
-	max-height: var(--max-height, ${(props) => props.$maxHeight});
-	height: ${(props) => props.$height || '100%'};
 
 	&::-webkit-scrollbar {
 		width: 10px;

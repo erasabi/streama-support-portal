@@ -6,6 +6,7 @@ import PropTypes from 'prop-types'
 import React, { useState } from 'react'
 import styled from 'styled-components'
 import { ButtonArray } from '/src/styles'
+import Button from '/src/styles/Button'
 import { deleteMediaRequest, updateMediaRequest } from '/src/api'
 import { ModalContext } from '/src/styles/Modal'
 const QueueStatusOptions = [
@@ -83,9 +84,9 @@ function RequestedMediaDetails(props) {
 				)}
 			</div>
 			<ButtonArray>
-				<button onClick={handleModal}>Cancel</button>
+				<Button onClick={handleModal}>Cancel</Button>
 				{isAuth && (
-					<button
+					<Button
 						style={{ '--background-color': '#e44e4e' }}
 						onClick={() => {
 							deleteMediaRequest(props, props.id)
@@ -93,10 +94,10 @@ function RequestedMediaDetails(props) {
 						}}
 					>
 						Delete
-					</button>
+					</Button>
 				)}
 				{isAuth && (
-					<button
+					<Button
 						style={{ '--background-color': '#4a4aff' }}
 						onClick={() => {
 							updateMediaRequest(props, props.id, dialog)
@@ -104,7 +105,7 @@ function RequestedMediaDetails(props) {
 						}}
 					>
 						Update
-					</button>
+					</Button>
 				)}
 			</ButtonArray>
 		</Wrapper>
