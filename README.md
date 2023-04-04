@@ -16,11 +16,9 @@ Check out the [deployed site(not yet available)](<url here>)
 <!-- TABLE OF CONTENTS -->
 ## Table of Contents
 - [Getting Started](#getting-started)
-  - [The Easiest Way(Docker Only)](#the-easiest-way)
-  - [Quickstart App with Demo Data(Docker Only)](#quickstart-app-with-demo-datadocker-only)
+  - [The Easiest Way(Docker Only)](#the-easiest-waydocker-only)
   - [For Faster Development](#for-faster-development)
 - [App Features](#app-features)
-- [Special Thanks](#special-thanks)
 - [License](#license)
 
 ## Getting Started
@@ -58,7 +56,7 @@ npm install
 npm run start
 ```
 
-## Features
+## App Features
 1. Search MovieDB for movies and shows
 2. Request movies and shows
 
