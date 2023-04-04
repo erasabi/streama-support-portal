@@ -53,7 +53,7 @@
 		"start": "webpack serve",
 		"start:local": "NODE_ENV=development webpack serve --config webpack.dev.js --hot",
 		"start:dev": "NODE_ENV=development webpack serve --config webpack.dev.js --hot",
-		"start:prod": "NODE_ENV=production webpack serve  --config webpack.prod.js",
+		"start:prod": "NODE_ENV=production webpack serve --config webpack.prod.js",
 		"format": "prettier --check .",
 		"format:fix": "prettier --write . --fix",
 		"lint": "eslint --ext .js,.jsx,.ts,.tsx .",
