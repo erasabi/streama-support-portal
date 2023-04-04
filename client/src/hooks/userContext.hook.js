@@ -1,21 +1,26 @@
 /* eslint-disable react/prop-types */
 import React, { useEffect, useState } from 'react'
 import { getUser } from '/src/api'
-
+const defaultUser = { user: {} }
 const UserContext = React.createContext()
 
 const UserProvider = ({ children }) => {
-	const [user, setUser] = useState({ user: {} })
+	const [user, setUser] = useState()
 
 	// On Mount: fetch & display already requested media
 	useEffect(() => {
-		async function getCurrUser() {
-			setUser(await getUser())
+		async function fetch() {
+			const currUser = await getUser()
+			setUser(currUser)
 		}
-		getCurrUser()
+		fetch()
 	}, [])
 
-	return <UserContext.Provider value={user}>{children}</UserContext.Provider>
+	return (
+		<UserContext.Provider value={user ?? defaultUser}>
+			{children}
+		</UserContext.Provider>
+	)
 }
 
 export { UserContext, UserProvider }

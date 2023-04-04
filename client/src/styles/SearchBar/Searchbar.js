@@ -8,8 +8,8 @@ function Searchbar({ children, ...restProps }) {
 
 export default Searchbar
 
-Searchbar.TextInput = function SearchbarTextInput({ ...restProps }) {
-	return <TextInput autoComplete="off" {...restProps} />
+Searchbar.TextInput = function SearchbarTextInput({ innerRef, ...restProps }) {
+	return <TextInput ref={innerRef} autoComplete="off" {...restProps} />
 }
 
 Searchbar.Button = function SearchbarButton({ ...restProps }) {
@@ -26,7 +26,10 @@ const Button = styled(ButtonBase)`
 	background-color: ${(props) => (props.disabled ? 'grey' : '#4a4aff')};
 `
 
-const TextInput = styled.input.attrs({ type: 'text' })`
+const TextInput = styled.input.attrs(({ ...restProps }) => ({
+	type: 'text',
+	...restProps
+}))`
 	height: 40px;
 	width: 100%;
 	box-sizing: border-box;

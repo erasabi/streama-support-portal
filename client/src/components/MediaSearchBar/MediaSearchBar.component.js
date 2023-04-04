@@ -27,7 +27,7 @@ function MediaSearchbar() {
 	const state = useSelector((state) => state)
 	const search = useInput('')
 	const disableSearchBtn = useInput(true)
-	const suggestions = useInput(null)
+	const suggestions = useInput([])
 
 	async function onRequest() {
 		try {
@@ -58,18 +58,20 @@ function MediaSearchbar() {
 				selectedMedia.original_name
 		)
 		disableSearchBtn.setValue(false)
-		suggestions.setValue(null)
+		suggestions.setValue([])
 	}
 
 	const MemoizedSuggestedMedia = useMemo(() => {
-		const results =
-			suggestions.value && suggestions.value.length > 0 ? suggestions.value : []
+		const results = suggestions.value
 
-		return suggestions.value ? (
+		return (
 			<Dropdown>
 				<Dropdown.Options style={{ height: '50vh' }}>
 					{results.map((result) => (
-						<Dropdown.Option key={result.id} onClick={onSelectSuggestedMedia}>
+						<Dropdown.Option
+							key={result.id}
+							onClick={() => onSelectSuggestedMedia(result)}
+						>
 							<Dropdown.Image
 								src={
 									result.poster_path
@@ -88,7 +90,7 @@ function MediaSearchbar() {
 					))}
 				</Dropdown.Options>
 			</Dropdown>
-		) : null
+		)
 	}, [suggestions.value])
 
 	return (
@@ -104,7 +106,7 @@ function MediaSearchbar() {
 					onClick={onRequest}
 				/>
 			</Searchbar>
-			{MemoizedSuggestedMedia}
+			{suggestions.value.length > 0 ? MemoizedSuggestedMedia : null}
 		</Wrapper>
 	)
 }

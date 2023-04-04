@@ -1,11 +1,9 @@
-/* eslint-disable no-undef */
-/* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
-import { useContext } from 'react'
+import React, { useContext } from 'react'
 import { UserContext } from '/src/hooks/userContext.hook'
+import useInput from '/src/hooks/useInput.hook'
+import useToggle from '/src/hooks/useToggle.hook'
 import { ADMIN_SECRETS, SUPERUSER_SECRETS } from '/src/constants'
-import PropTypes from 'prop-types'
-import React, { useState } from 'react'
 import styled from 'styled-components'
 import {
 	Button,
@@ -44,40 +42,16 @@ function isSuperUser(user) {
 }
 
 function RequestedMediaDetails(props) {
-	const userProfile = useContext(UserContext)
-	const isAuth = userProfile?.user
-		? isAdmin(userProfile?.user) || isSuperUser(userProfile?.user)
-		: false
+	const { user } = useContext(UserContext)
+	const isAuth = user ? isAdmin(user) || isSuperUser(user) : false
 	let { handleModal } = useContext(ModalContext)
-	const [dialog, setDialog] = useState({
-		queueStatus: props.queueStatus || '',
-		queueMessage: props.queueMessage || ''
-	})
+	const queueStatus = useInput(props.queueStatus ?? '')
+	const queueMessage = useInput(props.queueMessage ?? '')
+	const showDropdown = useToggle(false)
 
-	const QueueStatusSelect = () => {
-		return !dialog.queueStatus ? (
-			<Dropdown>
-				<Dropdown.Options style={{ height: '50vh' }}>
-					{QueueStatusOptions.map((result, index) => (
-						<Dropdown.Option
-							style={{ '--background-color': '#8d8b8b', fontSize: '20px' }}
-							key={index}
-							onClick={() => onSelectQueueStatus(result)}
-						>
-							{result}
-						</Dropdown.Option>
-					))}
-				</Dropdown.Options>
-			</Dropdown>
-		) : null
-	}
-
-	function onSelectQueueStatus(value) {
-		setDialog({ ...dialog, queueStatus: value })
-	}
-
-	function onChange(e) {
-		setDialog({ ...dialog, queueStatus: e.target.value })
+	const onDropdownSelect = (option) => {
+		queueStatus.setValue(option)
+		showDropdown.toggleValue()
 	}
 
 	return (
@@ -96,11 +70,29 @@ function RequestedMediaDetails(props) {
 								<Searchbar.TextInput
 									style={{ '--background-color': '#726f6f' }}
 									placeholder="Queue Status"
-									value={dialog.queueStatus}
-									onChange={onChange}
+									value={queueStatus.value}
+									onChange={queueStatus.onChange}
+									onFocus={() => showDropdown.setValue(true)}
 								/>
 							</Searchbar>
-							<QueueStatusSelect />
+							{showDropdown.value && !queueStatus.value ? (
+								<Dropdown>
+									<Dropdown.Options style={{ height: '50vh' }}>
+										{QueueStatusOptions.map((option, index) => (
+											<Dropdown.Option
+												style={{
+													'--background-color': '#8d8b8b',
+													fontSize: '20px'
+												}}
+												key={index}
+												onClick={() => onDropdownSelect(option)}
+											>
+												{option}
+											</Dropdown.Option>
+										))}
+									</Dropdown.Options>
+								</Dropdown>
+							) : null}
 						</SearchbarContainer>
 					</div>
 				)}
@@ -122,7 +114,10 @@ function RequestedMediaDetails(props) {
 					<Button
 						style={{ '--background-color': '#4a4aff' }}
 						onClick={() => {
-							updateMediaRequest(props, props.id, dialog)
+							updateMediaRequest(props, props.id, {
+								queueStatus: queueStatus.value,
+								queueMessage: queueMessage.value
+							})
 							handleModal()
 						}}
 					>

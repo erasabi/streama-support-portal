@@ -2,8 +2,8 @@ import React from 'react'
 import styled from 'styled-components'
 import Scrollbar from '../Scrollbar'
 
-function Dropdown({ children, ...restProps }) {
-	return <Container {...restProps}>{children}</Container>
+function Dropdown({ show = true, children, ...restProps }) {
+	return show ? <Container {...restProps}>{children}</Container> : null
 }
 
 export default Dropdown
