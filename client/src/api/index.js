@@ -45,10 +45,9 @@ async function getMediaRequestUser() {
 	return user
 }
 
-export async function addMediaRequest(value = {}) {
+export async function addMediaRequest(body = {}) {
 	try {
 		const {
-			id,
 			title,
 			name,
 			poster_path,
@@ -56,25 +55,20 @@ export async function addMediaRequest(value = {}) {
 			original_title,
 			release_date,
 			first_air_date,
-			adult,
-			media_type,
-			queueStatus,
-			queueMessage
-		} = value
+			media_type
+		} = body
 
-		const body = {
-			id: id,
-			title: title || name,
+		body = {
+			...body,
+			title: title ?? name,
 			posterPath: poster_path,
 			createdAt: new Date().toUTCString(),
-			originalTitle: original_name || original_title,
-			releaseDate: release_date || first_air_date,
-			adult: adult ?? false,
+			originalTitle: original_name ?? original_title,
+			releaseDate: release_date ?? first_air_date,
 			mediaType: media_type,
-			queueStatus: queueStatus,
-			queueMessage: queueMessage,
 			requestUser: await getMediaRequestUser()
 		}
+
 		return await axios.put(`${API_ENDPOINT}/requests`, body, API_REQUEST_CONFIG)
 	} catch (error) {
 		console.log(error)
@@ -82,31 +76,41 @@ export async function addMediaRequest(value = {}) {
 	}
 }
 
-export async function deleteMediaRequest(props, id) {
-	await axios
-		.delete(`${API_ENDPOINT}/requests/${id}`, API_REQUEST_CONFIG)
-		.then(() => {
-			props.handleRequestSubmit()
-		})
+export async function deleteMediaRequest(id, handleRequestSubmit) {
+	try {
+		return await axios
+			.delete(`${API_ENDPOINT}/requests/${id}`, API_REQUEST_CONFIG)
+			.then(() => {
+				handleRequestSubmit()
+			})
+	} catch (error) {
+		console.log(error)
+		return error
+	}
 }
 
-export async function updateMediaRequest(props, id, updatedProps) {
-	const body = {
-		id: props.id,
-		title: props.title || props.name,
-		posterPath: props.posterPath,
-		createdAt: new Date().toUTCString(),
-		originalTitle: props.originalName || props.originalTitle || null,
-		releaseDate: props.releaseDate || props.firstAirDate || null,
-		adult: props.adult || false,
-		mediaType: props.mediaType || null,
-		queueStatus: updatedProps.queueStatus || null,
-		queueMessage: updatedProps.queueMessage || null,
-		requestUser: props.requestUser || null
+export async function updateMediaRequest(body) {
+	try {
+		const {
+			id,
+			title,
+			name,
+			originalName,
+			originalTitle,
+			releaseDate,
+			firstAirDate,
+			handleRequestSubmit
+		} = body
+		body.title = title ?? name
+		body.createdAt = new Date().toUTCString()
+		body.originalTitle = originalName ?? originalTitle
+		body.releaseDate = releaseDate ?? firstAirDate
+
+		return await axios
+			.put(`${API_ENDPOINT}/requests/${id}`, body, API_REQUEST_CONFIG)
+			.then(() => handleRequestSubmit())
+	} catch (error) {
+		console.log(error)
+		return error
 	}
-	await axios
-		.put(`${API_ENDPOINT}/requests/${id}`, body, API_REQUEST_CONFIG)
-		.then(() => {
-			props.handleRequestSubmit()
-		})
 }
