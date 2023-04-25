@@ -1,53 +1,71 @@
-/* eslint-disable no-unused-vars */
 // lodash.merge: deep merges objects
 // 	warning: first object argument gets overwritten
 // 	- so dont pass an object you dont want to mutate
 import { merge } from 'lodash'
+import { createTheme } from '@mui/material/styles'
+import { blue, red, grey } from '@mui/material/colors'
 
-// color palette
-const darkBlack = '#111111'
+// custom colors
 const black = '#111111'
-const darkGray = '#222121'
-const gray = '#f3efef'
-const pink = '#fc52db'
-const purple = '#b123ff'
-const lightBlue = '#8870fd'
-const lightGray = '#a6a4a4'
-const offWhite = '#f5f2f2'
-const red = '#ff7878'
 const white = '#ffffff'
 
 // base theme: shared theme values
-const baseTheme = {
-	color: {
+const theme = {
+	// color palette: https://m2.material.io/design/color/the-color-system.html#tools-for-picking-colors
+	palette: {
+		black,
+		blue,
+		red,
+		grey,
+		// primary color: A primary color is the color displayed most frequently across your app's screens and components.
+		primary: {
+			main: black,
+			contrastText: white
+		},
+		// secondary color: floating action buttons, selection controls, like sliders and switches, highlighting selected text, progress bars, links and headlines
+		secondary: {
+			main: red[500],
+			contrastText: white
+		},
 		background: {
-			body: black,
+			default: black,
 			header: black,
-			button: lightGray,
-			card: darkGray,
+			button: grey[700],
+			card: grey[900],
 			input: {
-				text: darkGray
+				text: grey[900]
 			},
-			scrollbar: darkGray
+			scrollbar: grey[900]
 		},
 		text: {
-			button: white
+			primary: 'rgb(255, 255, 255, 0.87)',
+			secondary: 'rgb(255, 255, 255,0.6)',
+			disabled: 'rgb(255, 255, 255, 0.38)'
 		},
 		scrollbar: {
-			track: darkGray,
-			thumb: lightGray
+			track: grey[900],
+			thumb: grey[700]
 		}
 	},
-	font: {
-		family: `Lato, 'Helvetica Neue', Helvetica, Arial, sans-serif`
+	typography: {
+		button: {
+			fontFamily: 'Lato, Helvetica Neue, Helvetica, Arial, sans-serif',
+			fontWeight: 400,
+			fontSize: '0.875rem',
+			lineHeight: 1.75,
+			letterSpacing: '0.02857em',
+			textTransform: 'none'
+		}
 	},
-	breakpoint: {
+	breakpoints: {
 		mobile: '375px',
 		tablet: '600px',
 		laptop: '1200px',
 		desktop: '1600px'
 	}
 }
+
+const baseTheme = createTheme(theme)
 
 // lodash merge the custom theme with the base theme
 export const themeLight = merge(

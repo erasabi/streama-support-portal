@@ -27,7 +27,7 @@ html, body, #root {
 body {
   font-family: Lato, 'Helvetica Neue', Helvetica, Arial, sans-serif;
 	font-size: 15px;
-	background-color:  ${(props) => props.theme.color.background.body};
+	background-color:  ${(props) => props.theme.palette.background.default};
 }
 
 // Improve media defaults
