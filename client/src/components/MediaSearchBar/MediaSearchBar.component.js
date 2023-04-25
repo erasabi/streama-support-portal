@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react'
 import styled from 'styled-components'
-import { debounce } from 'lodash'
+import { isEmpty, debounce } from 'lodash'
 import { useDispatch, useSelector } from 'react-redux'
 import { addMediaRequest, searchMediaSuggestions } from '/src/api'
-import useInput from '/src/hooks/useInput.hook'
+import { useInput, useClickOutside, useRenderArray } from '/src/hooks'
 import { handleRequestSubmit } from '/src/redux'
 import { Searchbar, Dropdown } from '/src/styles'
 import { TMDB_ENDPOINT } from '/src/constants'
@@ -16,7 +16,7 @@ async function fetchSearchResults(value, callback) {
 			callback(data.results)
 		}
 	} catch (error) {
-		console.warn(error)
+		console.log(error)
 		callback(null)
 	}
 }
@@ -27,22 +27,24 @@ function MediaSearchbar() {
 	const state = useSelector((state) => state)
 	const search = useInput('')
 	const disableSearchBtn = useInput(true)
-	const suggestions = useInput([])
+	const suggestions = useRenderArray([])
+	const closeDropdown = () => suggestions.clear()
+	const dropdownRef = useClickOutside(closeDropdown)
 
-	async function onRequest() {
+	const onRequest = async () => {
 		try {
 			await addMediaRequest(state.value)
 			search.setValue('')
 			disableSearchBtn.setValue(true)
 		} catch (error) {
-			console.warn(error)
+			console.log(error)
 		}
 		dispatch(handleRequestSubmit())
 	}
 
 	const onChange = (value) => {
-		if (value.length < 1) {
-			suggestions.setValue(null)
+		if (isEmpty(value)) {
+			suggestions.clear()
 		}
 		debouncedFetchSearchResults(value, suggestions.setValue)
 		search.setValue(value)
@@ -50,46 +52,42 @@ function MediaSearchbar() {
 	}
 
 	const onSelectSuggestedMedia = (selectedMedia) => {
+		const { title, original_title, name, original_name } = selectedMedia
 		dispatch({ type: 'SELECT_MEDIA_SUGGESTION', value: selectedMedia })
-		search.setValue(
-			selectedMedia.title ||
-				selectedMedia.original_title ||
-				selectedMedia.name ||
-				selectedMedia.original_name
-		)
+		search.setValue(title || original_title || name || original_name)
 		disableSearchBtn.setValue(false)
-		suggestions.setValue([])
+		suggestions.clear()
 	}
 
 	const MemoizedSuggestedMedia = useMemo(() => {
-		const results = suggestions.value
-
 		return (
-			<Dropdown>
-				<Dropdown.Options style={{ height: '50vh' }}>
-					{results.map((result) => (
-						<Dropdown.Option
-							key={result.id}
-							onClick={() => onSelectSuggestedMedia(result)}
-						>
-							<Dropdown.Image
-								src={
-									result.poster_path
-										? TMDB_ENDPOINT + result.poster_path
-										: ImageNotFound
-								}
-							/>
-							<Dropdown.Title>
-								{result.title ? result.title : result.name} (
-								{result.release_date
-									? parseInt(result.release_date)
-									: parseInt(result.first_air_date)}
-								)
-							</Dropdown.Title>
-						</Dropdown.Option>
-					))}
-				</Dropdown.Options>
-			</Dropdown>
+			suggestions.isNotEmpty && (
+				<Dropdown>
+					<Dropdown.Options ref={dropdownRef} style={{ height: '50vh' }}>
+						{suggestions.value.map((result) => (
+							<Dropdown.Option
+								key={result.id}
+								onClick={() => onSelectSuggestedMedia(result)}
+							>
+								<Dropdown.Image
+									src={
+										result.poster_path
+											? TMDB_ENDPOINT + result.poster_path
+											: ImageNotFound
+									}
+								/>
+								<Dropdown.Title>
+									{result.title ? result.title : result.name} (
+									{result.release_date
+										? parseInt(result.release_date)
+										: parseInt(result.first_air_date)}
+									)
+								</Dropdown.Title>
+							</Dropdown.Option>
+						))}
+					</Dropdown.Options>
+				</Dropdown>
+			)
 		)
 	}, [suggestions.value])
 
@@ -100,13 +98,13 @@ function MediaSearchbar() {
 					placeholder="Search by Movie or Show"
 					value={search.value}
 					onChange={(e) => onChange(e.target.value)}
+					onFocus={(e) => onChange(e.target.value)}
 				/>
-				<Searchbar.Button
-					disabled={disableSearchBtn.value}
-					onClick={onRequest}
-				/>
+				<Searchbar.Button disabled={disableSearchBtn.value} onClick={onRequest}>
+					Request
+				</Searchbar.Button>
 			</Searchbar>
-			{suggestions.value.length > 0 ? MemoizedSuggestedMedia : null}
+			{MemoizedSuggestedMedia}
 		</Wrapper>
 	)
 }
@@ -130,5 +128,9 @@ const Wrapper = styled.div`
 	// desktops
 	@media only screen and (min-width: 1200px) {
 		width: 600px;
+	}
+
+	.dropdown-option {
+		align-items: center;
 	}
 `
