@@ -16,7 +16,7 @@ Header.Logo = function HeaderLogo({ ...restProps }) {
 }
 
 const Container = styled.header`
-	background-color: ${(props) => props.theme.color.background.header};
+	background-color: ${(props) => props.theme.palette.background.header};
 	display: flex;
 	flex-direction: row;
 	height: 70px;

@@ -2,8 +2,8 @@ import React from 'react'
 import styled from 'styled-components'
 import Scrollbar from '../Scrollbar'
 
-function Dropdown({ show = true, children, ...restProps }) {
-	return show ? <Container {...restProps}>{children}</Container> : null
+function Dropdown({ children, ...restProps }) {
+	return <Container {...restProps}>{children}</Container>
 }
 
 export default Dropdown
@@ -15,6 +15,12 @@ Dropdown.Options = function DropdownOptions({ children, ...restProps }) {
 		</Options>
 	)
 }
+
+Dropdown.Options = React.forwardRef(({ children, ...restProps }, ref) => (
+	<Options ref={ref} {...restProps}>
+		<Scrollbar.X>{children}</Scrollbar.X>
+	</Options>
+))
 
 Dropdown.Option = function DropdownOption({ children, ...restProps }) {
 	return <Option {...restProps}>{children}</Option>
@@ -64,7 +70,7 @@ const Option = styled.li`
 	gap: 10px;
 	background-color: var(
 		--background-color,
-		${(props) => props.theme.color.background.card}
+		${(props) => props.theme.palette.background.card}
 	);
 	border: 0.5px solid rgb(24, 24, 24); /* Prevent double borders */
 	color: white;
@@ -73,7 +79,7 @@ const Option = styled.li`
 		background-color: white;
 		color: var(
 			--background-color,
-			${(props) => props.theme.color.background.card}
+			${(props) => props.theme.palette.background.card}
 		);
 	}
 `

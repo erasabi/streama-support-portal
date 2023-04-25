@@ -24,7 +24,7 @@ const ScrollX = styled.div`
 	}
 
 	&::-webkit-scrollbar-track {
-		background-color: ${(props) => props.theme.color.scrollbar.track};
+		background-color: ${(props) => props.theme.palette.scrollbar.track};
 		border-radius: 10px;
 		box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
 		width: 5px;
@@ -32,7 +32,7 @@ const ScrollX = styled.div`
 	}
 
 	&::-webkit-scrollbar-thumb {
-		background-color: ${(props) => props.theme.color.scrollbar.thumb};
+		background-color: ${(props) => props.theme.palette.scrollbar.thumb};
 		border-radius: 10px;
 		-webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
 	}

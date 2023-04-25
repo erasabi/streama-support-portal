@@ -41,18 +41,17 @@ const Backdrop = styled.div`
 	align-items: center;
 	background-color: #00000082;
 	display: flex;
-	height: 100%;
+	height: 100vh;
+	width: 100vw;
 	justify-content: center;
 	position: fixed;
 	top: 0;
-	width: 100%;
 	z-index: 1000;
 `
 const Container = styled.div`
 	align-items: center;
 	background-color: #222121;
 	border-radius: 25px;
-	max-height: 80%;
-	max-width: 80%;
-	padding: 2% 5%;
+	padding: 25px;
+	width: 75vw;
 `
