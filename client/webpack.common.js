@@ -25,6 +25,13 @@ module.exports = {
 		path: __dirname + '/dist',
 		filename: 'bundle.js'
 	},
+	resolve: {
+		alias: {
+			// switch material ui default style engine (so you can use @mui/material/styles and its theme)
+			'@mui/styled-engine': '@mui/styled-engine-sc'
+		}
+	},
+
 	// "module" is where we tell Webpack to use all of those loaders we installed before.
 	//      We’re using regex to tell each loader which file extensions to target.
 	//      Also, we’re telling Webpack to run ESLint before Babel translates our code("enforce": “pre",), so it can warn us about stuff in our source code, not the compiled code.
