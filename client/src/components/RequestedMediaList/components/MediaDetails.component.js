@@ -118,7 +118,7 @@ export default function MediaDetails(props) {
 					<CardField label="Requested body">
 						<Card.Text>{props.requestUser}</Card.Text>
 					</CardField>
-					{!isAuth && (
+					{isAuth && (
 						<CardField label="Queue Status">
 							<div className="searchbar">
 								<Searchbar>
