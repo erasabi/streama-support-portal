@@ -17,9 +17,12 @@ export async function getUser() {
 			{ withCredentials: true },
 			API_REQUEST_CONFIG
 		)
-		return data.profiles[0]
+
+		return data.profiles[0].user
 	} catch (err) {
-		console.log(err)
+		console.warn(err)
+		// throw error so useQuery hooks isError will be correct
+		throw err
 	}
 }
 

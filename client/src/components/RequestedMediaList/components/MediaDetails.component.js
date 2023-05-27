@@ -2,12 +2,11 @@
 import React, { useMemo, useContext } from 'react'
 import { blue, red, grey } from '@mui/material/colors'
 import { isEmpty, isEqual, merge } from 'lodash'
-import { UserContext } from '/src/hooks/userContext.hook'
 import { useInput, useToggle, useClickOutside } from '/src/hooks'
-import { ADMIN_SECRETS, SUPERUSER_SECRETS } from '/src/constants'
 import styled from 'styled-components'
 import { Button, ModalContext, Searchbar, Dropdown, Card } from '/src/styles'
 import { deleteMediaRequest, updateMediaRequest } from '/src/api'
+import { isAdmin, isSuperuser } from '/src/auth'
 
 const QueueStatusOptions = [
 	'Not Yet Available',
@@ -16,32 +15,10 @@ const QueueStatusOptions = [
 	'Complete Collection'
 ]
 
-function isAdmin(user) {
-	try {
-		return (
-			user.authorities?.filter((e) => e.displayName === ADMIN_SECRETS).length >
-			0
-		)
-	} catch (error) {
-		console.log(error)
-		return false
-	}
-}
-
-function isSuperUser(user) {
-	try {
-		return user.username === SUPERUSER_SECRETS
-	} catch (error) {
-		console.log(error)
-		return false
-	}
-}
-
 export default function MediaDetails(props) {
 	const { id, handleRequestSubmit, queueStatus, queueMessage, ...restProps } =
 		props
-	const { user } = useContext(UserContext)
-	const isAuth = user ? isAdmin(user) || isSuperUser(user) : false
+	const isAuth = isAdmin() || isSuperuser()
 	let { handleModal } = useContext(ModalContext)
 	const status = useInput(queueStatus ?? '')
 	const message = useInput(queueMessage ?? '')

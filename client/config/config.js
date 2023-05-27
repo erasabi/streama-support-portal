@@ -17,7 +17,7 @@ envPath
 
 const NODE_ENV =
 	process.env.OVERRIDE_NODE_ENV || process.env.NODE_ENV || 'development'
-const DEBUG = process.env.DEBUG || false
+const DEBUG = process.env.DEBUG || NODE_ENV === 'development'
 const STREAMA_ENDPOINT = process.env.STREAMA_ENDPOINT
 const API_ENDPOINT = process.env.API_ENDPOINT
 const API_REQUEST_CONFIG =
