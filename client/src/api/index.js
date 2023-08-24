@@ -5,6 +5,28 @@ import {
 	STREAMA_ENDPOINT,
 	MOVIEDB_ENDPOINT
 } from '../constants'
+import { isArray } from 'lodash'
+
+export async function isReleased(title, year) {
+	let isReleased = false
+	try {
+		const { data } = await axios.get(
+			`https://yts.mx/api/v2/list_movies.json?query_term=${title}"`
+		)
+		const movies = data?.data?.movies
+
+		if (isArray(movies)) {
+			movies.forEach((movie) => {
+				if (movie.year == year) {
+					isReleased = true
+				}
+			})
+		}
+	} catch (error) {
+		console.log(error)
+	}
+	return isReleased
+}
 
 export async function getRequestedMedia() {
 	return await axios.get(`${API_ENDPOINT}/requests/all`, API_REQUEST_CONFIG)

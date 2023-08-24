@@ -1,28 +1,65 @@
 /* eslint-disable react/prop-types */
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import { isEmpty } from 'lodash'
 import MediaPosterPlaceHolder from '/src/media/images/media-poster-placeholder.png'
 import { TMDB_ENDPOINT } from '/src/constants'
+import { isReleased } from '/src/api/'
+
+const MediaItem = ({ item, onClick }) => {
+	const {
+		title,
+		originalTitle,
+		releaseDate,
+		mediaType,
+		posterPath,
+		queueStatus
+	} = item
+	const [released, setReleased] = useState(false)
+
+	useEffect(() => {
+		async function fetch() {
+			setReleased(
+				await isReleased(
+					title || originalTitle,
+					(releaseDate ?? []).slice(0, 3)
+				)
+			)
+		}
+		if (queueStatus === 'Not Yet Available' && mediaType === 'movie') fetch()
+	}, [])
+
+	return (
+		<Poster value={title} status={queueStatus}>
+			<img
+				className="poster-img"
+				onClick={() => onClick(item)}
+				src={TMDB_ENDPOINT + posterPath}
+				onError={(e) => (e.target.src = MediaPosterPlaceHolder)}
+			/>
+			<p className="poster-label">
+				{queueStatus}
+				{queueStatus === 'Not Yet Available'
+					? released
+						? ' (Y)'
+						: ' (X)'
+					: null}
+			</p>
+		</Poster>
+	)
+}
 
 export default function MediaList({ items, onClick }) {
 	return (
 		!isEmpty(items) && (
 			<Wrapper>
-				{items.map((item) => {
-					const { id, title, posterPath, queueStatus } = item
-					return (
-						<Poster key={`${id}_${title}`} value={title} status={queueStatus}>
-							<img
-								className="poster-img"
-								onClick={() => onClick(item)}
-								src={TMDB_ENDPOINT + posterPath}
-								onError={(e) => (e.target.src = MediaPosterPlaceHolder)}
-							/>
-							<p className="poster-label">{queueStatus}</p>
-						</Poster>
-					)
-				})}
+				{items.map((item) => (
+					<MediaItem
+						key={`${item?.id}_${item?.title}`}
+						item={item}
+						onClick={onClick}
+					/>
+				))}
 			</Wrapper>
 		)
 	)

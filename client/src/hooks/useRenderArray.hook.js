@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { isArray, isEmpty } from 'lodash'
 
 const handleInvalidArray = () => {
-	console.warn('useArray value not valid array')
+	console.log('useArray value not valid array')
 	return []
 }
 
