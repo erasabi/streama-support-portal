@@ -27,3 +27,13 @@ export function isSuperuser() {
 		return false
 	}
 }
+
+export function matchesUser(username) {
+	try {
+		const { user = { username: 'Anonymous' } } = useContext(UserContext)
+		return user.username === username
+	} catch (error) {
+		console.log(error)
+		return false
+	}
+}

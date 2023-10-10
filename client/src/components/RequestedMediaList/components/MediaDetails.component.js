@@ -6,25 +6,22 @@ import { useInput, useToggle, useClickOutside } from '/src/hooks'
 import styled from 'styled-components'
 import { Button, ModalContext, Searchbar, Dropdown, Card } from '/src/styles'
 import { deleteMediaRequest, updateMediaRequest } from '/src/api'
-import { isAdmin, isSuperuser } from '/src/auth'
-
-const QueueStatusOptions = [
-	'Not Yet Available',
-	'Rolling Episodes',
-	'Unavailable',
-	'Complete Collection'
-]
+import { isAdmin, isSuperuser, matchesUser } from '/src/auth'
 
 export default function MediaDetails(props) {
 	const { id, handleRequestSubmit, queueStatus, queueMessage, ...restProps } =
 		props
 	const isAuth = isAdmin() || isSuperuser()
+
 	let { handleModal } = useContext(ModalContext)
 	const status = useInput(queueStatus ?? '')
 	const message = useInput(queueMessage ?? '')
-	const showDropdown = useToggle(false)
-	const closeDropdown = () => showDropdown.setValue(false)
+	const showQueueStatusDropdown = useToggle(false)
+	const closeDropdown = () => showQueueStatusDropdown.setValue(false)
 	const dropdownRef = useClickOutside(closeDropdown)
+	const showQueueMessageDropdown = useToggle(false)
+	const closeMessageDropdown = () => showQueueMessageDropdown.setValue(false)
+	const dropdownMessageRef = useClickOutside(closeMessageDropdown)
 
 	const onDelete = () => {
 		deleteMediaRequest(id, handleRequestSubmit)
@@ -40,7 +37,14 @@ export default function MediaDetails(props) {
 		handleModal()
 	}
 
-	Searchbar.Dropdown = useMemo(() => {
+	Searchbar.StatusDropdown = useMemo(() => {
+		const QueueStatusOptions = [
+			'Not Yet Available',
+			'Rolling Episodes',
+			'Unavailable',
+			'Complete Collection'
+		]
+
 		const getOptions = (value, options) => {
 			try {
 				return options.filter(
@@ -55,7 +59,7 @@ export default function MediaDetails(props) {
 		}
 		const onDropdownSelect = (option) => {
 			status.setValue(option)
-			showDropdown.toggleValue()
+			showQueueStatusDropdown.toggleValue()
 		}
 		const options = getOptions(status.value, QueueStatusOptions)
 
@@ -78,22 +82,88 @@ export default function MediaDetails(props) {
 		)
 	}, [status.value])
 
+	Searchbar.MessageDropdown = useMemo(() => {
+		const RequestDetailsOptions = [
+			'Fetch New Seasons',
+			'Video Not Working',
+			'Wrong Video',
+			'Add Subitles',
+			'Fix Subtitles'
+		]
+		const getOptions = (value, options) => {
+			try {
+				return options.filter(
+					(option) =>
+						option.toLowerCase().includes(value.toLowerCase()) &&
+						!isEqual(option.toLowerCase(), value.toLowerCase())
+				)
+			} catch (error) {
+				console.log(error)
+				return false
+			}
+		}
+		const onDropdownSelect = (option) => {
+			message.setValue(option)
+			showQueueMessageDropdown.toggleValue()
+		}
+		const options = getOptions(message.value, RequestDetailsOptions)
+
+		return (
+			!isEmpty(options) && (
+				<Dropdown>
+					<Dropdown.Options ref={dropdownMessageRef} style={{ height: '50vh' }}>
+						{options.map((option) => (
+							<Dropdown.Option
+								key={option}
+								className="dropdown-option"
+								onClick={() => onDropdownSelect(option)}
+							>
+								{option}
+							</Dropdown.Option>
+						))}
+					</Dropdown.Options>
+				</Dropdown>
+			)
+		)
+	}, [message.value])
+
+	const DaysAgo = useMemo(() => {
+		function getDaysDifference(originalTimeString) {
+			const targetDate = new Date(originalTimeString)
+			const currentDate = new Date()
+			// Calculate the time difference in milliseconds
+			const timeDifference = targetDate - currentDate
+			// Calculate the number of days
+			const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24))
+			return daysDifference
+		}
+		const daysAgo = Math.abs(getDaysDifference(props.createdAt))
+		return (
+			<Card.Text>
+				<span style={daysAgo > 7 ? { color: 'red', fontWeight: 500 } : {}}>
+					{daysAgo}
+				</span>
+				{` ${daysAgo > 1 ? 'days' : 'day'} ago`}
+			</Card.Text>
+		)
+	}, [props.createdAt])
+
 	return (
 		<Wrapper {...restProps}>
 			<Card className="card">
 				<Card.Title className="card-title">{props.title}</Card.Title>
 				<Card.Content className="card-content">
-					<CardField label="Created">
-						<Card.Text>{props.createdAt}</Card.Text>
-					</CardField>
+					<CardField label="Requested">{DaysAgo}</CardField>
+					{(matchesUser(props.requestUser) || isAuth) && (
+						<CardField label="Requested By">
+							<Card.Text>{props.requestUser}</Card.Text>
+						</CardField>
+					)}
 					<CardField label="Released">
 						<Card.Text>{props.releaseDate}</Card.Text>
 					</CardField>
 					<CardField label="Media Type">
 						<Card.Text>{props.mediaType}</Card.Text>
-					</CardField>
-					<CardField label="Requested body">
-						<Card.Text>{props.requestUser}</Card.Text>
 					</CardField>
 					{isAuth && (
 						<CardField label="Queue Status">
@@ -104,10 +174,26 @@ export default function MediaDetails(props) {
 										placeholder="Queue Status"
 										value={status.value}
 										onChange={status.onChange}
-										onFocus={() => showDropdown.setValue(true)}
+										onFocus={() => showQueueStatusDropdown.setValue(true)}
 									/>
 								</Searchbar>
-								{showDropdown.value && Searchbar.Dropdown}
+								{showQueueStatusDropdown.value && Searchbar.StatusDropdown}
+							</div>
+						</CardField>
+					)}
+					{(matchesUser(props.requestUser) || isAuth) && (
+						<CardField label="Request Info">
+							<div className="searchbar">
+								<Searchbar>
+									<Searchbar.TextInput
+										className="searchbar-text-input"
+										placeholder="Request Details"
+										value={message.value}
+										onChange={message.onChange}
+										onFocus={() => showQueueMessageDropdown.setValue(true)}
+									/>
+								</Searchbar>
+								{showQueueMessageDropdown.value && Searchbar.MessageDropdown}
 							</div>
 						</CardField>
 					)}
@@ -116,10 +202,18 @@ export default function MediaDetails(props) {
 					<Button className="cancel" onClick={handleModal}>
 						Cancel
 					</Button>
-					<Button className="delete" disabled={!isAuth} onClick={onDelete}>
+					<Button
+						className="delete"
+						disabled={!(matchesUser(props.requestUser) || isAuth)}
+						onClick={onDelete}
+					>
 						Delete
 					</Button>
-					<Button className="update" disabled={!isAuth} onClick={onUpdate}>
+					<Button
+						className="update"
+						disabled={!(matchesUser(props.requestUser) || isAuth)}
+						onClick={onUpdate}
+					>
 						Update
 					</Button>
 				</Button.Group>
