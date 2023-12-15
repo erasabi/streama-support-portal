@@ -22,7 +22,7 @@ const MediaItem = ({ item, onClick }) => {
 			setReleased(
 				await isReleased(
 					title || originalTitle,
-					(releaseDate ?? []).slice(0, 3)
+					(releaseDate ?? []).slice(0, 4)
 				)
 			)
 		}

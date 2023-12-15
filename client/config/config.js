@@ -24,7 +24,7 @@ const API_REQUEST_CONFIG =
 	NODE_ENV !== 'production' ? { 'Access-Control-Allow-Origin': '*' } : {}
 
 const envConfig = {
-	NODE_ENV,
+	NODE_ENV: NODE_ENV,
 	DEBUG: DEBUG,
 	REACT_APP_STREAMA_ENDPOINT: STREAMA_ENDPOINT,
 	REACT_APP_API_ENDPOINT: API_ENDPOINT,
@@ -34,6 +34,5 @@ const envConfig = {
 }
 
 // // uncomment when debugging env config/webpack
-// console.dir({ envConfig })
 
 module.exports = envConfig

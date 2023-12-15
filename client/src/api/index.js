@@ -70,6 +70,44 @@ async function getMediaRequestUser() {
 	return user
 }
 
+export async function checkDuplicateMediaRequest(
+	title,
+	releaseDate,
+	mediaType
+) {
+	function findMatchingItem(title, releaseDate, jsonArray) {
+		for (const item of jsonArray) {
+			if (
+				((item.title === title || item.name === title) &&
+					item.release_date === releaseDate) ||
+				item.first_air_date === releaseDate
+			) {
+				return true
+			}
+		}
+		return false
+	}
+	return await axios
+		.get(
+			`${STREAMA_ENDPOINT}/dash/searchMedia.json?query=${title}`,
+			{ withCredentials: true },
+			API_REQUEST_CONFIG
+		)
+		.then((res) => {
+			if (mediaType === 'movie') {
+				const { movies } = res.data
+				return findMatchingItem(title, releaseDate, movies)
+			} else if (mediaType === 'tv') {
+				const { shows } = res.data
+				return findMatchingItem(title, releaseDate, shows)
+			}
+		})
+		.catch((err) => {
+			console.warn(err)
+			return false
+		})
+}
+
 export async function addMediaRequest(body = {}) {
 	try {
 		const {
