@@ -4,7 +4,14 @@ import { blue, red, grey } from '@mui/material/colors'
 import { isEmpty, isEqual, merge } from 'lodash'
 import { useInput, useToggle, useClickOutside } from '/src/hooks'
 import styled from 'styled-components'
-import { Button, ModalContext, Searchbar, Dropdown, Card } from '/src/styles'
+import {
+	Button,
+	ModalContext,
+	Searchbar,
+	Dropdown,
+	Card,
+	CopyText
+} from '/src/styles'
 import { deleteMediaRequest, updateMediaRequest } from '/src/api'
 import { isAdmin, isSuperuser, matchesUser } from '/src/auth'
 
@@ -151,7 +158,7 @@ export default function MediaDetails(props) {
 	return (
 		<Wrapper {...restProps}>
 			<Card className="card">
-				<Card.Title className="card-title">{props.title}</Card.Title>
+				<CardTitle text={props.title} />
 				<Card.Content className="card-content">
 					<CardField label="Requested">{DaysAgo}</CardField>
 					{(matchesUser(props.requestUser) || isAuth) && (
@@ -222,16 +229,36 @@ export default function MediaDetails(props) {
 	)
 }
 
+const CardTitle = styled(CopyText)`
+	display: flex;
+	justify-content: center;
+
+	.text {
+		font-size: 25px;
+		color: red;
+
+		@media only screen and (min-width: ${(props) =>
+				props.theme.breakpoints.tablet}) {
+			font-size: 50px;
+		}
+	}
+
+	.icon {
+		width: 15px;
+
+		@media only screen and (min-width: ${(props) =>
+				props.theme.breakpoints.tablet}) {
+			width: 35px;
+		}
+	}
+`
+
 const CardField = styled(Card.Field)``
 
 const Wrapper = styled.div`
 	.card {
 		flex-direction: column;
 		gap: 50px;
-	}
-
-	.card-title {
-		text-align: center;
 	}
 
 	.card-content {
