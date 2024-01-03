@@ -13,7 +13,8 @@ const MediaItem = ({ item, onClick }) => {
 		releaseDate,
 		mediaType,
 		posterPath,
-		queueStatus
+		queueStatus,
+		queueMessage
 	} = item
 	const [released, setReleased] = useState(false)
 
@@ -38,7 +39,7 @@ const MediaItem = ({ item, onClick }) => {
 				onError={(e) => (e.target.src = MediaPosterPlaceHolder)}
 			/>
 			<p className="poster-label">
-				{queueStatus}
+				{queueStatus ?? queueMessage}
 				{queueStatus === 'Not Yet Available'
 					? released
 						? ' (Y)'
