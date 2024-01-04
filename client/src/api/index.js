@@ -7,6 +7,55 @@ import {
 } from '../constants'
 import { isArray } from 'lodash'
 
+function compareTorrents(torrentA, torrentB) {
+	const qualityOrder = (quality) => {
+		switch (quality) {
+			case '1080p':
+				return 1
+			case '2160p':
+				return 2
+			default:
+				return 3
+		}
+	}
+
+	// Compare based on video codec and then quality
+	if (torrentA.video_codec === 'x264' && torrentB.video_codec !== 'x264') {
+		return -1 // Prioritize x264 over other codecs
+	} else if (
+		torrentA.video_codec !== 'x264' &&
+		torrentB.video_codec === 'x264'
+	) {
+		return 1 // Prioritize x264 over other codecs
+	} else {
+		// If codecs are the same, compare based on quality order
+		return qualityOrder(torrentA.quality) - qualityOrder(torrentB.quality)
+	}
+}
+
+export async function getYTSMagnetLink(title, year) {
+	let isReleased = ''
+	try {
+		const { data } = await axios.get(
+			`https://yts.mx/api/v2/list_movies.json?query_term=${title}"`
+		)
+		const movies = data?.data?.movies
+
+		if (isArray(movies)) {
+			movies.forEach((movie) => {
+				if (movie.year == year) {
+					const { url } = movie?.torrents?.sort(compareTorrents)[0]
+					isReleased = url
+				}
+			})
+		}
+	} catch (error) {
+		console.log(error)
+	}
+
+	return isReleased
+}
+
 export async function isReleased(title, year) {
 	let isReleased = false
 	try {

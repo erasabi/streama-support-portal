@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import React, { useMemo, useContext } from 'react'
+import React, { useState, useEffect, useMemo, useContext } from 'react'
 import { blue, red, grey } from '@mui/material/colors'
 import { isEmpty, isEqual, merge } from 'lodash'
 import { useInput, useToggle, useClickOutside } from '/src/hooks'
@@ -12,7 +12,11 @@ import {
 	Card,
 	CopyText
 } from '/src/styles'
-import { deleteMediaRequest, updateMediaRequest } from '/src/api'
+import {
+	deleteMediaRequest,
+	updateMediaRequest,
+	getYTSMagnetLink
+} from '/src/api'
 import { isAdmin, isSuperuser, matchesUser } from '/src/auth'
 
 export default function MediaDetails(props) {
@@ -29,6 +33,7 @@ export default function MediaDetails(props) {
 	const showQueueMessageDropdown = useToggle(false)
 	const closeMessageDropdown = () => showQueueMessageDropdown.setValue(false)
 	const dropdownMessageRef = useClickOutside(closeMessageDropdown)
+	const [magnet, setMagnet] = useState()
 
 	const onDelete = () => {
 		deleteMediaRequest(id, handleRequestSubmit)
@@ -42,6 +47,12 @@ export default function MediaDetails(props) {
 		})
 		updateMediaRequest(body)
 		handleModal()
+	}
+
+	const handleCopyMagnetUrl = () => {
+		// Copy the text inside the text field
+		navigator.clipboard.writeText(magnet)
+		alert('Magnet Link Copied: ' + magnet)
 	}
 
 	Searchbar.StatusDropdown = useMemo(() => {
@@ -155,12 +166,27 @@ export default function MediaDetails(props) {
 		)
 	}, [props.createdAt])
 
+	useEffect(async () => {
+		async function fetchMagnet() {
+			setMagnet(await getYTSMagnetLink('Hook', '1991'))
+		}
+		fetchMagnet()
+	}, [])
+
 	return (
 		<Wrapper {...restProps}>
 			<Card className="card">
 				<CardTitle text={props.title} />
 				<Card.Content className="card-content">
+					{(matchesUser(props.requestUser) || isAuth) && (
+						<CardField label="Magnet URL">
+							<Button onClick={handleCopyMagnetUrl}>Copy Magnet Link</Button>
+						</CardField>
+					)}
 					<CardField label="Requested">{DaysAgo}</CardField>
+					{/* {isReleased('Hook', '1991') || (
+						<div>{JSON.stringify(getYTSMagnetLink)}</div>
+					)} */}
 					{(matchesUser(props.requestUser) || isAuth) && (
 						<CardField label="Requested By">
 							<Card.Text>{props.requestUser}</Card.Text>
