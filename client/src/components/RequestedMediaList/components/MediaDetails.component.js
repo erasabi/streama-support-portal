@@ -20,10 +20,17 @@ import {
 import { isAdmin, isSuperuser, matchesUser } from '/src/auth'
 
 export default function MediaDetails(props) {
-	const { id, handleRequestSubmit, queueStatus, queueMessage, ...restProps } =
-		props
+	const {
+		id,
+		handleRequestSubmit,
+		title,
+		originalTitle,
+		releaseDate,
+		queueStatus,
+		queueMessage,
+		...restProps
+	} = props
 	const isAuth = isAdmin() || isSuperuser()
-
 	let { handleModal } = useContext(ModalContext)
 	const status = useInput(queueStatus ?? '')
 	const message = useInput(queueMessage ?? '')
@@ -34,6 +41,7 @@ export default function MediaDetails(props) {
 	const closeMessageDropdown = () => showQueueMessageDropdown.setValue(false)
 	const dropdownMessageRef = useClickOutside(closeMessageDropdown)
 	const [magnet, setMagnet] = useState()
+	const [isCopied, setCopied] = useState()
 
 	const onDelete = () => {
 		deleteMediaRequest(id, handleRequestSubmit)
@@ -49,10 +57,15 @@ export default function MediaDetails(props) {
 		handleModal()
 	}
 
-	const handleCopyMagnetUrl = () => {
-		// Copy the text inside the text field
-		navigator.clipboard.writeText(magnet)
-		alert('Magnet Link Copied: ' + magnet)
+	const handleCopyMagnetUrl = async (value) => {
+		// need to wait because it's async and alert(synch) could interrupt it
+		await navigator.clipboard.writeText(value)
+		// Change the button text temporarily
+		setCopied(true)
+		// Reset the button text after 1 second (1000 milliseconds)
+		setTimeout(() => {
+			setCopied(false)
+		}, 2000)
 	}
 
 	Searchbar.StatusDropdown = useMemo(() => {
@@ -166,9 +179,14 @@ export default function MediaDetails(props) {
 		)
 	}, [props.createdAt])
 
-	useEffect(async () => {
+	useEffect(() => {
 		async function fetchMagnet() {
-			setMagnet(await getYTSMagnetLink('Hook', '1991'))
+			setMagnet(
+				await getYTSMagnetLink(
+					title || originalTitle,
+					(releaseDate ?? []).slice(0, 4)
+				)
+			)
 		}
 		fetchMagnet()
 	}, [])
@@ -180,13 +198,12 @@ export default function MediaDetails(props) {
 				<Card.Content className="card-content">
 					{(matchesUser(props.requestUser) || isAuth) && (
 						<CardField label="Magnet URL">
-							<Button onClick={handleCopyMagnetUrl}>Copy Magnet Link</Button>
+							<MagnetLinkBtn onClick={() => handleCopyMagnetUrl(magnet)}>
+								{isCopied ? 'Copied!' : 'Copy Magnet Link'}
+							</MagnetLinkBtn>
 						</CardField>
 					)}
 					<CardField label="Requested">{DaysAgo}</CardField>
-					{/* {isReleased('Hook', '1991') || (
-						<div>{JSON.stringify(getYTSMagnetLink)}</div>
-					)} */}
 					{(matchesUser(props.requestUser) || isAuth) && (
 						<CardField label="Requested By">
 							<Card.Text>{props.requestUser}</Card.Text>
@@ -280,6 +297,10 @@ const CardTitle = styled(CopyText)`
 `
 
 const CardField = styled(Card.Field)``
+
+const MagnetLinkBtn = styled(Button)`
+	width: 150px;
+`
 
 const Wrapper = styled.div`
 	.card {

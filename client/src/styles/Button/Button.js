@@ -16,7 +16,6 @@ export default function Button({
 			aria-disabled={disabled}
 			className={disabled ? `btn-disabled ${className}` : className}
 			onClick={disabled ? handleDisabledEvent : onClick}
-			onKeyPress={disabled ? handleDisabledEvent : onClick}
 			{...restProps}
 		>
 			{children}
