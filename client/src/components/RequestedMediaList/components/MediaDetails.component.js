@@ -179,15 +179,15 @@ export default function MediaDetails(props) {
 		)
 	}, [props.createdAt])
 
+	async function fetchMagnet() {
+		const response = await getYTSMagnetLink(
+			title || originalTitle,
+			(releaseDate ?? []).slice(0, 4)
+		)
+		setMagnet(response)
+	}
+
 	useEffect(() => {
-		async function fetchMagnet() {
-			setMagnet(
-				await getYTSMagnetLink(
-					title || originalTitle,
-					(releaseDate ?? []).slice(0, 4)
-				)
-			)
-		}
 		fetchMagnet()
 	}, [])
 
@@ -196,7 +196,7 @@ export default function MediaDetails(props) {
 			<Card className="card">
 				<CardTitle text={props.title} />
 				<Card.Content className="card-content">
-					{(matchesUser(props.requestUser) || isAuth) && (
+					{magnet && (matchesUser(props.requestUser) || isAuth) && (
 						<CardField label="Magnet URL">
 							<MagnetLinkBtn onClick={() => handleCopyMagnetUrl(magnet)}>
 								{isCopied ? 'Copied!' : 'Copy Magnet Link'}
