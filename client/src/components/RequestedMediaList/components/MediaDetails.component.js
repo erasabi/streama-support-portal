@@ -177,12 +177,16 @@ export default function MediaDetails(props) {
 	}, [props.createdAt])
 
 	async function fetchMagnet() {
-		const { torrent, subtitle } = await getYTSLinks(
-			title || originalTitle,
-			(releaseDate ?? []).slice(0, 4)
-		)
-		setMagnet(torrent)
-		setSubtitle(subtitle)
+		try {
+			const { torrent, subtitle } = await getYTSLinks(
+				title || originalTitle,
+				(releaseDate ?? []).slice(0, 4)
+			)
+			setMagnet(torrent)
+			setSubtitle(subtitle)
+		} catch (error) {
+			console.log(error)
+		}
 	}
 
 	useEffect(() => {
