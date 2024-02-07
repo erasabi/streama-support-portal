@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import axios from 'axios'
 import {
 	API_ENDPOINT,
@@ -45,13 +44,17 @@ function findMatch(movies = [], year) {
 	return movies.find((movie) => movie.year == year)
 }
 
-export async function getYTSMagnetLink(title, year) {
+export async function getYTSLinks(title, year) {
 	try {
 		let movies = await axios
 			.get(`https://yts.mx/api/v2/list_movies.json?query_term=${title}`)
 			.then((res) => res.data.data.movies)
 		const movie = findMatch(movies, year)
-		return getTorrentUrl(movie.torrents)
+		const torrentUrl = getTorrentUrl(movie.torrents)
+		const { data: subtitleUrl } = await axios.get(
+			`${API_ENDPOINT}/proxy/subtitle-url/${movie?.imdb_code}`
+		)
+		return { torrent: torrentUrl, subtitle: subtitleUrl }
 	} catch (error) {
 		console.log(error)
 	}

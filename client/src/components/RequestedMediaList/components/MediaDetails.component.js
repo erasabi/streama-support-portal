@@ -12,11 +12,7 @@ import {
 	Card,
 	CopyText
 } from '/src/styles'
-import {
-	deleteMediaRequest,
-	updateMediaRequest,
-	getYTSMagnetLink
-} from '/src/api'
+import { deleteMediaRequest, updateMediaRequest, getYTSLinks } from '/src/api'
 import { isAdmin, isSuperuser, matchesUser } from '/src/auth'
 
 export default function MediaDetails(props) {
@@ -41,6 +37,7 @@ export default function MediaDetails(props) {
 	const closeMessageDropdown = () => showQueueMessageDropdown.setValue(false)
 	const dropdownMessageRef = useClickOutside(closeMessageDropdown)
 	const [magnet, setMagnet] = useState()
+	const [subtitle, setSubtitle] = useState()
 	const [isCopied, setCopied] = useState()
 
 	const onDelete = () => {
@@ -57,14 +54,14 @@ export default function MediaDetails(props) {
 		handleModal()
 	}
 
-	const handleCopyMagnetUrl = async (value) => {
+	const handleCopy = async (type, value) => {
 		// need to wait because it's async and alert(synch) could interrupt it
 		await navigator.clipboard.writeText(value)
 		// Change the button text temporarily
-		setCopied(true)
+		setCopied(type)
 		// Reset the button text after 1 second (1000 milliseconds)
 		setTimeout(() => {
-			setCopied(false)
+			setCopied()
 		}, 2000)
 	}
 
@@ -180,11 +177,12 @@ export default function MediaDetails(props) {
 	}, [props.createdAt])
 
 	async function fetchMagnet() {
-		const response = await getYTSMagnetLink(
+		const { torrent, subtitle } = await getYTSLinks(
 			title || originalTitle,
 			(releaseDate ?? []).slice(0, 4)
 		)
-		setMagnet(response)
+		setMagnet(torrent)
+		setSubtitle(subtitle)
 	}
 
 	useEffect(() => {
@@ -198,8 +196,15 @@ export default function MediaDetails(props) {
 				<Card.Content className="card-content">
 					{magnet && (matchesUser(props.requestUser) || isAuth) && (
 						<CardField label="Magnet URL">
-							<MagnetLinkBtn onClick={() => handleCopyMagnetUrl(magnet)}>
-								{isCopied ? 'Copied!' : 'Copy Magnet Link'}
+							<MagnetLinkBtn onClick={() => handleCopy('magnet', magnet)}>
+								{isCopied === 'magnet' ? 'Copied!' : 'Copy Magnet Link'}
+							</MagnetLinkBtn>
+						</CardField>
+					)}
+					{subtitle && (matchesUser(props.requestUser) || isAuth) && (
+						<CardField label="Subtitle URL">
+							<MagnetLinkBtn onClick={() => handleCopy('subtitle', subtitle)}>
+								{isCopied === 'subtitle' ? 'Copied!' : 'Copy Subtitle Link'}
 							</MagnetLinkBtn>
 						</CardField>
 					)}
