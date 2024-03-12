@@ -33,6 +33,4 @@ const envConfig = {
 	REACT_APP_SUPERUSER_SECRETS: process.env.SUPERUSER_SECRETS
 }
 
-// // uncomment when debugging env config/webpack
-
 module.exports = envConfig
