@@ -14,6 +14,7 @@ import {
 } from '/src/styles'
 import { deleteMediaRequest, updateMediaRequest, getYTSLinks } from '/src/api'
 import { isAdmin, isSuperuser, matchesUser } from '/src/auth'
+import { UserContext } from '/src/hooks/userContext.hook'
 
 export default function MediaDetails(props) {
 	const {
@@ -24,9 +25,12 @@ export default function MediaDetails(props) {
 		releaseDate,
 		queueStatus,
 		queueMessage,
+		requestUser,
 		...restProps
 	} = props
-	const isAuth = isAdmin() || isSuperuser()
+	const { user = { username: 'Anonymous' } } = useContext(UserContext)
+	const isUserMatch = matchesUser(user, requestUser)
+	const isAuth = isAdmin(user) || isSuperuser(user)
 	let { handleModal } = useContext(ModalContext)
 	const status = useInput(queueStatus ?? '')
 	const message = useInput(queueMessage ?? '')
@@ -198,14 +202,14 @@ export default function MediaDetails(props) {
 			<Card className="card">
 				<CardTitle text={props.title} />
 				<Card.Content className="card-content">
-					{magnet && (matchesUser(props.requestUser) || isAuth) && (
+					{((magnet && isUserMatch) || isAuth) && (
 						<CardField label="Magnet URL">
 							<MagnetLinkBtn onClick={() => handleCopy('magnet', magnet)}>
 								{isCopied === 'magnet' ? 'Copied!' : 'Copy Magnet Link'}
 							</MagnetLinkBtn>
 						</CardField>
 					)}
-					{subtitle && (matchesUser(props.requestUser) || isAuth) && (
+					{((subtitle && isUserMatch) || isAuth) && (
 						<CardField label="Subtitle URL">
 							<MagnetLinkBtn onClick={() => handleCopy('subtitle', subtitle)}>
 								{isCopied === 'subtitle' ? 'Copied!' : 'Copy Subtitle Link'}
@@ -213,7 +217,7 @@ export default function MediaDetails(props) {
 						</CardField>
 					)}
 					<CardField label="Requested">{DaysAgo}</CardField>
-					{(matchesUser(props.requestUser) || isAuth) && (
+					{(isUserMatch || isAuth) && (
 						<CardField label="Requested By">
 							<Card.Text>{props.requestUser}</Card.Text>
 						</CardField>
@@ -240,13 +244,13 @@ export default function MediaDetails(props) {
 							</div>
 						</CardField>
 					)}
-					{(matchesUser(props.requestUser) || isAuth) && (
-						<CardField label="Request Info">
+					{(isUserMatch || isAuth) && (
+						<CardField label="Request Details">
 							<div className="searchbar">
 								<Searchbar>
 									<Searchbar.TextInput
 										className="searchbar-text-input"
-										placeholder="Request Details"
+										placeholder="Choose or Write Anything"
 										value={message.value}
 										onChange={message.onChange}
 										onFocus={() => showQueueMessageDropdown.setValue(true)}
@@ -263,14 +267,14 @@ export default function MediaDetails(props) {
 					</Button>
 					<Button
 						className="delete"
-						disabled={!(matchesUser(props.requestUser) || isAuth)}
+						disabled={!(isUserMatch || isAuth)}
 						onClick={onDelete}
 					>
 						Delete
 					</Button>
 					<Button
 						className="update"
-						disabled={!(matchesUser(props.requestUser) || isAuth)}
+						disabled={!(isUserMatch || isAuth)}
 						onClick={onUpdate}
 					>
 						Update
