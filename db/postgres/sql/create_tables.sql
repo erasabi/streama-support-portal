@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS  "Requests" (
   "releaseDate" VARCHAR (20), 
   adult BOOLEAN,
   "mediaType" VARCHAR(20),
-  "queueStatus" VARCHAR(20),
-  "queueMessage" VARCHAR(20),
+  "queueStatus" VARCHAR(40),
+  "queueMessage" VARCHAR(120),
+  "queueEvents" JSONB[],
   "requestUser" VARCHAR(60)
 );

@@ -1,12 +1,9 @@
 /* eslint-disable react/prop-types */
-import { useContext } from 'react'
-import { UserContext } from '/src/hooks/userContext.hook'
 import { ADMIN_SECRETS, SUPERUSER_SECRETS } from '/src/constants'
 
-export function isAdmin() {
+export function isAdmin(user) {
 	try {
-		const { user } = useContext(UserContext)
-		if (process.env.NODE_ENV === 'development') return true
+		if (process.env.NODE_ENV !== 'production') return true
 		return (
 			user.authorities?.filter((e) => e.displayName === ADMIN_SECRETS).length >
 			0
@@ -17,11 +14,19 @@ export function isAdmin() {
 	}
 }
 
-export function isSuperuser() {
+export function isSuperuser(user) {
 	try {
-		const { user } = useContext(UserContext)
-		if (process.env.NODE_ENV === 'development') return true
+		if (process.env.NODE_ENV !== 'production') return true
 		return user.username === SUPERUSER_SECRETS
+	} catch (error) {
+		console.log(error)
+		return false
+	}
+}
+
+export function matchesUser(user, requestUser) {
+	try {
+		return user.username === requestUser
 	} catch (error) {
 		console.log(error)
 		return false

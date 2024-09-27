@@ -2,7 +2,11 @@ import React, { useMemo } from 'react'
 import styled from 'styled-components'
 import { isEmpty, debounce } from 'lodash'
 import { useDispatch, useSelector } from 'react-redux'
-import { addMediaRequest, searchMediaSuggestions } from '/src/api'
+import {
+	addMediaRequest,
+	searchMediaSuggestions,
+	checkDuplicateMediaRequest
+} from '/src/api'
 import { useInput, useClickOutside, useRenderArray } from '/src/hooks'
 import { handleRequestSubmit } from '/src/redux'
 import { Searchbar, Dropdown } from '/src/styles'
@@ -26,19 +30,21 @@ function MediaSearchbar() {
 	const dispatch = useDispatch()
 	const state = useSelector((state) => state)
 	const search = useInput('')
+	const selectedMediaExists = useInput(false)
 	const disableSearchBtn = useInput(true)
 	const suggestions = useRenderArray([])
 	const closeDropdown = () => suggestions.clear()
 	const dropdownRef = useClickOutside(closeDropdown)
 
-	const onRequest = async () => {
+	const onRequest = async (message = '') => {
 		try {
-			await addMediaRequest(state.value)
+			await addMediaRequest({ ...state.value, queueStatus: message })
 			search.setValue('')
 			disableSearchBtn.setValue(true)
 		} catch (error) {
 			console.log(error)
 		}
+		selectedMediaExists.setValue(false)
 		dispatch(handleRequestSubmit())
 	}
 
@@ -49,13 +55,28 @@ function MediaSearchbar() {
 		debouncedFetchSearchResults(value, suggestions.setValue)
 		search.setValue(value)
 		disableSearchBtn.setValue(true)
+		selectedMediaExists.setValue(false)
 	}
 
-	const onSelectSuggestedMedia = (selectedMedia) => {
-		const { title, original_title, name, original_name } = selectedMedia
+	const onSelectSuggestedMedia = async (selectedMedia) => {
+		const {
+			title,
+			original_title,
+			name,
+			original_name,
+			release_date,
+			first_air_date,
+			media_type
+		} = selectedMedia
 		dispatch({ type: 'SELECT_MEDIA_SUGGESTION', value: selectedMedia })
 		search.setValue(title || original_title || name || original_name)
 		disableSearchBtn.setValue(false)
+		const isAlreadyAdded = await checkDuplicateMediaRequest(
+			title ?? name,
+			release_date ?? first_air_date,
+			media_type
+		)
+		selectedMediaExists.setValue(isAlreadyAdded)
 		suggestions.clear()
 	}
 
@@ -96,13 +117,38 @@ function MediaSearchbar() {
 			<Searchbar>
 				<Searchbar.TextInput
 					placeholder="Search by Movie or Show"
-					value={search.value}
+					value={
+						selectedMediaExists.value
+							? search.value + ' (Already Available)'
+							: search.value
+					}
 					onChange={(e) => onChange(e.target.value)}
 					onFocus={(e) => onChange(e.target.value)}
 				/>
-				<Searchbar.Button disabled={disableSearchBtn.value} onClick={onRequest}>
-					Request
-				</Searchbar.Button>
+				{!selectedMediaExists.value && (
+					<Searchbar.Button
+						disabled={disableSearchBtn.value}
+						onClick={() => onRequest('')}
+					>
+						Request
+					</Searchbar.Button>
+				)}
+				{selectedMediaExists.value && (
+					<Searchbar.Button
+						onClick={() => onRequest('Request Update')}
+						style={{ backgroundColor: '#40a140' }}
+					>
+						Request Update
+					</Searchbar.Button>
+				)}
+				{selectedMediaExists.value && (
+					<Searchbar.Button
+						onClick={() => onRequest('Report Issue')}
+						style={{ backgroundColor: '#f35252' }}
+					>
+						Report Issue
+					</Searchbar.Button>
+				)}
 			</Searchbar>
 			{MemoizedSuggestedMedia}
 		</Wrapper>

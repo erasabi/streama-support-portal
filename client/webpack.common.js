@@ -1,11 +1,8 @@
 // webpack.config.js: holds configuration settings for webpack bundler
-
 const HtmlWebPackPlugin = require('html-webpack-plugin')
-const webpack = require('webpack')
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
-const envConfig = require('./config/config')
 
 module.exports = {
 	// set custom port
@@ -92,8 +89,6 @@ module.exports = {
 		new MiniCssExtractPlugin(),
 		// allows us to create polyfills for plugins
 		// needed for bcrypt to work in react code
-		new NodePolyfillPlugin(),
-		// allows env files
-		new webpack.EnvironmentPlugin(envConfig)
+		new NodePolyfillPlugin()
 	]
 }

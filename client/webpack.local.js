@@ -5,8 +5,8 @@ const webpack = require('webpack')
 const common = require('./webpack.common.js')
 
 // dotenv config allows access to process.env variables
-fs.existsSync('.env.dev')
-	? require('dotenv').config({ path: '.env.dev' })
+fs.existsSync('.env.local')
+	? require('dotenv').config({ path: '.env.local' })
 	: require('dotenv').config()
 
 const envConfig = require('./config/environment.js')
