@@ -1,5 +1,3 @@
-version: "3.8" # docker engine version
-
 services:
   postgres:
     image: postgres

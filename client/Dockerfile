@@ -11,6 +11,11 @@ WORKDIR /opt/app-client
 
 # add `/opt/app-client/node_modules/.bin` to $PATH
 ENV PATH /opt/app-client/node_modules/.bin:$PATH
+ENV NODE_ENV=$NODE_ENV
+ENV STREAMA_ENDPOINT=$STREAMA_ENDPOINT
+ENV API_ENDPOINT=$API_ENDPOINT
+ENV ADMIN_SECRETS=$ADMIN_SECRETS
+ENV SUPERUSER_SECRETS=$SUPERUSER_SECRETS
 
 # install app-client dependencies
 COPY ./client/package.json ./
