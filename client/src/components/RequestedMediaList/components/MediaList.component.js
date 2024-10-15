@@ -7,25 +7,12 @@ import { TMDB_ENDPOINT } from '/src/constants'
 import { isReleased } from '/src/api/'
 
 const MediaItem = ({ item, onClick }) => {
-	const {
-		title,
-		originalTitle,
-		releaseDate,
-		mediaType,
-		posterPath,
-		queueStatus,
-		queueMessage
-	} = item
+	const { id, title, mediaType, posterPath, queueStatus, queueMessage } = item
 	const [released, setReleased] = useState(false)
 
 	useEffect(() => {
 		async function fetch() {
-			setReleased(
-				await isReleased(
-					title || originalTitle,
-					(releaseDate ?? []).slice(0, 4)
-				)
-			)
+			setReleased(await isReleased(id))
 		}
 		if (queueStatus === 'Not Yet Available' && mediaType === 'movie') fetch()
 	}, [])
@@ -40,11 +27,35 @@ const MediaItem = ({ item, onClick }) => {
 			/>
 			<p className="poster-label">
 				{queueStatus ?? queueMessage}
-				{queueStatus === 'Not Yet Available'
-					? released
-						? ' (Y)'
-						: ' (X)'
-					: null}
+				{queueStatus === 'Not Yet Available' && (
+					<>
+						{' '}
+						{/* Add space like a regular character */}
+						{released ? (
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="16" // Adjust the size as needed
+								height="16"
+								viewBox="0 0 24 24"
+								fill="green"
+								style={{ display: 'inline-block', verticalAlign: 'middle' }} // Inline display and alignment
+							>
+								<path d="M20.285 2l-11.285 11.285-5.285-5.285-3.715 3.715 9 9 15-15z" />
+							</svg>
+						) : (
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								viewBox="0 0 512 512"
+								width="16" // Adjust the size as needed
+								height="16"
+								fill="red"
+								style={{ display: 'inline-block', verticalAlign: 'middle' }} // Inline display and alignment
+							>
+								<path d="M367.2 412.5L99.5 144.8C77.1 176.1 64 214.5 64 256c0 106 86 192 192 192c41.5 0 79.9-13.1 111.2-35.5zm45.3-45.3C434.9 335.9 448 297.5 448 256c0-106-86-192-192-192c-41.5 0-79.9 13.1-111.2 35.5L412.5 367.2zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256z" />
+							</svg>
+						)}
+					</>
+				)}
 			</p>
 		</Poster>
 	)

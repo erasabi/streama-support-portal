@@ -1,17 +1,19 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useContext } from 'react'
 import styled from 'styled-components'
 import { isEmpty, debounce } from 'lodash'
 import { useDispatch, useSelector } from 'react-redux'
 import {
 	addMediaRequest,
 	searchMediaSuggestions,
-	checkDuplicateMediaRequest
+	checkDuplicateMediaRequest,
+	getMediaRequestUser
 } from '/src/api'
 import { useInput, useClickOutside, useRenderArray } from '/src/hooks'
 import { handleRequestSubmit } from '/src/redux'
-import { Searchbar, Dropdown } from '/src/styles'
+import { ModalContext, Searchbar, Dropdown } from '/src/styles'
 import { TMDB_ENDPOINT } from '/src/constants'
 import ImageNotFound from '/src/media/images/image-not-found.png'
+import UpdateExistingMedia from '../RequestedMediaList/components/UpdateExistingMedia.component'
 
 async function fetchSearchResults(value, callback) {
 	try {
@@ -29,6 +31,7 @@ const debouncedFetchSearchResults = debounce(fetchSearchResults, 500)
 function MediaSearchbar() {
 	const dispatch = useDispatch()
 	const state = useSelector((state) => state)
+	let { handleModal } = useContext(ModalContext)
 	const search = useInput('')
 	const selectedMediaExists = useInput(false)
 	const disableSearchBtn = useInput(true)
@@ -36,15 +39,19 @@ function MediaSearchbar() {
 	const closeDropdown = () => suggestions.clear()
 	const dropdownRef = useClickOutside(closeDropdown)
 
+	const resetSearchbar = () => {
+		search.setValue('')
+		disableSearchBtn.setValue(true)
+		selectedMediaExists.setValue(false)
+	}
+
 	const onRequest = async (message = '') => {
 		try {
 			await addMediaRequest({ ...state.value, queueStatus: message })
-			search.setValue('')
-			disableSearchBtn.setValue(true)
 		} catch (error) {
 			console.log(error)
 		}
-		selectedMediaExists.setValue(false)
+		resetSearchbar()
 		dispatch(handleRequestSubmit())
 	}
 
@@ -56,6 +63,40 @@ function MediaSearchbar() {
 		search.setValue(value)
 		disableSearchBtn.setValue(true)
 		selectedMediaExists.setValue(false)
+	}
+
+	const onUpdateExistingRequest = async (queueStatus) => {
+		const {
+			title,
+			name,
+			poster_path,
+			original_name,
+			original_title,
+			release_date,
+			first_air_date,
+			media_type
+		} = state.value
+
+		const data = {
+			...state.value,
+			title: title ?? name,
+			posterPath: poster_path,
+			createdAt: new Date().toUTCString(),
+			originalTitle: original_name ?? original_title,
+			releaseDate: release_date ?? first_air_date,
+			mediaType: media_type,
+			requestUser: await getMediaRequestUser()
+		}
+		handleModal(
+			<UpdateExistingMedia
+				{...data}
+				queueStatus={queueStatus}
+				handleRequestSubmit={() => {
+					resetSearchbar()
+					dispatch(handleRequestSubmit())
+				}}
+			/>
+		)
 	}
 
 	const onSelectSuggestedMedia = async (selectedMedia) => {
@@ -135,7 +176,7 @@ function MediaSearchbar() {
 				)}
 				{selectedMediaExists.value && (
 					<Searchbar.Button
-						onClick={() => onRequest('Request Update')}
+						onClick={() => onUpdateExistingRequest('Request Update')}
 						style={{ backgroundColor: '#40a140' }}
 					>
 						Request Update
@@ -143,7 +184,7 @@ function MediaSearchbar() {
 				)}
 				{selectedMediaExists.value && (
 					<Searchbar.Button
-						onClick={() => onRequest('Report Issue')}
+						onClick={() => onUpdateExistingRequest('Report Issue')}
 						style={{ backgroundColor: '#f35252' }}
 					>
 						Report Issue

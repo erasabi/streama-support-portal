@@ -3,9 +3,8 @@ import {
 	API_ENDPOINT,
 	API_REQUEST_CONFIG,
 	STREAMA_ENDPOINT,
-	MOVIEDB_ENDPOINT
+	MOVIEDB
 } from '../constants'
-import { isArray } from 'lodash'
 
 function getTorrentUrl(torrents = []) {
 	try {
@@ -40,41 +39,41 @@ function getTorrentUrl(torrents = []) {
 	}
 }
 
-function findMatch(movies = [], year) {
-	return movies.find((movie) => movie.year == year)
-}
-
-export async function getYTSLinks(title, year) {
+export async function getYTSLinks(tmdbId) {
 	try {
-		let movies = await axios
-			.get(`https://yts.mx/api/v2/list_movies.json?query_term=${title}`)
-			.then((res) => res.data.data.movies)
-		const movie = findMatch(movies, year)
-		const torrentUrl = getTorrentUrl(movie.torrents)
-		const { data: subtitleUrl } = await axios.get(
-			`${API_ENDPOINT}/proxy/subtitle-url/${movie?.imdb_code}`
-		)
-		return { torrent: torrentUrl, subtitle: subtitleUrl }
+		let imdb_id = await axios
+			.get(`${MOVIEDB.ENDPOINT.MOVIE}/${tmdbId}?api_key=${MOVIEDB.API_KEY}`)
+			.then((res) => res.data?.imdb_id)
+
+		let movie = await axios
+			.get(`https://yts.mx/api/v2/movie_details.json?imdb_id=${imdb_id}`)
+			.then((res) => res.data?.data?.movie)
+
+		if (movie.id !== 0) {
+			const torrentUrl = getTorrentUrl(movie.torrents)
+			const { data: subtitleUrl } = await axios.get(
+				`${API_ENDPOINT}/proxy/subtitle-url/${imdb_id}`
+			)
+			return { torrent: torrentUrl, subtitle: subtitleUrl, movie: movie }
+		}
+		return {}
 	} catch (error) {
 		console.log(error)
 	}
 }
 
-export async function isReleased(title, year) {
+export async function isReleased(tmdbId) {
 	let isReleased = false
 	try {
-		const { data } = await axios.get(
-			`https://yts.mx/api/v2/list_movies.json?query_term=${title}"`
-		)
-		const movies = data?.data?.movies
+		let imdb_id = await axios
+			.get(`${MOVIEDB.ENDPOINT.MOVIE}/${tmdbId}?api_key=${MOVIEDB.API_KEY}`)
+			.then((res) => res.data?.imdb_id)
 
-		if (isArray(movies)) {
-			movies.forEach((movie) => {
-				if (movie.year == year) {
-					isReleased = true
-				}
-			})
-		}
+		let movie = await axios
+			.get(`https://yts.mx/api/v2/movie_details.json?imdb_id=${imdb_id}`)
+			.then((res) => res.data?.data?.movie)
+
+		return movie.id === 0 ? false : true
 	} catch (error) {
 		console.log(error)
 	}
@@ -102,10 +101,12 @@ export async function getUser() {
 }
 
 export async function searchMediaSuggestions(searchValue) {
-	return await axios.get(MOVIEDB_ENDPOINT + searchValue)
+	return await axios.get(
+		`${MOVIEDB.ENDPOINT.MULTI}?api_key=${MOVIEDB.API_KEY}&language=en-US&include_adult=false&sort_by="vote_count.desc"&query=${searchValue}`
+	)
 }
 
-async function getMediaRequestUser() {
+export async function getMediaRequestUser() {
 	let user = 'Anonymous'
 
 	await axios

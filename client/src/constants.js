@@ -4,5 +4,10 @@ export const API_REQUEST_CONFIG = process.env.REACT_APP_API_REQUEST_CONFIG
 export const ADMIN_SECRETS = process.env.REACT_APP_ADMIN_SECRETS
 export const SUPERUSER_SECRETS = process.env.REACT_APP_SUPERUSER_SECRETS
 export const TMDB_ENDPOINT = 'https://image.tmdb.org/t/p/w1280/'
-export const MOVIEDB_ENDPOINT =
-	'https://api.themoviedb.org/3/search/multi?api_key=11cce9d83563a5188d7201b2514f7286&language=en-US&include_adult=false&sort_by="vote_count.desc"&query='
+export const MOVIEDB = {
+	API_KEY: '11cce9d83563a5188d7201b2514f7286',
+	ENDPOINT: {
+		MULTI: 'https://api.themoviedb.org/3/search/multi',
+		MOVIE: 'https://api.themoviedb.org/3/movie'
+	}
+}

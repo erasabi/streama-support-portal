@@ -2,7 +2,7 @@
 import { createStore, applyMiddleware } from 'redux'
 import thunk from 'redux-thunk'
 import axios from 'axios'
-import { API_ENDPOINT, API_REQUEST_CONFIG } from '../constants'
+import { API_ENDPOINT, API_REQUEST_CONFIG, MOVIEDB } from '../constants'
 import { getRequestedMedia } from '/src/api'
 
 // CREATE THE ACTION
@@ -14,8 +14,7 @@ export const handleSearchInput = (value) => {
 		if (value.length > 2) {
 			axios
 				.get(
-					'https://api.themoviedb.org/3/search/multi?api_key=11cce9d83563a5188d7201b2514f7286&language=en-US&include_adult=false&sort_by="vote_count.desc"&query=' +
-						value
+					`${MOVIEDB.ENDPOINT.MULTI}?api_key=${MOVIEDB.API_KEY}&language=en-US&include_adult=false&sort_by="vote_count.desc"&query=${value}`
 				)
 				.then((res) => {
 					dispatch({
