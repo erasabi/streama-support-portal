@@ -3,7 +3,7 @@ import {
 	API_ENDPOINT,
 	API_REQUEST_CONFIG,
 	STREAMA_ENDPOINT,
-	MOVIEDB_ENDPOINT
+	MOVIEDB
 } from '../constants'
 
 function getTorrentUrl(torrents = []) {
@@ -42,9 +42,7 @@ function getTorrentUrl(torrents = []) {
 export async function getYTSLinks(tmdbId) {
 	try {
 		let imdb_id = await axios
-			.get(
-				`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=11cce9d83563a5188d7201b2514f7286`
-			)
+			.get(`${MOVIEDB.ENDPOINT.MOVIE}/${tmdbId}?api_key=${MOVIEDB.API_KEY}`)
 			.then((res) => res.data?.imdb_id)
 
 		let movie = await axios
@@ -68,9 +66,7 @@ export async function isReleased(tmdbId) {
 	let isReleased = false
 	try {
 		let imdb_id = await axios
-			.get(
-				`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=11cce9d83563a5188d7201b2514f7286`
-			)
+			.get(`${MOVIEDB.ENDPOINT.MOVIE}/${tmdbId}?api_key=${MOVIEDB.API_KEY}`)
 			.then((res) => res.data?.imdb_id)
 
 		let movie = await axios
@@ -105,7 +101,9 @@ export async function getUser() {
 }
 
 export async function searchMediaSuggestions(searchValue) {
-	return await axios.get(MOVIEDB_ENDPOINT + searchValue)
+	return await axios.get(
+		`${MOVIEDB.ENDPOINT.MULTI}?api_key=${MOVIEDB.API_KEY}&language=en-US&include_adult=false&sort_by="vote_count.desc"&query=${searchValue}`
+	)
 }
 
 export async function getMediaRequestUser() {
