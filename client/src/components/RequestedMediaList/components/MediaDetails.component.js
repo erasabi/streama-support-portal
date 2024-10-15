@@ -20,9 +20,7 @@ export default function MediaDetails(props) {
 	const {
 		id,
 		handleRequestSubmit,
-		title,
-		originalTitle,
-		releaseDate,
+		mediaType,
 		queueStatus,
 		queueMessage,
 		requestUser,
@@ -41,6 +39,7 @@ export default function MediaDetails(props) {
 	const closeMessageDropdown = () => showQueueMessageDropdown.setValue(false)
 	const dropdownMessageRef = useClickOutside(closeMessageDropdown)
 	const [magnet, setMagnet] = useState()
+	const [movie, setMovie] = useState()
 	const [subtitle, setSubtitle] = useState()
 	const [isCopied, setCopied] = useState()
 
@@ -59,14 +58,20 @@ export default function MediaDetails(props) {
 	}
 
 	const handleCopy = async (type, value) => {
-		// need to wait because it's async and alert(synch) could interrupt it
-		await navigator.clipboard.writeText(value)
-		// Change the button text temporarily
-		setCopied(type)
-		// Reset the button text after 1 second (1000 milliseconds)
-		setTimeout(() => {
-			setCopied()
-		}, 2000)
+		if (!navigator.clipboard || !type || !value) {
+			console.error('Clipboard API is not available or missing type/value.')
+			return
+		}
+
+		try {
+			await navigator.clipboard.writeText(value)
+			setCopied(type)
+			setTimeout(() => {
+				setCopied(null)
+			}, 2000)
+		} catch (error) {
+			console.error('Failed to copy text: ', error)
+		}
 	}
 
 	Searchbar.StatusDropdown = useMemo(() => {
@@ -182,12 +187,12 @@ export default function MediaDetails(props) {
 
 	async function fetchMagnet() {
 		try {
-			const { torrent, subtitle } = await getYTSLinks(
-				title || originalTitle,
-				(releaseDate ?? []).slice(0, 4)
-			)
-			setMagnet(torrent)
-			setSubtitle(subtitle)
+			if (mediaType === 'movie') {
+				const { torrent, subtitle, movie } = await getYTSLinks(id)
+				setMagnet(torrent)
+				setSubtitle(subtitle)
+				setMovie(movie)
+			}
 		} catch (error) {
 			console.log(error)
 		}
@@ -202,14 +207,15 @@ export default function MediaDetails(props) {
 			<Card className="card">
 				<CardTitle text={props.title} />
 				<Card.Content className="card-content">
-					{((magnet && isUserMatch) || isAuth) && (
+					{(isAuth || isUserMatch) && magnet && (
 						<CardField label="Magnet URL">
 							<MagnetLinkBtn onClick={() => handleCopy('magnet', magnet)}>
 								{isCopied === 'magnet' ? 'Copied!' : 'Copy Magnet Link'}
 							</MagnetLinkBtn>
+							<span style={{ color: 'white' }}>{movie?.title}</span>
 						</CardField>
 					)}
-					{((subtitle && isUserMatch) || isAuth) && (
+					{(isAuth || isUserMatch) && subtitle && (
 						<CardField label="Subtitle URL">
 							<MagnetLinkBtn onClick={() => handleCopy('subtitle', subtitle)}>
 								{isCopied === 'subtitle' ? 'Copied!' : 'Copy Subtitle Link'}
@@ -285,7 +291,7 @@ export default function MediaDetails(props) {
 	)
 }
 
-const CardTitle = styled(CopyText)`
+export const CardTitle = styled(CopyText)`
 	display: flex;
 	justify-content: center;
 
@@ -309,7 +315,7 @@ const CardTitle = styled(CopyText)`
 	}
 `
 
-const CardField = styled(Card.Field)``
+export const CardField = styled(Card.Field)``
 
 const MagnetLinkBtn = styled(Button)`
 	width: 150px;
