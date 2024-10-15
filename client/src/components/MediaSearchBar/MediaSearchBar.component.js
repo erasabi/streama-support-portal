@@ -39,15 +39,19 @@ function MediaSearchbar() {
 	const closeDropdown = () => suggestions.clear()
 	const dropdownRef = useClickOutside(closeDropdown)
 
+	const resetSearchbar = () => {
+		search.setValue('')
+		disableSearchBtn.setValue(true)
+		selectedMediaExists.setValue(false)
+	}
+
 	const onRequest = async (message = '') => {
 		try {
 			await addMediaRequest({ ...state.value, queueStatus: message })
-			search.setValue('')
-			disableSearchBtn.setValue(true)
 		} catch (error) {
 			console.log(error)
 		}
-		selectedMediaExists.setValue(false)
+		resetSearchbar()
 		dispatch(handleRequestSubmit())
 	}
 
@@ -87,7 +91,10 @@ function MediaSearchbar() {
 			<UpdateExistingMedia
 				{...data}
 				queueStatus={queueStatus}
-				handleRequestSubmit={() => dispatch(handleRequestSubmit())}
+				handleRequestSubmit={() => {
+					resetSearchbar()
+					dispatch(handleRequestSubmit())
+				}}
 			/>
 		)
 	}
