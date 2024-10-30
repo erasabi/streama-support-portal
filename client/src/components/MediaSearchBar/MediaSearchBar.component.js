@@ -205,7 +205,7 @@ const Wrapper = styled.div`
 
 	// phones
 	@media only screen and (max-width: 600px) {
-		min-width: 200px;
+		min-width: 300px;
 	}
 	// tablets
 	@media only screen and (min-width: 600px) {
