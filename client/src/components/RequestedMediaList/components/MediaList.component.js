@@ -90,10 +90,13 @@ const Poster = styled.div`
 	justify-content: center;
 	position: relative;
 	width: 120px;
+	padding: 5px 0;
 
 	.poster-img {
 		cursor: pointer;
+		height: 180px;
 		max-width: 100%;
+		objectFit: 'cover';
 	}
 
 	.poster-label {	
