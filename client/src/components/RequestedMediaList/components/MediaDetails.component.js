@@ -225,7 +225,19 @@ export default function MediaDetails(props) {
 					<CardField label="Requested">{DaysAgo}</CardField>
 					{(isUserMatch || isAuth) && (
 						<CardField label="Requested By">
-							<Card.Text>{props.requestUser}</Card.Text>
+							<Card.Text>
+								<CopyText
+									text={props.requestUser}
+									copyValue={
+										!isEmpty(props.requestUser)
+											? `Requested by ${
+													props.requestUser.charAt(0).toUpperCase() +
+													props.requestUser.slice(1)
+											  }`
+											: props.requestUser
+									}
+								/>
+							</Card.Text>
 						</CardField>
 					)}
 					<CardField label="Released">

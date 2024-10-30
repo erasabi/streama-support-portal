@@ -3,7 +3,12 @@ import styled, { keyframes } from 'styled-components'
 import Icon from '../Icon'
 import { useToggle } from '../../hooks'
 
-export default function CopyText({ className, text = '', ...restProps }) {
+export default function CopyText({
+	className,
+	text = '',
+	copyValue = null,
+	...restProps
+}) {
 	const isCopied = useToggle(false)
 
 	const handleCopyText = (value) => {
@@ -26,7 +31,10 @@ export default function CopyText({ className, text = '', ...restProps }) {
 					<Path d="M10,35 L30,55 L60,10" />
 				</CheckmarkSVG>
 			) : (
-				<Icon className="icon" onClick={() => handleCopyText(text)}>
+				<Icon
+					className="icon"
+					onClick={() => handleCopyText(copyValue ?? text)}
+				>
 					<svg
 						viewBox="0 0 24 24"
 						fill="none"
@@ -88,7 +96,7 @@ const StyledCopyText = styled.div`
 	gap: 5px;
 
 	.text {
-		font-size: 20px;
+		font-size: inherit;
 		color: ${(props) => props.theme.palette.text.primary};
 	}
 
