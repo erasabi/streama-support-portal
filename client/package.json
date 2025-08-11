@@ -1,6 +1,6 @@
 {
 	"name": "streama-support-portal",
-	"version": "1.0.0",
+	"version": "1.0.4",
 	"description": "support portal for streama users",
 	"main": "index.js",
 	"comments": {
