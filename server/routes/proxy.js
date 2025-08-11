@@ -36,13 +36,20 @@ async function getYifySubtitleUrl(imdbCode) {
 			}
 		})
 
+		// Check if any English subtitles were found.
+		if (Object.keys(listEng).length === 0) {
+			console.log("No English subtitles found")
+			return null
+		}
+
 		// Find the top-rated English subtitle URL.
-		const topRated = Object.keys(listEng).reduce((a, b) =>
-			a > b ? listEng[a] : listEng[b]
+		const topRatedKey = Object.keys(listEng).reduce((a, b) =>
+			parseFloat(a) > parseFloat(b) ? a : b
 		)
+		const topRatedUrl = listEng[topRatedKey]
 
 		// Extract filename from the subtitle URL.
-		const filename = topRated.substring("/subtitles/".length)
+		const filename = topRatedUrl.substring("/subtitles/".length)
 
 		// Construct download URL for the subtitle.
 		const dwnUrl = "https://yifysubtitles.ch/subtitle/" + filename + ".zip"
@@ -58,6 +65,13 @@ router.get("/subtitle-url/:imdbCode", async function (req, res) {
 	try {
 		// Call getYifySubtitleUrl function to get subtitle URL.
 		const url = await getYifySubtitleUrl(req.params.imdbCode)
+
+		// Check if subtitle URL was found.
+		if (!url) {
+			return res
+				.status(404)
+				.send("No English subtitles found for this IMDB code")
+		}
 
 		// Send subtitle URL as response.
 		res.status(200).send(url)
