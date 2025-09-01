@@ -50,10 +50,26 @@ export async function getYTSLinks(tmdbId) {
 			.then((res) => res.data?.data?.movie)
 
 		if (movie.id !== 0) {
-			const torrentUrl = getTorrentUrl(movie.torrents)
-			const { data: subtitleUrl } = await axios.get(
-				`${API_ENDPOINT}/proxy/subtitle-url/${imdb_id}`
-			)
+			let torrentUrl = null
+			let subtitleUrl = null
+
+			// Try to get torrent URL, but don't fail if it errors
+			try {
+				torrentUrl = getTorrentUrl(movie.torrents)
+			} catch (error) {
+				console.log('Error getting torrent URL:', error)
+			}
+
+			// Try to get subtitle URL, but don't fail if it errors
+			try {
+				const { data } = await axios.get(
+					`${API_ENDPOINT}/proxy/subtitle-url/${imdb_id}`
+				)
+				subtitleUrl = data
+			} catch (error) {
+				console.log('Error getting subtitle URL:', error)
+			}
+
 			return { torrent: torrentUrl, subtitle: subtitleUrl, movie: movie }
 		}
 		return {}
