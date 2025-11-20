@@ -1,5 +1,5 @@
-# updating to node 16 or greater causes breaking error
-FROM node:16-alpine
+# Updated to node 20 to support File API and ReadableStream for axios/undici compatibility
+FROM node:20-alpine
 
 # create directory for app use
 RUN mkdir -p /opt/app-server

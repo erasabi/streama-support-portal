@@ -46,7 +46,9 @@ export async function getYTSLinks(tmdbId) {
 			.then((res) => res.data?.imdb_id)
 
 		let movie = await axios
-			.get(`https://yts.mx/api/v2/movie_details.json?imdb_id=${imdb_id}`)
+			.get(
+				`https://en.yts-official.org/api/v2/movie_details.json?imdb_id=${imdb_id}`
+			)
 			.then((res) => res.data?.data?.movie)
 
 		if (movie.id !== 0) {
@@ -86,7 +88,9 @@ export async function isReleased(tmdbId) {
 			.then((res) => res.data?.imdb_id)
 
 		let movie = await axios
-			.get(`https://yts.mx/api/v2/movie_details.json?imdb_id=${imdb_id}`)
+			.get(
+				`https://en.yts-official.org/api/v2/movie_details.json?imdb_id=${imdb_id}`
+			)
 			.then((res) => res.data?.data?.movie)
 
 		return movie.id === 0 ? false : true
