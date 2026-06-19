@@ -14,8 +14,8 @@ WORKDIR /opt/app-server
 ENV PATH /opt/app-server/node_modules/.bin:$PATH
 
 # install app-server dependencies
-COPY ./server/package.json ./
-RUN npm install --silent
+COPY ./server/package.json ./server/package-lock.json ./
+RUN npm ci --silent --omit=dev
 
 # add app-server and set permissions
 COPY ./server/ .
