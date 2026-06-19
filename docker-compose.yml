@@ -14,6 +14,7 @@ services:
       context: .
       dockerfile: ./server/Dockerfile
     environment:
+      NODE_ENV: "${NODE_ENV}"
       DB_SCHEMA: "${DB_SCHEMA}"
       DB_USER: "${DB_USER}"
       DB_PASSWORD: "${DB_PASSWORD}"
@@ -27,7 +28,14 @@ services:
     build:
       context: .
       dockerfile: ./client/Dockerfile
+      args:
+        NODE_ENV: "${NODE_ENV}"
+        STREAMA_ENDPOINT: "${STREAMA_ENDPOINT}"
+        API_ENDPOINT: "${API_ENDPOINT}"
+        ADMIN_SECRETS: "${ADMIN_SECRETS}"
+        SUPERUSER_SECRETS: "${SUPERUSER_SECRETS}"
     environment:
+      NODE_ENV: "${NODE_ENV}"
       STREAMA_ENDPOINT: "${STREAMA_ENDPOINT}"
       API_ENDPOINT: "${API_ENDPOINT}"
       ADMIN_SECRETS: "${ADMIN_SECRETS}"
