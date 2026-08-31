@@ -19,6 +19,21 @@ services:
       DB_USER: "${DB_USER}"
       DB_PASSWORD: "${DB_PASSWORD}"
       DB_HOST: "${DB_HOST}"
+      # Agent API tokens (rentify + sortify). Agent routes 401 until set.
+      PIPELINE_API_TOKEN: "${PIPELINE_API_TOKEN}"
+      SORTIFY_API_TOKEN: "${SORTIFY_API_TOKEN}"
+      # Streama identity used to gate admin/magnet access in production.
+      ADMIN_SECRETS: "${ADMIN_SECRETS}"
+      SUPERUSER_SECRETS: "${SUPERUSER_SECRETS}"
+      # Optional TMDB key for server-side magnet lookup (falls back to bundled).
+      TMDB_API_KEY: "${TMDB_API_KEY}"
+      # Streama library lookup (TMDB apiId). Missing login → Check Manually for released titles (unreleased stay Not Yet Available).
+      STREAMA_URL: "${STREAMA_URL}"
+      STREAMA_ENDPOINT: "${STREAMA_ENDPOINT}"
+      STREAMA_USERNAME: "${STREAMA_USERNAME}"
+      STREAMA_PASSWORD: "${STREAMA_PASSWORD}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - postgres
     ports:

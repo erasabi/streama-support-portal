@@ -5,7 +5,8 @@ import {
 	handleRequestedMedia,
 	handleRequestSubmit,
 	handleSearchInput,
-	handleSuggestedMediaSelected
+	handleSuggestedMediaSelected,
+	REQUESTED_MEDIA_POLL_MS
 } from './redux'
 import { default as Header } from './components/Header'
 import RequestedMediaList from './components/RequestedMediaList'
@@ -17,10 +18,22 @@ import ErrorBoundary from './components/ErrorBoundary'
 function App() {
 	const dispatch = useDispatch()
 
-	// On Mount: fetch & display already requested media
 	useEffect(() => {
 		dispatch(handleRequestedMedia())
-	}, [])
+
+		const refreshIfVisible = () => {
+			if (document.visibilityState === 'visible') {
+				dispatch(handleRequestedMedia())
+			}
+		}
+
+		const pollId = setInterval(refreshIfVisible, REQUESTED_MEDIA_POLL_MS)
+		document.addEventListener('visibilitychange', refreshIfVisible)
+		return () => {
+			clearInterval(pollId)
+			document.removeEventListener('visibilitychange', refreshIfVisible)
+		}
+	}, [dispatch])
 
 	return (
 		<UserProvider>

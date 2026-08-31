@@ -1,0 +1,21 @@
+---
+description: Redeploy this portal via ubuntu + sudo; Cursor sessions run as catalog.ssh_user without Docker.
+alwaysApply: true
+---
+
+# Host deploy (this VM)
+
+Cursor agent shells here run as **`catalog.ssh_user`**. That user is **not** in the `docker` group and **cannot** `sudo`. App code lives in `catalog.remote_root`. Production is **`portal.service`** (root `docker-compose up --build`).
+
+After any change that must go live (server, client, `.env`, migrations):
+
+1. Read gitignored secrets (never commit, never echo in chat):
+   - `.env` → `DEPLOY_USER` (default `ubuntu`) and `DEPLOY_SUDO_PASSWORD`
+   - fallback file `.cursor/deploy.secret` (first line = same password)
+2. Run `catalog.remote_root/scripts/deploy-with-systemd.sh`
+   - The script `su`s to `ubuntu` and `sudo systemctl restart portal.service`, then migrations.
+3. Verify: `GET /agent/v1/jobs` → **401**, `/requests/all` has current fields.
+
+Do **not** stop at “rebuild needs sudo.” Use the secret and the script. If the password is empty, ask the operator to set `DEPLOY_SUDO_PASSWORD` in `.env` and retry.
+
+Do **not** put the password in git-tracked files, rules, or docs.

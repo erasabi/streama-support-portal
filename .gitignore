@@ -204,6 +204,9 @@ typings/
 .env.test
 .env*.local
 
+# Host sudo password for VM deploys (Cursor agents run as catalog.ssh_user)
+.cursor/deploy.secret
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
@@ -267,3 +270,24 @@ dist
 ###########################################################
 # PROJECT
 .env*
+
+# Remote Fleet Operations — operator bindings (not for git)
+/00_docs/local/
+/ops/runbook.local.md
+/ops/operator.env
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Editor / local backups
+bak_*
+*.bak
+
+# Cursor ephemeral plans (rules/ may be committed for shared VM deploy guidance)
+.cursor/plans/
+.cursor/*.plan.md
+
+# Stray / out-of-scope local copies (not part of this repo)
+/tsconfig.json
+/docs/pipeline-docs/

@@ -3,5 +3,8 @@ export {
 	handleSearchInput,
 	handleRequestedMedia,
 	handleSuggestedMediaSelected,
-	handleRequestSubmit
+	handleRequestSubmit,
+	submitRequestSuccess,
+	refreshRequestedMediaSoon,
+	REQUESTED_MEDIA_POLL_MS
 } from './store'

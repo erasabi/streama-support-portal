@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux'
 import { ModalContext, Card } from '/src/styles'
 import RequestedMediaDetails from './components/MediaDetails.component'
 import MediaList from './components/MediaList.component'
-import { handleRequestSubmit } from '/src/redux'
+import { refreshRequestedMediaSoon } from '/src/redux'
 
 function RequestedMediaList() {
 	const dispatch = useDispatch()
@@ -16,7 +16,7 @@ function RequestedMediaList() {
 		handleModal(
 			<RequestedMediaDetails
 				{...data}
-				handleRequestSubmit={() => dispatch(handleRequestSubmit())}
+				handleRequestSubmit={() => dispatch(refreshRequestedMediaSoon())}
 			/>
 		)
 	}
@@ -34,7 +34,7 @@ function RequestedMediaList() {
 //  - this is how App Container can access dispatch for its reducers
 const mapDispatchToProps = (dispatch) => {
 	return {
-		handleRequestSubmit: () => dispatch(handleRequestSubmit())
+		handleRequestSubmit: () => dispatch(refreshRequestedMediaSoon())
 	}
 }
 

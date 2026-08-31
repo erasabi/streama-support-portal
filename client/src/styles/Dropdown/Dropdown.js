@@ -90,5 +90,11 @@ const Image = styled.img`
 `
 
 const Title = styled.p`
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex: 1;
+	min-width: 0;
 	overflow: hidden;
+	margin: 0;
 `

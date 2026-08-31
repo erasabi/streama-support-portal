@@ -1,0 +1,44 @@
+version: 1
+app_id: streama-support-portal
+environments:
+  - prod
+runtimes:
+  - systemd
+  - docker_compose
+release_planes:
+  - vm_compose
+workloads:
+  - name: portal.service
+    kind: service
+    unit: portal.service
+    scope: system
+    source: remote-inventory
+release:
+  method: rsync
+  include:
+    - '**'
+  exclude:
+    - .git
+    - node_modules
+    - .venv
+    - client/dist
+    - server/node_modules
+health:
+  type: command
+  command: test "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 http://127.0.0.1:3000/agent/v1/jobs)" = 401 && echo 'GET /agent/v1/jobs 401'
+  timeout_s: 15
+  note: agent API must 401 without a bearer token; 200 would mean auth is off
+expose:
+  - name: web
+    kind: reverse_proxy
+    upstream: http://127.0.0.1:3000/
+    proxy_host: forward
+secrets:
+  - name: catalog.remote_root/.env
+  - name: PIPELINE_API_TOKEN
+  - name: SORTIFY_API_TOKEN
+  - name: DEPLOY_SUDO_PASSWORD
+rollback:
+  method: previous_release
+  note: production is in-tree docker-compose via portal.service; no fleetctl current/releases layout yet
+source: remote-inventory

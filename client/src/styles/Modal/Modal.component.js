@@ -19,10 +19,20 @@ const Modal = () => {
 			}
 		}
 
+		function handleEscape(event) {
+			if (event.key === 'Escape') {
+				handleModal()
+			}
+		}
+
 		// if anywhere on document is clicked run function
 		document.addEventListener('mousedown', handleClickOutside)
-		// clean up event listener on useEffect completion
-		return () => document.removeEventListener('mousedown', handleClickOutside)
+		document.addEventListener('keydown', handleEscape)
+		// clean up event listeners on useEffect completion
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside)
+			document.removeEventListener('keydown', handleEscape)
+		}
 	}, [modal])
 
 	return modal
@@ -44,14 +54,28 @@ const Backdrop = styled.div`
 	height: 100vh;
 	width: 100vw;
 	justify-content: center;
+	overflow: hidden;
 	position: fixed;
 	top: 0;
 	z-index: 1000;
 `
 const Container = styled.div`
-	align-items: center;
+	align-items: stretch;
 	background-color: #222121;
 	border-radius: 25px;
-	padding: 25px;
-	width: 75vw;
+	display: flex;
+	flex-direction: column;
+	max-height: 90vh;
+	min-height: 0;
+	overflow: hidden;
+	padding: 20px;
+	width: min(92vw, 900px);
+
+	@media only screen and (min-width: 600px) {
+		padding: 25px;
+	}
+
+	> * {
+		min-height: 0;
+	}
 `

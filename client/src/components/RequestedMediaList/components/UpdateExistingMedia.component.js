@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
-import React, { useMemo, useContext } from 'react'
+import React, { useMemo, useContext, useState } from 'react'
 import { blue, red, grey } from '@mui/material/colors'
 import { isEmpty, isEqual, merge } from 'lodash'
 import { useInput, useToggle, useClickOutside } from '/src/hooks'
@@ -14,6 +14,8 @@ import {
 	CopyText
 } from '/src/styles'
 import { addMediaRequest } from '/src/api'
+import { submitRequestSuccess } from '/src/redux'
+import { useDispatch } from 'react-redux'
 import { isAdmin, isSuperuser, matchesUser } from '/src/auth'
 import { UserContext } from '/src/hooks/userContext.hook'
 import { CardField, CardTitle } from './MediaDetails.component'
@@ -22,30 +24,50 @@ export default function UpdateExistingMedia(props) {
 	const {
 		id,
 		mediaType,
-		handleRequestSubmit,
 		queueStatus,
 		queueMessage,
 		requestUser,
+		onSubmitted,
 		...restProps
 	} = props
+	const isTv = ['tv', 'tvshow', 'show'].includes(
+		String(mediaType || '').toLowerCase()
+	)
 	const { user = { username: 'Anonymous' } } = useContext(UserContext)
+	const dispatch = useDispatch()
+	const [isSubmitting, setIsSubmitting] = useState(false)
 	const isUserMatch = matchesUser(user, requestUser)
 	const isAuth = isAdmin(user) || isSuperuser(user)
 	let { handleModal } = useContext(ModalContext)
 	const status = useInput(queueStatus ?? '')
-	const message = useInput(queueMessage ?? '')
+	const message = useInput(
+		isTv && queueStatus === 'Request Update'
+			? 'Fetch New Seasons'
+			: (queueMessage ?? '')
+	)
 	const showQueueMessageDropdown = useToggle(false)
 	const closeMessageDropdown = () => showQueueMessageDropdown.setValue(false)
 	const dropdownMessageRef = useClickOutside(closeMessageDropdown)
 
 	const onSubmit = async () => {
-		const body = merge({}, props, {
-			queueStatus: status.value,
-			queueMessage: message.value
-		})
-		await addMediaRequest(body)
-		handleRequestSubmit()
-		handleModal()
+		if (isSubmitting) return
+		setIsSubmitting(true)
+		try {
+			const body = merge({}, props, {
+				queueStatus: status.value,
+				queueMessage: message.value
+			})
+			delete body.onSubmitted
+			delete body.handleRequestSubmit
+			const { data } = await addMediaRequest(body, user.username)
+			if (typeof onSubmitted === 'function') onSubmitted()
+			dispatch(submitRequestSuccess(data))
+			handleModal()
+		} catch (error) {
+			console.log(error)
+		} finally {
+			setIsSubmitting(false)
+		}
 	}
 
 	Searchbar.MessageDropdown = useMemo(() => {
@@ -77,7 +99,7 @@ export default function UpdateExistingMedia(props) {
 		return (
 			!isEmpty(options) && (
 				<Dropdown>
-					<Dropdown.Options ref={dropdownMessageRef} style={{ height: '50vh' }}>
+					<Dropdown.Options ref={dropdownMessageRef} style={{ maxHeight: '240px' }}>
 						{options.map((option) => (
 							<Dropdown.Option
 								key={option}
@@ -121,10 +143,10 @@ export default function UpdateExistingMedia(props) {
 					</Button>
 					<Button
 						className="update"
-						disabled={isEmpty(message.value)}
+						disabled={isEmpty(message.value) || isSubmitting}
 						onClick={onSubmit}
 					>
-						Submit
+						{isSubmitting ? 'Submitting…' : 'Submit'}
 					</Button>
 				</Button.Group>
 			</Card>

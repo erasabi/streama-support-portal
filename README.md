@@ -10,77 +10,87 @@ Media request support service for <a href="https://github.com/streamaserver/stre
 <!-- Top-Level App Screenshot -->
 ![alt text](./docs/media/media-search.png "Streama Support Portal")
 
-<!-- Deployed Site -->
-Check out the [deployed site(not yet available)](<url here>)
-
-<!-- TABLE OF CONTENTS -->
 ## Table of Contents
 - [Getting Started](#getting-started)
-  - [The Easiest Way(Docker Only)](#the-easiest-waydocker-only)
-  - [For Faster Development](#for-faster-development)
+  - [Docker](#docker)
+  - [Local development](#local-development)
+- [Documentation](#documentation)
 - [App Features](#app-features)
 - [License](#license)
 
 ## Getting Started
-At the root of your project duplicate the 'sample.env.*' and rename it '.env' (optionally edit any values you would like to change)
 
-### The Easiest Way(Docker Only)
-Start with Docker
+Copy a sample env file to `.env` at the project root and edit values as needed:
+
+```sh
+cp sample.env.local .env
+```
+
+Set `PIPELINE_API_TOKEN` and `SORTIFY_API_TOKEN` before agents can call `/agent/*`
+(see [docs/app.md](./docs/app.md#environment-variables)).
+
+### Docker
+
 ```sh
 docker-compose up
 # or when rebuilding
 docker-compose up --build
 ```
 
-### For Faster Development
-Run Database with Docker
+### Local development
+
 ```sh
 docker-compose -f docker-compose-db-only.yml up
 ```
 
-Setup + Run Server(Node) App
 ```sh
-# from project root
-cd ./server
-npm install
-# migrate database
-npm run migrate
-npm run start
+# server (:3000)
+cd ./server && npm install && npm run migrate && npm start
+
+# client (:8081)
+cd ./client && npm install && npm run start
 ```
 
-Setup + Run Client(React) App
-```sh
-# from project root
-cd ./client
-npm install
-npm run start
-```
+Use `DB_HOST=localhost` in `.env` when Postgres runs in Docker on port 5432.
+
+Deploy: `./scripts/deploy.sh`
+
+## Documentation
+
+| Doc | Description |
+|---|---|
+| [docs/README.md](./docs/README.md) | Doc index — portal + Prelanflix + Sortify relationship |
+| [docs/app.md](./docs/app.md) | App stack, env vars, deploy, API summary |
+| [docs/agent-integration-changes/.../overview.md](./docs/agent-integration-changes/00_docs/stream-support-portal-app/overview.md) | Pipeline contract and `/agent/v1` reference |
+
+Related repos (not in this tree):
+
+- Prelanflix pipeline — `~/.cursor/00_docs/` on the download box (`rentify`, encode, sync)
+- Sortify agent — `catalog.ssh_alias/agents/sortify-agent/docs/README.md` on the ElanFlix box
 
 ## App Features
-1. Search MovieDB for movies and shows
-2. Request movies and shows
 
-<!-- ## Special Thanks
-A quick thanks to sources for learning or sample code that helped us bring this app to life
->  -->
+1. Search TMDB for movies and shows
+2. Request movies and shows
+3. Automated pipeline integration: movie requests auto-fetch and persist a magnet
+   (hourly retry, auto **Not Yet Available** when unreleased and **Check Manually** when released but no source), the Prelanflix
+   pipeline claims jobs and reports download/encode/upload progress, and the
+   Sortify agent reports sorting/registration and dashboard highlighting — so a
+   request tracks all the way to "Available" with no manual media adds.
+4. Admin-only, append-only event history for every request (past and present).
+
+**Integration status:** portal and Sortify bridge are implemented; Prelanflix
+`portal-worker` is still pending (see [docs/README.md](./docs/README.md)).
 
 ## License
+
 This app is distributed under the terms of the [MIT license](./LICENSE).
 
 <p align="left"><a href="#readme-top">(Back to Top)</a></p>
 
 <!----------- MARKDOWN LINKS & IMAGES --------------->
-<!-- BADGE URL SYNTAX  -->
-<!--  - title info: [short-link name]: https://img.shields.io/static/v1?label=<left-side-text>&message=<right-side-text>&color=<color>&style=<style-type> -->
-<!--  - logo w/link: [short-link name]: https://img.shields.io/badge/<label>-<bg-color?style=<style-type>&logo=<name from simpleicon.org> -->
-<!-- RESOURCE LINKS -->
-<!--  - markdown links guide: https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-<!--  - logo names: https://simpleicons.org/ -->
-
-<!-- Top-Lvl Title -->
 [MIT-license-url]: https://img.shields.io/badge/license-MIT-blue.svg
 [NPM-url]: https://img.shields.io/static/v1?label=npm&message=v8.19.3&color=blue&style=flat
-<!-- Built With -->
 [React.js]: https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB
 [React-url]: https://reactjs.org/
 [Node.js]: https://img.shields.io/badge/Node.js-20232A?style=for-the-badge&logo=node.js

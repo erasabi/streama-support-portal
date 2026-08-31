@@ -47,7 +47,7 @@ export async function getYTSLinks(tmdbId) {
 
 		let movie = await axios
 			.get(
-				`https://en.yts-official.org/api/v2/movie_details.json?imdb_id=${imdb_id}`
+				` https://movies-api.accel.li/api/v2/movie_details.json?imdb_id=${imdb_id}`
 			)
 			.then((res) => res.data?.data?.movie)
 
@@ -89,7 +89,7 @@ export async function isReleased(tmdbId) {
 
 		let movie = await axios
 			.get(
-				`https://en.yts-official.org/api/v2/movie_details.json?imdb_id=${imdb_id}`
+				` https://movies-api.accel.li/api/v2/movie_details.json?imdb_id=${imdb_id}`
 			)
 			.then((res) => res.data?.data?.movie)
 
@@ -101,7 +101,82 @@ export async function isReleased(tmdbId) {
 }
 
 export async function getRequestedMedia() {
-	return await axios.get(`${API_ENDPOINT}/requests/all`, API_REQUEST_CONFIG)
+	const config =
+		API_REQUEST_CONFIG && typeof API_REQUEST_CONFIG === 'object'
+			? API_REQUEST_CONFIG
+			: {}
+	return await axios.get(`${API_ENDPOINT}/requests/all`, {
+		...config,
+		params: { ...(config.params || {}), _ts: Date.now() }
+	})
+}
+
+// Forward Streama identity so the server can gate magnet visibility + admin
+// actions. This is best-effort (headers are spoofable); locking the whole API
+// behind a Streama session is a documented follow-up.
+export function authHeaders(user) {
+	const headers = {}
+	if (user && user.username) headers['x-streama-user'] = user.username
+	if (user && Array.isArray(user.authorities)) {
+		headers['x-streama-authorities'] = user.authorities
+			.map((a) => a.displayName)
+			.join(',')
+	}
+	return { headers }
+}
+
+export async function getRequestDetails(id, user) {
+	const { data } = await axios.get(
+		`${API_ENDPOINT}/requests/${id}`,
+		authHeaders(user)
+	)
+	return data
+}
+
+export async function getRequestEvents(id, user) {
+	try {
+		const { data } = await axios.get(
+			`${API_ENDPOINT}/requests/${id}/events`,
+			authHeaders(user)
+		)
+		return data
+	} catch (error) {
+		console.warn('getRequestEvents failed:', error?.message)
+		return []
+	}
+}
+
+export async function attachRequestSource(id, body, user) {
+	return await axios.post(`${API_ENDPOINT}/requests/${id}/source`, body, {
+		...authHeaders(user)
+	})
+}
+
+// Replace the full source list for a request (add + remove in one call).
+export async function saveRequestSources(id, magnetUrls, user) {
+	return await axios.put(
+		`${API_ENDPOINT}/requests/${id}/sources`,
+		{ magnetUrls },
+		{ ...authHeaders(user) }
+	)
+}
+
+export async function approveRequestSeasons(id, seasons, user) {
+	const { data } = await axios.post(
+		`${API_ENDPOINT}/requests/${id}/seasons`,
+		{ seasons },
+		authHeaders(user)
+	)
+	return data
+}
+
+export async function getAdminHistory(params = {}, user) {
+	const query = new URLSearchParams(params).toString()
+	const { data } = await axios.get(
+		`${API_ENDPOINT}/admin/history${query ? `?${query}` : ''}`,
+		authHeaders(user)
+	)
+	return data
 }
 
 export async function getUser() {
@@ -151,11 +226,11 @@ export async function checkDuplicateMediaRequest(
 ) {
 	function findMatchingItem(title, releaseDate, jsonArray) {
 		for (const item of jsonArray) {
-			if (
-				((item.title === title || item.name === title) &&
-					item.release_date === releaseDate) ||
+			const sameTitle = item.title === title || item.name === title
+			const sameDate =
+				item.release_date === releaseDate ||
 				item.first_air_date === releaseDate
-			) {
+			if (sameTitle && sameDate) {
 				return true
 			}
 		}
@@ -182,35 +257,34 @@ export async function checkDuplicateMediaRequest(
 		})
 }
 
-export async function addMediaRequest(body = {}) {
-	try {
-		const {
-			title,
-			name,
-			poster_path,
-			original_name,
-			original_title,
-			release_date,
-			first_air_date,
-			media_type
-		} = body
+export async function addMediaRequest(body = {}, requestUser) {
+	const {
+		title,
+		name,
+		poster_path,
+		original_name,
+		original_title,
+		release_date,
+		first_air_date,
+		media_type
+	} = body
 
-		body = {
-			...body,
-			title: title ?? name,
-			posterPath: poster_path,
-			createdAt: new Date().toUTCString(),
-			originalTitle: original_name ?? original_title,
-			releaseDate: release_date ?? first_air_date,
-			mediaType: media_type,
-			requestUser: await getMediaRequestUser()
-		}
-
-		return await axios.put(`${API_ENDPOINT}/requests`, body, API_REQUEST_CONFIG)
-	} catch (error) {
-		console.log(error)
-		return error
+	const payload = {
+		...body,
+		id: body.id != null ? String(body.id) : body.id,
+		title: title ?? name,
+		posterPath: poster_path || body.posterPath,
+		createdAt: new Date().toUTCString(),
+		originalTitle: original_name ?? original_title ?? body.originalTitle,
+		releaseDate: release_date ?? first_air_date ?? body.releaseDate,
+		mediaType: media_type || body.mediaType,
+		requestUser:
+			requestUser != null && requestUser !== ''
+				? requestUser
+				: await getMediaRequestUser()
 	}
+
+	return await axios.put(`${API_ENDPOINT}/requests`, payload, API_REQUEST_CONFIG)
 }
 
 export async function deleteMediaRequest(id, handleRequestSubmit) {
@@ -218,7 +292,7 @@ export async function deleteMediaRequest(id, handleRequestSubmit) {
 		return await axios
 			.delete(`${API_ENDPOINT}/requests/${id}`, API_REQUEST_CONFIG)
 			.then(() => {
-				handleRequestSubmit()
+				if (typeof handleRequestSubmit === 'function') handleRequestSubmit()
 			})
 	} catch (error) {
 		console.log(error)
@@ -245,7 +319,9 @@ export async function updateMediaRequest(body) {
 
 		return await axios
 			.put(`${API_ENDPOINT}/requests/${id}`, body, API_REQUEST_CONFIG)
-			.then(() => handleRequestSubmit())
+			.then(() => {
+				if (typeof handleRequestSubmit === 'function') handleRequestSubmit()
+			})
 	} catch (error) {
 		console.log(error)
 		return error

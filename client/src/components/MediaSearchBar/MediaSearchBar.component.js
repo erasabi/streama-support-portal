@@ -1,15 +1,15 @@
-import React, { useMemo, useContext } from 'react'
+import React, { useMemo, useContext, useState } from 'react'
 import styled from 'styled-components'
 import { isEmpty, debounce } from 'lodash'
 import { useDispatch, useSelector } from 'react-redux'
 import {
 	addMediaRequest,
 	searchMediaSuggestions,
-	checkDuplicateMediaRequest,
-	getMediaRequestUser
+	checkDuplicateMediaRequest
 } from '/src/api'
 import { useInput, useClickOutside, useRenderArray } from '/src/hooks'
-import { handleRequestSubmit } from '/src/redux'
+import { submitRequestSuccess } from '/src/redux'
+import { UserContext } from '/src/hooks/userContext.hook'
 import { ModalContext, Searchbar, Dropdown } from '/src/styles'
 import { TMDB_ENDPOINT } from '/src/constants'
 import ImageNotFound from '/src/media/images/image-not-found.png'
@@ -31,6 +31,8 @@ const debouncedFetchSearchResults = debounce(fetchSearchResults, 500)
 function MediaSearchbar() {
 	const dispatch = useDispatch()
 	const state = useSelector((state) => state)
+	const { user } = useContext(UserContext)
+	const [isSubmitting, setIsSubmitting] = useState(false)
 	let { handleModal } = useContext(ModalContext)
 	const search = useInput('')
 	const selectedMediaExists = useInput(false)
@@ -46,13 +48,21 @@ function MediaSearchbar() {
 	}
 
 	const onRequest = async (message = '') => {
+		if (isSubmitting || disableSearchBtn.value) return
+		setIsSubmitting(true)
 		try {
-			await addMediaRequest({ ...state.value, queueStatus: message })
+			const requestUser = user?.username || 'Anonymous'
+			const { data } = await addMediaRequest(
+				{ ...state.value, queueStatus: message },
+				requestUser
+			)
+			resetSearchbar()
+			dispatch(submitRequestSuccess(data))
 		} catch (error) {
 			console.log(error)
+		} finally {
+			setIsSubmitting(false)
 		}
-		resetSearchbar()
-		dispatch(handleRequestSubmit())
 	}
 
 	const onChange = (value) => {
@@ -85,16 +95,13 @@ function MediaSearchbar() {
 			originalTitle: original_name ?? original_title,
 			releaseDate: release_date ?? first_air_date,
 			mediaType: media_type,
-			requestUser: await getMediaRequestUser()
+			requestUser: user?.username || 'Anonymous'
 		}
 		handleModal(
 			<UpdateExistingMedia
 				{...data}
 				queueStatus={queueStatus}
-				handleRequestSubmit={() => {
-					resetSearchbar()
-					dispatch(handleRequestSubmit())
-				}}
+				onSubmitted={resetSearchbar}
 			/>
 		)
 	}
@@ -139,11 +146,15 @@ function MediaSearchbar() {
 									}
 								/>
 								<Dropdown.Title>
-									{result.title ? result.title : result.name} (
-									{result.release_date
-										? parseInt(result.release_date)
-										: parseInt(result.first_air_date)}
-									)
+									<span>
+										{result.title ? result.title : result.name} (
+										{result.release_date
+											? parseInt(result.release_date)
+											: parseInt(result.first_air_date)}
+										)
+									</span>
+									{result.media_type === 'movie' && <MovieProjectorIcon />}
+									{result.media_type === 'tv' && <AntennaTvIcon />}
 								</Dropdown.Title>
 							</Dropdown.Option>
 						))}
@@ -153,29 +164,36 @@ function MediaSearchbar() {
 		)
 	}, [suggestions.value])
 
+	const requestBusy = isSubmitting
+
 	return (
 		<Wrapper>
-			<Searchbar>
+			<Searchbar aria-busy={requestBusy}>
 				<Searchbar.TextInput
 					placeholder="Search by Movie or Show"
-					value={
-						selectedMediaExists.value
-							? search.value + ' (Already Available)'
-							: search.value
-					}
+					disabled={requestBusy}
+					value={search.value}
 					onChange={(e) => onChange(e.target.value)}
-					onFocus={(e) => onChange(e.target.value)}
+					onFocus={() => {
+						if (search.value.length > 2) {
+							debouncedFetchSearchResults(
+								search.value,
+								suggestions.setValue
+							)
+						}
+					}}
 				/>
 				{!selectedMediaExists.value && (
 					<Searchbar.Button
-						disabled={disableSearchBtn.value}
+						disabled={disableSearchBtn.value || requestBusy}
 						onClick={() => onRequest('')}
 					>
-						Request
+						{requestBusy ? 'Requesting…' : 'Request'}
 					</Searchbar.Button>
 				)}
 				{selectedMediaExists.value && (
 					<Searchbar.Button
+						disabled={requestBusy}
 						onClick={() => onUpdateExistingRequest('Request Update')}
 						style={{ backgroundColor: '#40a140' }}
 					>
@@ -184,6 +202,7 @@ function MediaSearchbar() {
 				)}
 				{selectedMediaExists.value && (
 					<Searchbar.Button
+						disabled={requestBusy}
 						onClick={() => onUpdateExistingRequest('Report Issue')}
 						style={{ backgroundColor: '#f35252' }}
 					>
@@ -191,12 +210,132 @@ function MediaSearchbar() {
 					</Searchbar.Button>
 				)}
 			</Searchbar>
+			{selectedMediaExists.value && (
+				<AlreadyHint>Already in the library</AlreadyHint>
+			)}
 			{MemoizedSuggestedMedia}
 		</Wrapper>
 	)
 }
 
 export default MediaSearchbar
+
+function MovieProjectorIcon() {
+	return (
+		<TypeIcon title="Movie" aria-label="Movie">
+			<svg viewBox="0 0 24 24" aria-hidden="true">
+				<path
+					fill="currentColor"
+					fillRule="evenodd"
+					d="M7.4 2a4.3 4.3 0 1 0 0 8.6A4.3 4.3 0 0 0 7.4 2zm0 2.7a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2z"
+				/>
+				<path
+					fill="currentColor"
+					fillRule="evenodd"
+					d="M15.4 3.1a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2zm0 2.3a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6z"
+				/>
+				<rect
+					x="3.1"
+					y="10.4"
+					width="13.4"
+					height="7.3"
+					rx="1.3"
+					fill="currentColor"
+				/>
+				<rect
+					x="16.2"
+					y="12.2"
+					width="3.3"
+					height="4.2"
+					rx="0.55"
+					fill="currentColor"
+				/>
+				<circle cx="21.1" cy="14.3" r="2.05" fill="currentColor" />
+				<rect
+					x="6.1"
+					y="17.4"
+					width="1.85"
+					height="4.4"
+					rx="0.4"
+					fill="currentColor"
+				/>
+				<rect
+					x="13.2"
+					y="17.4"
+					width="1.85"
+					height="4.4"
+					rx="0.4"
+					fill="currentColor"
+				/>
+			</svg>
+		</TypeIcon>
+	)
+}
+
+function AntennaTvIcon() {
+	return (
+		<TypeIcon title="TV show" aria-label="TV show">
+			<svg viewBox="0 0 24 24" aria-hidden="true">
+				<path
+					d="M12 8.1L4.8 1.6M12 8.1l7.2-6.5"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="1.7"
+					strokeLinecap="round"
+				/>
+				<circle cx="4.8" cy="1.6" r="1.15" fill="currentColor" />
+				<circle cx="19.2" cy="1.6" r="1.15" fill="currentColor" />
+				<path
+					fill="currentColor"
+					fillRule="evenodd"
+					d="M3.1 8.2h17.8c1.05 0 1.9.85 1.9 1.9v9.1c0 1.05-.85 1.9-1.9 1.9H3.1c-1.05 0-1.9-.85-1.9-1.9v-9.1c0-1.05.85-1.9 1.9-1.9zm2.5 3h10.6c.45 0 .8.35.8.8v5.5c0 .45-.35.8-.8.8H5.6c-.45 0-.8-.35-.8-.8v-5.5c0-.45.35-.8.8-.8z"
+				/>
+				<rect
+					x="5.6"
+					y="21.15"
+					width="3.2"
+					height="1.55"
+					rx="0.4"
+					fill="currentColor"
+				/>
+				<rect
+					x="15.2"
+					y="21.15"
+					width="3.2"
+					height="1.55"
+					rx="0.4"
+					fill="currentColor"
+				/>
+			</svg>
+		</TypeIcon>
+	)
+}
+
+const TypeIcon = styled.span`
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	opacity: 0.95;
+	overflow: visible;
+	line-height: 0;
+
+	svg {
+		display: block;
+		width: 32px;
+		height: 32px;
+		overflow: visible;
+	}
+`
+
+const AlreadyHint = styled.p`
+	color: #9ccc9c;
+	font-size: 13px;
+	margin: 6px 0 0;
+	text-align: center;
+`
 
 const Wrapper = styled.div`
 	display: flex;
