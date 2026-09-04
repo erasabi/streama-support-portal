@@ -502,7 +502,6 @@ async function runMagnetLookup(request, deps = {}) {
 	}
 	if (lib.status === "error" || lib.status === "unconfigured") {
 		await markLibraryUncertain(request, lib.status)
-		return request.magnetLookupStatus || "pending"
 	}
 
 	const result = await lookupMovieMagnet(request.id)
