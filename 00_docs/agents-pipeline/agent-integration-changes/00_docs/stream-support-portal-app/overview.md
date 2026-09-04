@@ -16,7 +16,7 @@ Companion docs describe each worker:
 
 Ready-to-paste Cursor agent prompts (copy everything below the `---` in each file):
 
-- [prompt-rentify-portal-worker.md](prompt-rentify-portal-worker.md) — implement on Prelanflix
+- [prompt-rentify-portal-worker.md](prompt-rentify-portal-worker.md) — historical; worker is **Done** on Prelanflix
 - [prompt-sortify-portal-bridge.md](prompt-sortify-portal-bridge.md) — reference on ElanFlix (bridge already shipped)
 
 ## Implementation status
@@ -25,10 +25,9 @@ Ready-to-paste Cursor agent prompts (copy everything below the `---` in each fil
 |---|---|
 | Portal server + client (`/agent/*`, jobs, poller, UI) | **Done** (this repo) |
 | Sortify `portal_bridge` + dashboard highlights | **Done** — `catalog.ssh_alias/agents/sortify-agent/docs/README.md` |
-| Prelanflix `portal-worker` (poll, claim, rentify progress) | **Not done** — spec in [rentify-pipeline-changes.md](rentify-pipeline-changes.md) |
+| Prelanflix `portal-worker` (poll, claim, rentify / piratify progress) | **Done** — ops in Prelanflix `00_docs/portal-worker.md` |
 
-Prelanflix pipeline mechanics (without portal worker): `~/.cursor/00_docs/` on the
-download box (`README.md`, `torrent-download.md`, `encoding.md`, `remote-sync.md`).
+Prelanflix pipeline mechanics: `00_docs/` on the download box (`README.md`, `torrent-download.md`, `encoding.md`, `remote-sync.md`, `portal-worker.md`).
 
 Canonical doc home (portal repo): `streama-support-portal/docs/README.md`.
 
@@ -37,21 +36,25 @@ Canonical doc home (portal repo): `streama-support-portal/docs/README.md`.
 ```
 user request (portal)
    │  movie: portal looks up magnet (TMDB → YTS mirror), stores it, retries hourly
-   │  tv:    empty sourceUrl job with `seasons` (first+latest if new; missing
-   │         latest auto + in-between gaps held for admin on Fetch New Seasons).
-   │         Seasons that already have any Streama video are not re-queued
-   │         (incomplete ones wait for admin approval). File `{id}` stubs count.
+   │  tv:    empty sourceUrl job with episode-grain `missing[]` (`S01E04`, …)
+   │         from Streama vs TVMaze. Seasons that already have every aired
+   │         episode in Streama are not re-queued. Incomplete seasons queue
+   │         only the absent episode codes. File `{id}` stubs count.
    │         Streama errors / missing config fail closed (Check Manually) for
    │         new released titles, never treated as a new show. Unreleased titles
-   │         stay Not Yet Available. Fetch New Seasons on an already-Available
-   │         show does not demote the badge if Streama is unreachable.
-   │         Jobs include `presentSeasons`; the worker will not re-add those.
-   │         portal-worker runs piratify.
+   │         stay Not Yet Available. Fetch New Seasons / Request Update plans
+   │         in the background. New TV requests (not in Streama) still queue
+   │         first + latest seasons (all aired episodes in those seasons).
+   │         Empty `missing[]` does not create a job and does not default to S01
+   │         (planner bug if it appears on a payload). `seasons` stays on the
+   │         job for legacy workers. New workers fetch `missing[]` and do **not**
+   │         subtract `presentSeasons`. portal-worker runs piratify on Prelanflix.
    │         Admin-attached magnet/URL still uses rentify.
    ▼
-PipelineJob (claimStatus=ready)  ← rentify worker polls GET /agent/v1/jobs?status=ready
+PipelineJob (claimStatus=ready)  ← worker polls GET /agent/v1/jobs?status=ready
    │  claim → rentify add -f <folderName> [-s subtitleUrl] <sourceUrl>
-   │       or piratify add -f <folderName> --seasons N,M <title>  (TV, no sourceUrl)
+   │       or piratify add -f <folder> --episodes csv --year Y title
+   │          (TV, no sourceUrl, missing[] present; legacy: --seasons)
    ▼
 download → encode → scp to 00_PRE-SORT   (rentify posts progress back)
    ▼
@@ -104,6 +107,7 @@ report `stage` values from this set:
 | `pending_approval` | Adding to library (optional; hidden from history) | sortify; not required |
 | `highlighted` / `available` | Available | sortify (after dashboard highlight) |
 | `failed` | Failed | any agent |
+| `paused` | Paused | rentify (disk below Prelanflix low watermark; job stays `ready`) |
 
 Portal-internal stages you do **not** post: `requested`, `looking_up_magnet`,
 `not_yet_available`, `needs_manual_check`, `season_approval`, `magnet_ready`, `claimed`.
@@ -115,9 +119,14 @@ become **Check Manually**.
 Rules the portal enforces:
 
 - Progress never regresses (a late `downloading` after `pending_approval` is
-  ignored), except `failed` (always accepted) and recovery out of `failed`.
+  ignored), except `failed` and `paused` (always accepted) and recovery out of
+  those stages (`paused` recovers to `claimed` / `downloading` / `magnet_ready`).
   Repeated posts of the same stage are stored on the job but **not** duplicated
-  in history.
+  in history. The portal does **not** measure disk. `paused` keeps
+  `claimStatus=ready`, does not start a lease, and is not `in_progress`.
+  After heartbeats stop, the portal fails a stall: **6h** in `downloading`
+  (`LEASE_STUCK_DOWNLOAD_MS`) and **2h** in encoding/sync/sortify stages
+  (`LEASE_STUCK_ENCODE_MS`).
 - An admin status override (`Unavailable`, `Rolling Episodes`,
   `Complete Collection`, `Request Update`, `Report Issue`) wins over derived
   progress for display, but events are still recorded. **Archived** (`archivedAt`)
@@ -144,8 +153,9 @@ All requests need the bearer token.
 
 | Method | Path | Body / Query | Returns |
 |---|---|---|---|
-| GET | `/agent/v1/jobs?status=ready` | — | `[{ jobId, requestId, mediaType, folderName, sourceUrl, subtitleUrl, title, requestUser, seasons, presentSeasons, allowPresentSeasons }]` |
-| POST | `/agent/v1/jobs/:id/claim` | `{ claimedBy?, leaseMs? }` | `{ jobId, requestId, folderName, sourceUrl, subtitleUrl, mediaType, seasons, presentSeasons, allowPresentSeasons, leaseUntil }` or 409 |
+| GET | `/agent/v1/jobs?status=ready` | — | `[{ jobId, requestId, mediaType, folderName, sourceUrl, subtitleUrl, title, requestUser, seasons, missing, presentSeasons, allowPresentSeasons, stage, infoHash, claimStatus, claimedBy, ledger }]` |
+| GET | `/agent/v1/jobs?status=claimed\|in_progress&claimedBy=` | — | Same shape. Worker resumes in-flight jobs into `portal-jobs.json`. Disk-paused jobs stay `ready`. |
+| POST | `/agent/v1/jobs/:id/claim` | `{ claimedBy?, leaseMs? }` | `{ jobId, requestId, folderName, sourceUrl, subtitleUrl, mediaType, seasons, missing, presentSeasons, allowPresentSeasons, leaseUntil, ledger }` or 409 |
 | POST | `/agent/v1/jobs/:id/heartbeat` | `{ leaseMs? }` | `{ jobId, leaseUntil }` |
 | POST | `/agent/v1/jobs/:id/progress` | `{ stage, progressPct?, etaSeconds?, detail?, infoHash?, folderName?, artifacts? }` | `{ jobId, stage }` |
 | POST | `/agent/v1/jobs/:id/release` | `{ reason? }` | `{ jobId, claimStatus }` |
@@ -160,7 +170,13 @@ of guessing — no request row is invented.
 ## Portal-side data (for reference)
 
 - `PipelineJob`: `claimStatus` = `ready | claimed | in_progress | completed | failed | cancelled`,
-  plus `leaseUntil` (crash-safe claim), `stage`, `progressPct`, `etaSeconds`, `detail`.
+  plus `leaseUntil` (crash-safe claim), `stage`, `progressPct`, `etaSeconds`, `detail`,
+  and JSONB `ledger` (`infoHash`, leftover episode codes in `ledger.missing`
+  via `detail.leftoverMissing`, `paths` download/encode/upload name lists that
+  never shrink, `attempts`, `lastError`). Merged on progress; returned on GET
+  `/agent/v1/jobs` and claim. The worker posts `leftoverMissing`; it does not
+  drive adds from `ledger`. A disk janitor that scans leftover files vs ledger
+  is **not** implemented.
 - `RequestEvent`: append-only history (`actor`, `type`, `payload`, `createdAt`).
 - `Request`: `magnetLookupStatus` = `pending | found | not_found | not_applicable | error | stopped`,
   `magnetUrl` / `magnetUrls`, `pipelineStage`, `pipelineArtifacts` (unioned

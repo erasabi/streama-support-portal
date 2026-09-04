@@ -10,6 +10,7 @@ const {
 	librarySeasonsFromShow,
 	libraryEpisodeCodesFromShow,
 	completeSeasonsFromAired,
+	missingEpisodeCodes,
 	resolveTvSeasons,
 	planTvSeasons,
 } = require("./tvSeasons")
@@ -275,6 +276,7 @@ describe("resolveTvSeasons", () => {
 		expect(plan.present).toEqual([1])
 		expect(plan.auto).toEqual([2])
 		expect(plan.pending).toEqual([1])
+		expect(plan.missing).toEqual(["S02E01"])
 		expect(plan.streamaMediaId).toBe(1720)
 	})
 
@@ -313,6 +315,126 @@ describe("resolveTvSeasons", () => {
 		expect(plan.present).toEqual([1])
 		expect(plan.auto).toEqual([1, 2])
 		expect(plan.pending).toEqual([])
+		expect(plan.missing).toEqual(["S01E10", "S02E01"])
+	})
+
+	test("incomplete season missing[] is only absent episode codes", async () => {
+		const fetchImpl = async (url) => {
+			if (String(url).startsWith("https://api.tvmaze.com/lookup")) {
+				return jsonRes({ id: 99 })
+			}
+			if (String(url).includes("/episodes")) {
+				return jsonRes([
+					{ season: 1, number: 1, airstamp: "2017-02-07T00:00:00Z" },
+					{ season: 1, number: 2, airstamp: "2017-02-14T00:00:00Z" },
+					{ season: 1, number: 3, airstamp: "2017-02-21T00:00:00Z" },
+					{ season: 1, number: 4, airstamp: "2017-02-28T00:00:00Z" },
+				])
+			}
+			throw new Error(`unexpected ${url}`)
+		}
+		const show = {
+			id: 1,
+			episodes: [
+				{
+					season_number: 1,
+					episode_number: 1,
+					files: [{ originalFilename: "s01e01.mkv", contentType: "video/mp4" }],
+				},
+				{
+					season_number: 1,
+					episode_number: 2,
+					files: [{ originalFilename: "s01e02.mkv", contentType: "video/mp4" }],
+				},
+				{
+					season_number: 1,
+					episode_number: 3,
+					files: [{ originalFilename: "s01e03.mkv", contentType: "video/mp4" }],
+				},
+			],
+		}
+		const plan = await planTvSeasons(
+			{ id: "1", title: "Show", mediaType: "tv" },
+			{
+				fetchImpl,
+				fetchMissing: true,
+				libraryLookup: { status: "found", show, streamaId: 1 },
+			}
+		)
+		expect(plan.auto).toEqual([1])
+		expect(plan.missing).toEqual(["S01E04"])
+		expect(plan.missing).not.toEqual(["S01E01", "S01E02", "S01E03", "S01E04"])
+	})
+
+	test("new show bookends: missing is all aired episodes in those seasons", async () => {
+		const fetchImpl = async (url) => {
+			if (String(url).startsWith("https://api.tvmaze.com/lookup")) {
+				return jsonRes({ id: 99 })
+			}
+			if (String(url).includes("/episodes")) {
+				return jsonRes([
+					{ season: 1, number: 1, airstamp: "2020-01-01T00:00:00Z" },
+					{ season: 1, number: 2, airstamp: "2020-01-08T00:00:00Z" },
+					{ season: 2, number: 1, airstamp: "2021-01-01T00:00:00Z" },
+					{ season: 3, number: 1, airstamp: "2022-01-01T00:00:00Z" },
+					{ season: 4, number: 1, airstamp: "2023-01-01T00:00:00Z" },
+					{ season: 4, number: 2, airstamp: "2023-01-08T00:00:00Z" },
+				])
+			}
+			throw new Error(`unexpected ${url}`)
+		}
+		const plan = await planTvSeasons(
+			{ id: "603", title: "Widows Bay", mediaType: "tv" },
+			{
+				fetchImpl,
+				libraryLookup: { status: "missing" },
+			}
+		)
+		expect(plan.auto).toEqual([1, 4])
+		expect(plan.missing).toEqual(["S01E01", "S01E02", "S04E01", "S04E02"])
+	})
+
+	test("does not default to season 1 when TVMaze and library yield nothing", async () => {
+		const fetchImpl = async (url) => {
+			if (String(url).startsWith("https://api.tvmaze.com/lookup")) {
+				return jsonRes({ id: 99 })
+			}
+			if (String(url).includes("/episodes")) {
+				return jsonRes([])
+			}
+			throw new Error(`unexpected ${url}`)
+		}
+		const plan = await planTvSeasons(
+			{ id: "603", title: "Unknown Show", mediaType: "tv" },
+			{
+				fetchImpl,
+				libraryLookup: { status: "missing" },
+			}
+		)
+		expect(plan.auto).toEqual([])
+		expect(plan.missing).toEqual([])
+		expect(plan.libraryStatus).toBe("missing")
+	})
+
+	test("empty missing when auto seasons have no numbered aired episodes", async () => {
+		const fetchImpl = async (url) => {
+			if (String(url).startsWith("https://api.tvmaze.com/lookup")) {
+				return jsonRes({ id: 99 })
+			}
+			if (String(url).includes("/episodes")) {
+				return jsonRes([{ season: 1, airstamp: "2020-01-01T00:00:00Z" }])
+			}
+			throw new Error(`unexpected ${url}`)
+		}
+		const plan = await planTvSeasons(
+			{ id: "603", title: "Show", mediaType: "tv" },
+			{
+				fetchImpl,
+				libraryLookup: { status: "missing" },
+			}
+		)
+		expect(plan.auto).toEqual([1])
+		expect(plan.missing).toEqual([])
 	})
 })
 
@@ -374,5 +496,32 @@ describe("bookendSeasons / classifySeasonPlan", () => {
 			auto: [],
 			pending: [],
 		})
+	})
+})
+
+describe("missingEpisodeCodes", () => {
+	test("subtracts library codes within the planned seasons only", () => {
+		const aired = [
+			{ season: 1, number: 1 },
+			{ season: 1, number: 4 },
+			{ season: 2, number: 1 },
+			{ season: 3, number: 2 },
+		]
+		expect(
+			missingEpisodeCodes(aired, [1, 3], new Set(["S01E01"]))
+		).toEqual(["S01E04", "S03E02"])
+	})
+
+	test("empty when every aired episode in those seasons is present", () => {
+		expect(
+			missingEpisodeCodes(
+				[
+					{ season: 1, number: 1 },
+					{ season: 1, number: 2 },
+				],
+				[1],
+				new Set(["S01E01", "S01E02"])
+			)
+		).toEqual([])
 	})
 })

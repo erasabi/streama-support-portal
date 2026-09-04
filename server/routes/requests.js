@@ -10,10 +10,12 @@ const {
 	approveTvSeasons,
 	mergeMagnetUrls,
 } = require("../services/requestPipeline")
+const jobs = require("../services/jobs")
 const { isTvMedia, isTvSeasonFetch } = require("../services/tvSeasons")
 const { extractInfoHash } = require("../services/magnetLookup")
 const { displayStatus, ADMIN_LABELS } = require("../services/status")
 const { canViewMagnet, isAdminRequest } = require("../services/auth")
+const { loadPipelinePlanView } = require("../services/pipelinePlanView")
 const { normalizeRequestId, isNamespacedRequestId } = require("../utils/requestId")
 
 const getDbConnectionStatus = async () => {
@@ -144,7 +146,11 @@ router.get("/:id", async function (req, res) {
 	try {
 		const request = await db.Request.findByPk(normalizeRequestId(req.params.id))
 		if (!request) return res.status(404).json({ error: "not found" })
-		res.status(200).json(toDetailJSON(request, req))
+		const detail = toDetailJSON(request, req)
+		if (isAdminRequest(req)) {
+			detail.pipelinePlan = await loadPipelinePlanView(request)
+		}
+		res.status(200).json(detail)
 	} catch (err) {
 		res.status(500).send(JSON.stringify(err))
 	}
@@ -440,6 +446,42 @@ router.post("/:id/seasons", async function (req, res) {
 	} catch (err) {
 		console.error("approve seasons error:", err.message)
 		res.status(500).send(JSON.stringify(err.message))
+	}
+})
+
+// Admin: put failed/cancelled jobs back on the ready queue (same source).
+router.post("/:id/requeue", async function (req, res) {
+	if (!isAdminRequest(req)) return res.status(403).json({ error: "admin only" })
+	try {
+		const request = await db.Request.findByPk(normalizeRequestId(req.params.id))
+		if (!request) return res.status(404).json({ error: "not found" })
+		const count = await jobs.requeueJobsForRequest(
+			request.id,
+			req.body && req.body.reason
+		)
+		await request.reload()
+		res.status(200).json({ requeued: count, request: toPublicJSON(request) })
+	} catch (err) {
+		console.error("requeue error:", err.message)
+		res.status(500).json({ error: err.message })
+	}
+})
+
+// Admin: fail in-flight jobs so the UI is not stuck Downloading/Encoding.
+router.post("/:id/fail-pipeline", async function (req, res) {
+	if (!isAdminRequest(req)) return res.status(403).json({ error: "admin only" })
+	try {
+		const request = await db.Request.findByPk(normalizeRequestId(req.params.id))
+		if (!request) return res.status(404).json({ error: "not found" })
+		const count = await jobs.failJobsForRequest(
+			request.id,
+			req.body && req.body.reason
+		)
+		await request.reload()
+		res.status(200).json({ failed: count, request: toPublicJSON(request) })
+	} catch (err) {
+		console.error("fail-pipeline error:", err.message)
+		res.status(500).json({ error: err.message })
 	}
 })
 

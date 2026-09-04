@@ -217,6 +217,11 @@ const PipelineJob = sequelize.define("PipelineJob", {
 		type: Sequelize.JSONB,
 		allowNull: true,
 	},
+	// Worker resume state: infoHash, leftover missing[], path inventories, attempts.
+	ledger: {
+		type: Sequelize.JSONB,
+		allowNull: true,
+	},
 })
 
 // Append-only history. Never updated, never deleted.

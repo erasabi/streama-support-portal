@@ -7,12 +7,12 @@ to the Prelanflix download pipeline and the ElanFlix Sortify agent.
 |---|---|---|
 | [app.md](app.md) | Portal developers / operators | Stack, run, deploy, env vars, features |
 | [agent-integration-changes/00_docs/stream-support-portal-app/overview.md](agent-integration-changes/00_docs/stream-support-portal-app/overview.md) | Agent authors | End-to-end contract, identity rules, `/agent/v1` API |
-| [agent-integration-changes/00_docs/stream-support-portal-app/rentify-pipeline-changes.md](agent-integration-changes/00_docs/stream-support-portal-app/rentify-pipeline-changes.md) | Prelanflix box | `portal-worker` spec (not yet implemented) |
+| [agent-integration-changes/00_docs/stream-support-portal-app/rentify-pipeline-changes.md](agent-integration-changes/00_docs/stream-support-portal-app/rentify-pipeline-changes.md) | Prelanflix box | `portal-worker` contract (implemented on Prelanflix; see that host’s `00_docs/portal-worker.md`) |
 | [agent-integration-changes/00_docs/stream-support-portal-app/sortify-agent-changes.md](agent-integration-changes/00_docs/stream-support-portal-app/sortify-agent-changes.md) | ElanFlix box | Sortify portal bridge (implemented) |
 
 Ready-to-paste Cursor prompts for agent work:
 
-- [prompt-rentify-portal-worker.md](agent-integration-changes/00_docs/stream-support-portal-app/prompt-rentify-portal-worker.md) — build on Prelanflix
+- [prompt-rentify-portal-worker.md](agent-integration-changes/00_docs/stream-support-portal-app/prompt-rentify-portal-worker.md) — historical prompt; worker is **Done** on Prelanflix
 - [prompt-sortify-portal-bridge.md](agent-integration-changes/00_docs/stream-support-portal-app/prompt-sortify-portal-bridge.md) — reference for ElanFlix (already done)
 
 ## The three systems
@@ -36,7 +36,7 @@ the requester on the dashboard.
 │  Prelanflix box               │  ────────►   │  ElanFlix box                │
 │  ~/.cursor/00_docs (rentify)  │  00_PRE-SORT │  agents/sortify-agent        │
 │  download → encode → sync     │              │  PRE-SORT → TO-SORT → STORAGE│
-│  portal-worker (planned)      │              │  → Streama register + highlight│
+│  portal-worker (Done)         │              │  → Streama register + highlight│
 └───────────────────────────────┘              └──────────────────────────────┘
 ```
 
@@ -58,11 +58,7 @@ sortify parses `tmdb(\d+)` to link events back to the portal request.
 |---|---|---|
 | Portal server + client (`/agent/*`, jobs, poller, UI) | this repo | **Implemented** |
 | Sortify `portal_bridge` + dashboard highlights | `catalog.ssh_alias/agents/sortify-agent` (`lib/portal_bridge.py`) | **Implemented** — `PORTAL_TOKEN` in `~/.config/catalog.ssh_alias/portal.env` |
-| Prelanflix `portal-worker` (poll, claim, progress) | Prelanflix box | **Not implemented** — spec in [rentify-pipeline-changes.md](agent-integration-changes/00_docs/stream-support-portal-app/rentify-pipeline-changes.md) |
-
-Until `portal-worker` exists, requests queue as `ready` jobs in the portal but
-nothing on Prelanflix will claim them. Sortify reporting works independently once
-files land in `00_PRE-SORT` with a valid `tmdb{id}` folder name.
+| Prelanflix `portal-worker` (poll, claim, progress) | Prelanflix box | **Done** — live timer; TV uses `piratify add --episodes` when `missing[]` is present. Contract: [rentify-pipeline-changes.md](agent-integration-changes/00_docs/stream-support-portal-app/rentify-pipeline-changes.md); ops: Prelanflix `00_docs/portal-worker.md` |
 
 ### External doc locations
 

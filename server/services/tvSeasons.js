@@ -4,9 +4,10 @@
  * New show (confirmed absent from Streama): first + latest aired season.
  * Request Update (`fetchMissing`): every aired season that is missing or
  * incomplete. A season with any video is "present"; completeness is every
- * aired episode. If Streama is unreachable or unconfigured, do not guess —
- * return no auto seasons (fail closed). Streama `show.json` often nests files
- * as `{id}` stubs — those count as video.
+ * aired episode. Jobs carry episode-grain `missing[]` (`SxxEyy`). If Streama
+ * is unreachable or unconfigured, do not guess — return no auto seasons
+ * (fail closed). Never default to season 1 when TVMaze has no aired list.
+ * Streama `show.json` often nests files as `{id}` stubs — those count as video.
  */
 const TVMAZE_LOOKUP = "https://api.tvmaze.com/lookup/shows"
 const TVMAZE_SEARCH = "https://api.tvmaze.com/search/shows"
@@ -43,6 +44,23 @@ function normalizeSeasons(seasons) {
 
 function seasonsKey(seasons) {
 	const n = normalizeSeasons(seasons)
+	return n ? n.join(",") : ""
+}
+
+function normalizeMissing(missing) {
+	if (!Array.isArray(missing)) return null
+	const codes = [
+		...new Set(
+			missing
+				.map((c) => String(c || "").toUpperCase().trim())
+				.filter((c) => /^S\d+E\d+$/.test(c))
+		),
+	].sort()
+	return codes.length ? codes : null
+}
+
+function missingKey(missing) {
+	const n = normalizeMissing(missing)
 	return n ? n.join(",") : ""
 }
 
@@ -170,6 +188,52 @@ function libraryEpisodeCodesFromShow(show) {
 	return found
 }
 
+/**
+ * Aired TVMaze episodes in `seasons` that are not already in Streama.
+ * Codes look like `S01E04`. Unnumbered episodes cannot form a code and are skipped.
+ */
+function missingEpisodeCodes(airedEps, seasons, libraryCodes) {
+	const seasonSet = new Set(normalizeSeasons(seasons) || [])
+	if (!seasonSet.size) return []
+	const have =
+		libraryCodes instanceof Set ? libraryCodes : new Set(libraryCodes || [])
+	const out = []
+	for (const ep of airedEps || []) {
+		if (!seasonSet.has(ep.season) || !ep.number) continue
+		const code = episodeCode(ep.season, ep.number)
+		if (!have.has(code)) out.push(code)
+	}
+	return [...new Set(out)].sort()
+}
+
+async function libraryEpisodeCodesForRequest(request, deps = {}) {
+	if (deps.libraryCodes) {
+		return deps.libraryCodes instanceof Set
+			? deps.libraryCodes
+			: new Set(deps.libraryCodes)
+	}
+	const lookup = deps.libraryLookup || (await lookupLibraryShow(request, deps))
+	if (lookup && lookup.status === "found" && lookup.show) {
+		return libraryEpisodeCodesFromShow(lookup.show)
+	}
+	return new Set()
+}
+
+async function missingCodesForSeasons(request, seasons, deps = {}) {
+	const airedEps = Array.isArray(deps.airedEpisodes)
+		? deps.airedEpisodes
+		: await fetchTvmazeEpisodes(request, deps)
+	const libraryCodes = await libraryEpisodeCodesForRequest(request, deps)
+	const seasonSet = new Set(normalizeSeasons(seasons) || [])
+	const airedInSeasons = airedEps.some(
+		(ep) => seasonSet.has(ep.season) && ep.number
+	)
+	return {
+		missing: missingEpisodeCodes(airedEps, seasons, libraryCodes),
+		airedInSeasons,
+	}
+}
+
 /** Seasons that have every aired episode on disk — not "any episode exists". */
 function completeSeasonsFromAired(airedEps, libraryCodes) {
 	const bySeason = new Map()
@@ -263,11 +327,12 @@ function emptyPlan(libraryStatus, streamaMediaId = null) {
 		streamaMediaId: streamaMediaId || null,
 		present: [],
 		complete: [],
+		missing: [],
 	}
 }
 
 /**
- * @returns {Promise<{auto: number[], pending: number[], libraryStatus: string, libraryUncertain: boolean, streamaMediaId: number|null, present: number[], complete: number[]}>}
+ * @returns {Promise<{auto: number[], pending: number[], libraryStatus: string, libraryUncertain: boolean, streamaMediaId: number|null, present: number[], complete: number[], missing: string[]}>}
  */
 async function planTvSeasons(request, deps = {}) {
 	const airedEps = await fetchTvmazeEpisodes(request, deps)
@@ -293,28 +358,16 @@ async function planTvSeasons(request, deps = {}) {
 
 	let present = Array.isArray(lookup.present) ? lookup.present : []
 	let complete = Array.isArray(lookup.complete) ? lookup.complete : []
+	let libraryCodes = new Set()
 	if (lookup.status === "found" && lookup.show) {
 		present = librarySeasonsFromShow(lookup.show)
-		complete = completeSeasonsFromAired(
-			airedEps,
-			libraryEpisodeCodesFromShow(lookup.show)
-		)
+		libraryCodes = libraryEpisodeCodesFromShow(lookup.show)
+		complete = completeSeasonsFromAired(airedEps, libraryCodes)
 	}
 
 	const plan = classifySeasonPlan(aired, complete, present, {
 		fetchMissing: !!deps.fetchMissing,
 	})
-	if (lookup.status === "missing" && !aired.length && !plan.auto.length) {
-		return {
-			auto: [1],
-			pending: [],
-			libraryStatus: "missing",
-			libraryUncertain: false,
-			streamaMediaId: null,
-			present: [],
-			complete: [],
-		}
-	}
 	return {
 		auto: plan.auto,
 		pending: plan.pending,
@@ -323,6 +376,7 @@ async function planTvSeasons(request, deps = {}) {
 		streamaMediaId: lookup.streamaId != null ? lookup.streamaId : null,
 		present,
 		complete,
+		missing: missingEpisodeCodes(airedEps, plan.auto, libraryCodes),
 	}
 }
 
@@ -341,6 +395,8 @@ module.exports = {
 	isTvSeasonFetch,
 	normalizeSeasons,
 	seasonsKey,
+	normalizeMissing,
+	missingKey,
 	bookendSeasons,
 	classifySeasonPlan,
 	pendingSeasonsOf,
@@ -348,7 +404,10 @@ module.exports = {
 	airedEpisodesFromList,
 	librarySeasonsFromShow,
 	libraryEpisodeCodesFromShow,
+	missingEpisodeCodes,
+	missingCodesForSeasons,
 	completeSeasonsFromAired,
+	episodeCode,
 	planTvSeasons,
 	resolveTvSeasons,
 	airedSeasonNumbers,

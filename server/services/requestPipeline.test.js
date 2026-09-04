@@ -50,4 +50,26 @@ describe("isSameSource", () => {
 			isSameSource({ sourceUrl: null, seasons: [1] }, null, null, [2, 3])
 		).toBe(false)
 	})
+
+	test("TV jobs with missing[] match on identical codes, not seasons alone", () => {
+		const job = {
+			sourceUrl: null,
+			seasons: [1],
+			detail: { missing: ["S01E04"] },
+		}
+		expect(isSameSource(job, null, null, [1], ["S01E04"])).toBe(true)
+		expect(isSameSource(job, null, null, [1, 5], ["S01E04"])).toBe(true)
+		expect(
+			isSameSource(job, null, null, [1, 5], ["S01E04", "S05E01"])
+		).toBe(false)
+	})
+
+	test("a later missing[] that is a subset of an in-flight job is a duplicate", () => {
+		const job = {
+			sourceUrl: null,
+			seasons: [1, 5],
+			detail: { missing: ["S01E04", "S05E01"] },
+		}
+		expect(isSameSource(job, null, null, [1], ["S01E04"])).toBe(true)
+	})
 })

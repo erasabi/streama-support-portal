@@ -30,7 +30,7 @@ import {
 } from '/src/api'
 import { isAdmin, isSuperuser, matchesUser } from '/src/auth'
 import { UserContext } from '/src/hooks/userContext.hook'
-import { STEPPER, stageToStep, defaultInventoryStep, inventoryKeyForStep, subtitleLangFromName, magnetDisplayName } from '/src/utils/pipeline'
+import { STEPPER, stageToStep, defaultInventoryStep, inventoryKeyForStep, subtitleLangFromName, magnetDisplayName, groupEpisodeCodes, formatSeasonList, FETCH_MODE_LABELS } from '/src/utils/pipeline'
 import EventTimeline from '/src/components/EventTimeline'
 
 function cleanSources(list) {
@@ -441,6 +441,11 @@ export default function MediaDetails(props) {
 							</SeasonPicker>
 						</CardField>
 					)}
+					{isAuth && details && details.pipelinePlan && (
+						<CardField label="Planned Fetch">
+							<PipelinePlanPanel plan={details.pipelinePlan} />
+						</CardField>
+					)}
 					{isAuth && (
 						<CardField label="Attach Source">
 							<SourceEditor>
@@ -566,6 +571,112 @@ export default function MediaDetails(props) {
 				</Button.Group>
 			</Card>
 		</Wrapper>
+	)
+}
+
+function EpisodeGroups({ codes, className = '' }) {
+	const groups = groupEpisodeCodes(codes)
+	if (!groups.length) {
+		return <p className={`plan-muted ${className}`.trim()}>None</p>
+	}
+	return (
+		<ul className={`plan-episodes ${className}`.trim()}>
+			{groups.map(({ season, episodes }) => (
+				<li key={season}>
+					<span className="plan-season">S{String(season).padStart(2, '0')}</span>
+					<span className="plan-eps">
+						E{episodes.map((e) => String(e).padStart(2, '0')).join(', E')}
+					</span>
+				</li>
+			))}
+		</ul>
+	)
+}
+
+function PipelinePlanPanel({ plan }) {
+	if (!plan) return null
+	const { headline, seasonPlan, active, jobs = [] } = plan
+	const plannedFromPlan = seasonPlan && seasonPlan.plannedMissing
+	const activePlanned = active && active.plannedMissing
+	const activeRemaining = active && active.remainingMissing
+
+	return (
+		<PlanPanel>
+			{headline && <p className="plan-headline">{headline}</p>}
+			{seasonPlan && (
+				<div className="plan-block">
+					<p className="plan-subhead">Library vs plan</p>
+					<dl className="plan-dl">
+						<dt>Auto-queued seasons</dt>
+						<dd>{formatSeasonList(seasonPlan.autoSeasons)}</dd>
+						<dt>In library (partial)</dt>
+						<dd>{formatSeasonList(seasonPlan.presentSeasons)}</dd>
+						<dt>Complete in library</dt>
+						<dd>{formatSeasonList(seasonPlan.completeSeasons)}</dd>
+						<dt>Awaiting approval</dt>
+						<dd>{formatSeasonList(seasonPlan.pendingSeasons)}</dd>
+					</dl>
+					<p className="plan-subhead">Episodes to fetch (from Streama diff)</p>
+					<EpisodeGroups codes={plannedFromPlan} />
+				</div>
+			)}
+			{active && active.count > 0 && (
+				<div className="plan-block">
+					<p className="plan-subhead">Active worker queue</p>
+					<dl className="plan-dl">
+						<dt>Jobs</dt>
+						<dd>{active.count}</dd>
+						<dt>Planned episodes</dt>
+						<dd>
+							<EpisodeGroups codes={activePlanned} />
+						</dd>
+						<dt>Still missing</dt>
+						<dd>
+							<EpisodeGroups codes={activeRemaining} />
+						</dd>
+					</dl>
+				</div>
+			)}
+			{jobs.length > 0 && (
+				<div className="plan-block">
+					<p className="plan-subhead">Pipeline jobs</p>
+					<ul className="plan-jobs">
+						{jobs.map((job) => (
+							<li key={job.id} className="plan-job">
+								<div className="plan-job-head">
+									<span className="plan-job-status">{job.claimStatus}</span>
+									<span className="plan-job-mode">
+										{FETCH_MODE_LABELS[job.fetchMode] || job.fetchMode}
+									</span>
+									{job.seasons && job.seasons.length > 0 && (
+										<span className="plan-job-seasons">
+											{formatSeasonList(job.seasons)}
+										</span>
+									)}
+								</div>
+								{job.folderName && (
+									<p className="plan-muted plan-folder">{job.folderName}</p>
+								)}
+								{job.plannedMissing && job.plannedMissing.length > 0 && (
+									<div className="plan-job-eps">
+										<span className="plan-label">Planned:</span>
+										<EpisodeGroups codes={job.plannedMissing} />
+									</div>
+								)}
+								{job.remainingMissing &&
+									job.remainingMissing.length > 0 &&
+									!isEqual(job.remainingMissing, job.plannedMissing) && (
+										<div className="plan-job-eps">
+											<span className="plan-label">Remaining:</span>
+											<EpisodeGroups codes={job.remainingMissing} />
+										</div>
+									)}
+							</li>
+						))}
+					</ul>
+				</div>
+			)}
+		</PlanPanel>
 	)
 }
 
@@ -1029,6 +1140,132 @@ const SeasonPicker = styled.div`
 			cursor: not-allowed;
 			opacity: 0.45;
 		}
+	}
+`
+
+const PlanPanel = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	width: 100%;
+
+	.plan-headline {
+		color: white;
+		font-size: 13px;
+		font-weight: 600;
+		margin: 0;
+	}
+
+	.plan-block {
+		background: rgba(255, 255, 255, 0.06);
+		border-radius: 6px;
+		padding: 10px 12px;
+	}
+
+	.plan-subhead {
+		color: ${grey[300]};
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		margin: 0 0 6px;
+		text-transform: uppercase;
+	}
+
+	.plan-dl {
+		display: grid;
+		gap: 4px 12px;
+		grid-template-columns: max-content 1fr;
+		margin: 0 0 10px;
+
+		dt {
+			color: ${grey[400]};
+			font-size: 12px;
+		}
+
+		dd {
+			color: white;
+			font-size: 12px;
+			margin: 0;
+		}
+	}
+
+	.plan-muted {
+		color: ${grey[400]};
+		font-size: 12px;
+		margin: 0;
+	}
+
+	.plan-folder {
+		word-break: break-all;
+	}
+
+	.plan-episodes {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.plan-episodes li {
+		color: white;
+		display: flex;
+		font-size: 12px;
+		gap: 8px;
+		padding: 1px 0;
+	}
+
+	.plan-season {
+		color: ${blue[300]};
+		font-weight: 600;
+		min-width: 2.5rem;
+	}
+
+	.plan-eps {
+		word-break: break-word;
+	}
+
+	.plan-jobs {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.plan-job {
+		border-top: 1px solid ${grey[800]};
+		padding: 8px 0;
+
+		&:first-child {
+			border-top: none;
+			padding-top: 0;
+		}
+	}
+
+	.plan-job-head {
+		display: flex;
+		flex-wrap: wrap;
+		font-size: 12px;
+		gap: 8px;
+	}
+
+	.plan-job-status {
+		color: ${blue[300]};
+		font-weight: 600;
+		text-transform: capitalize;
+	}
+
+	.plan-job-mode,
+	.plan-job-seasons {
+		color: white;
+	}
+
+	.plan-job-eps {
+		margin-top: 4px;
+	}
+
+	.plan-label {
+		color: ${grey[400]};
+		display: block;
+		font-size: 11px;
+		margin-bottom: 2px;
 	}
 `
 

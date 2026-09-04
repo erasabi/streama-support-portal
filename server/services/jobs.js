@@ -10,22 +10,13 @@ const {
 	mergePipelineArtifacts,
 	artifactsHaveContent,
 } = require("./pipelineArtifacts")
-
-const DEFAULT_LEASE_MS = 5 * 60 * 1000 // 5 minutes
-
-// Stages at/after which a torrent may already be downloading in uTorrent.
-// Reclaiming these to "ready" risks a double `rentify add`, so we keep them
-// in_progress and only log that the lease lapsed.
-const PAST_DOWNLOAD = new Set([
-	"downloading",
-	"encoding",
-	"ready_to_sync",
-	"syncing",
-	"uploaded",
-	"sorting",
-	"registering",
-	"pending_approval",
-])
+const { mergePipelineLedger } = require("./pipelineLedger")
+const {
+	DEFAULT_LEASE_MS,
+	PAST_DOWNLOAD,
+	shouldFailStalledLease,
+	stuckTtlMs,
+} = require("./jobs.lease")
 
 /**
  * Atomically claim a ready job. Returns the claimed job or null if it was
@@ -63,6 +54,8 @@ async function heartbeat(jobId, leaseMs = DEFAULT_LEASE_MS) {
 	const job = await db.PipelineJob.findByPk(jobId)
 	if (!job) return null
 	if (["completed", "cancelled", "failed"].includes(job.claimStatus)) return job
+	// paused+ready is waiting on disk, not an in_progress lease.
+	if (job.claimStatus === "ready" || job.stage === "paused") return job
 	await job.update({ leaseUntil: new Date(Date.now() + leaseMs) })
 	return job
 }
@@ -76,8 +69,9 @@ async function recordProgress(jobId, progress) {
 	const { stage, progressPct, etaSeconds, detail, infoHash, folderName, artifacts } =
 		progress
 
-	const updates = {
-		leaseUntil: new Date(Date.now() + DEFAULT_LEASE_MS),
+	const updates = {}
+	if (stage !== "paused") {
+		updates.leaseUntil = new Date(Date.now() + DEFAULT_LEASE_MS)
 	}
 	if (stage) updates.stage = stage
 	if (progressPct != null) updates.progressPct = progressPct
@@ -99,6 +93,12 @@ async function recordProgress(jobId, progress) {
 	// Reflect claim lifecycle from stages.
 	if (stage === "failed") {
 		updates.claimStatus = "failed"
+	} else if (stage === "paused") {
+		// Prelanflix owns disk; do not claim or fail. Stay ready until watermark recovers.
+		updates.claimStatus = "ready"
+		updates.claimedBy = null
+		updates.claimedAt = null
+		updates.leaseUntil = null
 	} else if (stage === "not_yet_available" && noTorrentsDetail(detail)) {
 		updates.claimStatus = "failed"
 	} else if (stage === "uploaded" || stage === "available") {
@@ -111,7 +111,29 @@ async function recordProgress(jobId, progress) {
 		updates.claimStatus = "in_progress"
 	}
 
+	const mergedDetail =
+		updates.detail ||
+		(job.detail && typeof job.detail === "object" && !Array.isArray(job.detail)
+			? job.detail
+			: {})
+	updates.ledger = mergePipelineLedger(job.ledger, {
+		infoHash: infoHash || job.infoHash,
+		detail:
+			detail != null && typeof detail === "object" && !Array.isArray(detail)
+				? detail
+				: {},
+		artifacts,
+	})
+
+	if (stage && stage !== "failed") {
+		if (mergedDetail && mergedDetail.stalledSince) {
+			updates.detail = { ...mergedDetail, stalledSince: null }
+		}
+	}
+
+	const previousStage = job.stage
 	await job.update(updates)
+
 
 	let requestStage = stage
 	if (
@@ -149,7 +171,41 @@ async function recordProgress(jobId, progress) {
 		})
 	}
 	await applyArtifactsToRequest(job.requestId, artifacts)
+	if (stage === "failed") {
+		await maybeRelookupMovieMagnet(job, previousStage)
+	}
 	return job
+}
+
+const MAX_MAGNET_RELOOKUPS = 2
+
+async function maybeRelookupMovieMagnet(job, failedFromStage) {
+	try {
+		if (job.mediaType !== "movie") return
+		if (!["downloading", "claimed", "magnet_ready"].includes(failedFromStage)) {
+			return
+		}
+		if (!job.requestId) return
+		const request = await db.Request.findByPk(normalizeRequestId(job.requestId))
+		if (!request || request.magnetLookupStatus === "stopped") return
+		const prevDetail =
+			request.pipelineStageDetail &&
+			typeof request.pipelineStageDetail === "object" &&
+			!Array.isArray(request.pipelineStageDetail)
+				? request.pipelineStageDetail
+				: {}
+		const n = Number(prevDetail.magnetRelookups) || 0
+		if (n >= MAX_MAGNET_RELOOKUPS) return
+		await request.update({
+			magnetLookupStatus: "pending",
+			pipelineStageDetail: { ...prevDetail, magnetRelookups: n + 1 },
+		})
+		await request.reload()
+		const { runMagnetLookup } = require("./requestPipeline")
+		await runMagnetLookup(request, { force: true })
+	} catch (err) {
+		console.error("magnet re-lookup after download fail:", err.message)
+	}
 }
 
 /** Return a claimed/in_progress job to ready after a failed `rentify add`. */
@@ -170,7 +226,64 @@ async function releaseJob(jobId, reason) {
 		type: "released",
 		payload: { reason: reason || null },
 	})
+	await applyStageToRequest(job.requestId, "magnet_ready", {
+		reason: reason || "released",
+	})
 	return job
+}
+
+/** Admin: put failed/cancelled jobs back on the ready queue. */
+async function requeueJobsForRequest(requestId, reason) {
+	const rows = await db.PipelineJob.findAll({
+		where: {
+			requestId: normalizeRequestId(requestId),
+			claimStatus: { [Op.in]: ["failed", "cancelled"] },
+		},
+	})
+	for (const job of rows) {
+		const prev =
+			job.detail && typeof job.detail === "object" && !Array.isArray(job.detail)
+				? job.detail
+				: {}
+		await job.update({
+			claimStatus: "ready",
+			claimedBy: null,
+			claimedAt: null,
+			leaseUntil: null,
+			stage: "magnet_ready",
+			detail: { ...prev, stalledSince: null },
+		})
+		await appendEvent({
+			requestId: job.requestId,
+			jobId: job.id,
+			actor: "admin",
+			type: "requeued",
+			payload: { reason: reason || null },
+		})
+	}
+	if (rows.length) {
+		await applyStageToRequest(requestId, "magnet_ready", {
+			reason: reason || "requeued",
+		})
+	}
+	return rows.length
+}
+
+/** Admin: mark claimed/in_progress jobs failed. */
+async function failJobsForRequest(requestId, reason) {
+	const rows = await db.PipelineJob.findAll({
+		where: {
+			requestId: normalizeRequestId(requestId),
+			claimStatus: { [Op.in]: ["claimed", "in_progress"] },
+		},
+	})
+	for (const job of rows) {
+		await recordProgress(job.id, {
+			stage: "failed",
+			detail: { error: reason || "admin failed" },
+		})
+	}
+	return rows.length
 }
 
 /**
@@ -246,15 +359,33 @@ async function reapExpiredLeases() {
 			continue
 		}
 		if (PAST_DOWNLOAD.has(job.stage)) {
+			const prev =
+				job.detail && typeof job.detail === "object" && !Array.isArray(job.detail)
+					? job.detail
+					: {}
+			const stalledSince = prev.stalledSince || now.toISOString()
+			if (shouldFailStalledLease(job.stage, stalledSince, now.getTime())) {
+				const hours = Math.round(stuckTtlMs(job.stage) / 3600000)
+				await recordProgress(job.id, {
+					stage: "failed",
+					detail: {
+						error: `stalled: no worker heartbeat for ${hours}h at ${job.stage}`,
+						stalledSince,
+					},
+				})
+				continue
+			}
 			await appendEventIfChanged({
 				requestId: job.requestId,
 				jobId: job.id,
 				actor: "portal",
 				type: "lease_expired",
-				payload: { stage: job.stage, kept: true },
+				payload: { stage: job.stage, kept: true, stalledSince },
 			})
-			// Extend lease slightly so we don't spam events every reap tick.
-			await job.update({ leaseUntil: new Date(now.getTime() + DEFAULT_LEASE_MS) })
+			await job.update({
+				leaseUntil: new Date(now.getTime() + DEFAULT_LEASE_MS),
+				detail: { ...prev, stalledSince },
+			})
 		} else {
 			await job.update({
 				claimStatus: "ready",
@@ -270,6 +401,9 @@ async function reapExpiredLeases() {
 				type: "lease_expired",
 				payload: { stage: job.stage, requeued: true },
 			})
+			await applyStageToRequest(job.requestId, "magnet_ready", {
+				reason: "lease_expired",
+			})
 		}
 	}
 	return stuck.length
@@ -280,6 +414,8 @@ module.exports = {
 	heartbeat,
 	recordProgress,
 	releaseJob,
+	requeueJobsForRequest,
+	failJobsForRequest,
 	reapExpiredLeases,
 	applyStageToRequest,
 	applyArtifactsToRequest,

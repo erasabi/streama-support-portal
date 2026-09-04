@@ -66,11 +66,14 @@ Set `DB_HOST=localhost` in `.env` when the database container publishes `5432`.
    poster appears on Coming Soon (Available is hidden). Season planning runs in
    the background: every aired season that is incomplete or entirely missing is
    auto-queued. Streama/TVMaze lookups time out instead of hanging Submit.
-   Fully complete seasons are skipped (`presentSeasons` = complete seasons only,
-   so missing episodes in a partial season still download). Leftover magnets
+   Fully complete seasons are skipped. Incomplete seasons enqueue only the
+   absent episode codes (`missing[]` like `S01E04`, `S03E02` on the job and on
+   GET/claim). `seasons` is still sent for legacy workers; new workers should
+   fetch `missing` and not subtract `presentSeasons`. Leftover magnets
    from an earlier season do not skip planning. If every season is already
    complete, the row returns to Available. New TV requests (not in Streama)
-   still queue **first + latest** only.
+   still queue **first + latest** only (all aired episodes in those seasons).
+   Empty `missing[]` does not create a job and does not default to season 1.
    If Streama cannot be queried, **new** released titles go to **Check Manually**;
    titles that have not premiered yet stay **Not Yet Available**. **Fetch New
    Seasons** on a show already in the library does not demote it to Check
@@ -86,7 +89,9 @@ Set `DB_HOST=localhost` in `.env` when the database container publishes `5432`.
    magnet/URL sources (one pipeline job per unique source). Saved on Update
    or when the details modal is dismissed (Cancel discards).
 5. **Pipeline tracking** — Coming Soon badge, details stepper, and history
-   share the same derived `pipelineStage` / `displayStatus`. Owner and admin
+   share the same derived `pipelineStage` / `displayStatus`. A worker may post
+   `paused` when Prelanflix disk is below its watermark; the job stays `ready`
+   (no lease) and the badge shows **Paused**. Owner and admin
    can click **Download**, **Encode**, and **Upload** on the stepper to see
    file inventories (`pipelineArtifacts`: originals, encoded MP4s, `subs/`
    names, and what was scp'd). The SPA refetches
@@ -117,8 +122,10 @@ the same values (`STREAMA_ENDPOINT` → `REACT_APP_STREAMA_ENDPOINT`, etc.).
 |---|---|---|
 | `NODE_ENV` | yes | `development` or `production` |
 | `STREAMA_ENDPOINT` | yes | Streama app URL (client + server fallback) |
-| `STREAMA_URL` | server | Streama origin the **server container** uses for library lookup. Must be reachable from Docker (port 80/443 on the host gateway, or the same HTTPS origin as `STREAMA_ENDPOINT`). `host.docker.internal:8080` often times out even when Streama answers `:8080` on the host. Falls back to `STREAMA_ENDPOINT`. Missing URL or login → **Check Manually** for released titles (unreleased stay **Not Yet Available**); never auto-download. |
+| `STREAMA_URL` | server | Streama origin the **server container** uses for library lookup. On elanflix this must be the host nginx on **port 80** (`http://host.docker.internal`), not Streama's `:8080` and not the public HTTPS hostname. Docker cannot reach host `:8080` (TCP times out); nginx on `:80` answers in ~0.2s. `STREAMA_ENDPOINT` stays the public HTTPS origin for the browser. Falls back to `STREAMA_ENDPOINT` if unset. Missing URL or login → **Check Manually** for released titles (unreleased stay **Not Yet Available**); never auto-download. |
 | `STREAMA_USERNAME` / `STREAMA_PASSWORD` | server | Streama login for `/tvShow/index.json` and `/movie/index.json` TMDB `apiId` lookup |
+| `LEASE_STUCK_DOWNLOAD_MS` | server | After the worker stops heartbeating, fail a `downloading` job (default 6h) |
+| `LEASE_STUCK_ENCODE_MS` | server | Same for encoding/sync/sortify stages (default 2h) |
 | `API_ENDPOINT` | yes | This portal's API URL (client → server) |
 | `DB_HOST`, `DB_SCHEMA`, `DB_USER`, `DB_PASSWORD` | yes | PostgreSQL |
 | `ADMIN_SECRETS` | prod | Streama authority name gating admin routes |
@@ -136,7 +143,7 @@ are set. Each agent uses its own token.
 
 | Host | Env file | Token must match |
 |---|---|---|
-| Prelanflix (planned) | e.g. `/etc/portal-worker.env` | `PIPELINE_API_TOKEN` |
+| Prelanflix | `/etc/portal-worker.env` | `PIPELINE_API_TOKEN` |
 | ElanFlix sortify | `~/.config/catalog.ssh_alias/portal.env` | `SORTIFY_API_TOKEN` as `PORTAL_TOKEN` |
 
 Sortify also reads `PORTAL_BASE_URL` (default in agent config: `http://catalog.gateway.lan_server_name:3000`).
@@ -170,15 +177,22 @@ Confirm `/agent/v1/jobs` returns **401** (route exists, auth enforced).
 | `/agent` | Bearer-token pipeline API — see [overview.md](agent-integration-changes/00_docs/stream-support-portal-app/overview.md) |
 | `/admin` | History, unlinked pipeline events |
 
-Background: hourly magnet retry poller, `PipelineJob` claim/lease/progress,
-append-only `RequestEvent` history.
+Background: hourly magnet retry poller, `PipelineJob` claim/lease/progress
+(including JSONB `ledger` merged on progress; leftover episode codes land in
+`ledger.missing` via `detail.leftoverMissing`; GET `/agent/v1/jobs` returns
+`ledger`), append-only `RequestEvent` history. The worker still tracks leftovers
+in `portal-jobs.json`; it does not resume from ledger. A disk janitor that
+scans leftovers vs ledger is **not** implemented.
 
 ## Pipeline integration
 
 The portal implementation is complete. Agent-side work:
 
 - **Sortify** — implemented in `catalog.ssh_alias/agents/sortify-agent` (`lib/portal_bridge.py`).
-- **Rentify worker** — not yet built; spec in
+- **Prelanflix `portal-worker`** — **Done**. TV jobs with `missing[]` run
+  `piratify add -f folder --episodes csv --year year title` on Prelanflix
+  (piratify is not on this host). Ops: Prelanflix `00_docs/portal-worker.md`.
+  Contract notes:
   [rentify-pipeline-changes.md](agent-integration-changes/00_docs/stream-support-portal-app/rentify-pipeline-changes.md).
 
 Contract and API reference: [overview.md](agent-integration-changes/00_docs/stream-support-portal-app/overview.md).

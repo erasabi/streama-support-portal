@@ -14,6 +14,7 @@ function jobLibraryFields(job) {
 	return {
 		presentSeasons: Array.isArray(detail.presentSeasons) ? detail.presentSeasons : null,
 		allowPresentSeasons: !!detail.allowPresentSeasons,
+		missing: Array.isArray(detail.missing) ? detail.missing : null,
 	}
 }
 
@@ -24,7 +25,10 @@ router.get("/v1/jobs", async function (req, res) {
 	try {
 		const status = req.query.status || "ready"
 		const jobRows = await db.PipelineJob.findAll({
-			where: { claimStatus: status },
+			where: {
+				claimStatus: status,
+				...(req.query.claimedBy ? { claimedBy: req.query.claimedBy } : {}),
+			},
 			order: [["createdAt", "ASC"]],
 			limit: 50,
 		})
@@ -44,6 +48,11 @@ router.get("/v1/jobs", async function (req, res) {
 				title: request ? request.title : null,
 				requestUser: request ? request.requestUser : null,
 				seasons: Array.isArray(job.seasons) ? job.seasons : null,
+				stage: job.stage || null,
+				infoHash: job.infoHash || null,
+				claimStatus: job.claimStatus,
+				claimedBy: job.claimedBy || null,
+				ledger: job.ledger || null,
 				...jobLibraryFields(job),
 			})
 		}
@@ -71,6 +80,7 @@ router.post("/v1/jobs/:id/claim", async function (req, res) {
 			mediaType: job.mediaType,
 			seasons: Array.isArray(job.seasons) ? job.seasons : null,
 			leaseUntil: job.leaseUntil,
+			ledger: job.ledger || null,
 			...jobLibraryFields(job),
 		})
 	} catch (err) {

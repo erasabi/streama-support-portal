@@ -28,9 +28,20 @@ function qualityOrder(quality) {
 }
 
 // Prefer x264 (browser/Firestick friendly), then 1080p > 2160p > other.
-function pickBestTorrent(torrents = []) {
+// `excludeHashes` skips torrents already tried (download Error / stall).
+function pickBestTorrent(torrents = [], excludeHashes = []) {
 	if (!Array.isArray(torrents) || torrents.length === 0) return null
-	const sorted = [...torrents].sort((a, b) => {
+	const skip = new Set(
+		(excludeHashes || []).map((h) => String(h || "").toUpperCase()).filter(Boolean)
+	)
+	const eligible = skip.size
+		? torrents.filter((t) => {
+				const hash = String((t && (t.hash || extractInfoHash(t.url))) || "").toUpperCase()
+				return hash && !skip.has(hash)
+			})
+		: torrents
+	const pool = eligible.length ? eligible : torrents
+	const sorted = [...pool].sort((a, b) => {
 		if (a.video_codec === "x264" && b.video_codec !== "x264") return -1
 		if (a.video_codec !== "x264" && b.video_codec === "x264") return 1
 		return qualityOrder(a.quality) - qualityOrder(b.quality)
@@ -91,7 +102,8 @@ async function getYifySubtitleUrl(imdbCode) {
  * @returns {Promise<{status: string, imdbId?, magnetUrl?, magnetHash?, magnetQuality?, subtitleUrl?}>}
  *   status is one of: "found" | "not_found" | "error"
  */
-async function lookupMovieMagnet(tmdbId) {
+async function lookupMovieMagnet(tmdbId, opts = {}) {
+	const excludeHashes = opts.excludeHashes || []
 	let imdbId = null
 	try {
 		imdbId = await getImdbId(tmdbId)
@@ -125,7 +137,7 @@ async function lookupMovieMagnet(tmdbId) {
 		return { status: "not_found", imdbId }
 	}
 
-	const best = pickBestTorrent(movie.torrents)
+	const best = pickBestTorrent(movie.torrents, excludeHashes)
 	if (!best || !best.url) {
 		return { status: "not_found", imdbId }
 	}

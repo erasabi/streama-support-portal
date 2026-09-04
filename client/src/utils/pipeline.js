@@ -22,6 +22,7 @@ const STAGE_TO_STEP = {
 	magnet_ready: 1,
 	claimed: 2,
 	downloading: 2,
+	paused: 2,
 	encoding: 3,
 	ready_to_sync: 4,
 	syncing: 4,
@@ -91,6 +92,8 @@ export function statusColor(label) {
 			return '#b90000d9'
 		case 'Failed':
 			return '#7a0000e0'
+		case 'Paused':
+			return '#c76a00d9'
 		case 'Needs attention':
 			return '#c76a00d9'
 		case 'Pending Approval':
@@ -148,6 +151,7 @@ const EVENT_LABELS = {
 	available: 'Available',
 	highlighted: 'Highlighted',
 	failed: 'Failed',
+	paused: 'Paused (capacity)',
 	released: 'Requeued',
 	lease_expired: 'Lease expired',
 	cancelled: 'Cancelled',
@@ -198,6 +202,36 @@ export function prepareEvents(events = []) {
 }
 
 // Stages that should be hidden from the default "Coming Soon" grid.
+export function groupEpisodeCodes(codes) {
+	const map = new Map()
+	for (const raw of codes || []) {
+		const m = /^S(\d+)E(\d+)$/i.exec(String(raw).trim())
+		if (!m) continue
+		const season = Number(m[1])
+		const episode = Number(m[2])
+		if (!map.has(season)) map.set(season, [])
+		map.get(season).push(episode)
+	}
+	return [...map.entries()]
+		.sort((a, b) => a[0] - b[0])
+		.map(([season, episodes]) => ({
+			season,
+			episodes: [...new Set(episodes)].sort((a, b) => a - b)
+		}))
+}
+
+export function formatSeasonList(nums) {
+	if (!Array.isArray(nums) || !nums.length) return '—'
+	return nums.map((n) => `S${String(n).padStart(2, '0')}`).join(', ')
+}
+
+export const FETCH_MODE_LABELS = {
+	episodes: 'Missing episodes (piratify)',
+	magnet: 'Magnet / URL',
+	seasons_legacy: 'Whole season(s)',
+	unknown: 'Not specified'
+}
+
 export function isHiddenFromComingSoon(request) {
 	if (!request) return false
 	if (request.archivedAt) return true

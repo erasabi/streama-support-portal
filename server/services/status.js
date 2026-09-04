@@ -51,6 +51,7 @@ const STAGE_LABELS = {
 	pending_approval: "Adding to library",
 	available: "Available",
 	failed: "Failed",
+	paused: "Paused",
 	archived: "Archived",
 }
 
@@ -68,6 +69,16 @@ const ADMIN_LABELS = [
 
 // "failed" can happen at any point and is not part of the linear order.
 const TERMINAL_FAILED = "failed"
+// Capacity pause (Prelanflix disk watermark). Not linear; recovery is like failed.
+const STAGE_PAUSED = "paused"
+const PAUSED_RECOVERY_STAGES = new Set([
+	"claimed",
+	"downloading",
+	"magnet_ready",
+	"encoding",
+	"ready_to_sync",
+	"syncing",
+])
 
 function stageIndex(stage) {
 	return STAGE_ORDER.indexOf(stage)
@@ -80,13 +91,16 @@ function stageLabel(stage) {
 /**
  * Whether a new stage should overwrite the currently stored stage. Prevents
  * out-of-order/late pipeline events from regressing progress, while always
- * allowing a move to "failed" and always allowing recovery out of "failed".
+ * allowing a move to "failed"/"paused" and recovery out of those stages.
  */
 function shouldAdvance(currentStage, nextStage) {
 	if (!nextStage) return false
 	if (nextStage === currentStage) return true
-	if (nextStage === TERMINAL_FAILED) return true
+	if (nextStage === TERMINAL_FAILED || nextStage === STAGE_PAUSED) return true
 	if (currentStage === TERMINAL_FAILED) return true // allow retry recovery
+	if (currentStage === STAGE_PAUSED) {
+		return PAUSED_RECOVERY_STAGES.has(nextStage)
+	}
 	if (SOURCE_MISS_STAGES.has(currentStage) && SOURCE_MISS_STAGES.has(nextStage)) {
 		return true
 	}
@@ -122,6 +136,9 @@ const RENTIFY_IN_FLIGHT_STAGES = new Set([
  */
 function shouldApplyDerivedStage(currentStage, nextStage) {
 	if (shouldAdvance(currentStage, nextStage)) return true
+	if (currentStage === STAGE_PAUSED && PAUSED_RECOVERY_STAGES.has(nextStage)) {
+		return true
+	}
 	if (
 		SORTIFY_COMPLETION_STAGES.has(currentStage) &&
 		(RENTIFY_IN_FLIGHT_STAGES.has(nextStage) || nextStage === "magnet_ready")
@@ -149,6 +166,7 @@ const ACTIVE_PIPELINE = new Set([
 	"syncing",
 	"sorting",
 	"registering",
+	"paused",
 ])
 
 function hasPendingSeasons(request) {
@@ -202,6 +220,8 @@ module.exports = {
 	ADMIN_LABELS,
 	SOURCE_MISS_STAGES,
 	TERMINAL_FAILED,
+	STAGE_PAUSED,
+	PAUSED_RECOVERY_STAGES,
 	stageIndex,
 	stageLabel,
 	shouldAdvance,

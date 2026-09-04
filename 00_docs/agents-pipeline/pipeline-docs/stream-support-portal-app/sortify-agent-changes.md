@@ -51,14 +51,16 @@ If an id cannot be resolved, still `post_event` with `folderName` (+ `title` /
 | Where | Portal `stage` |
 |---|---|
 | `promote_presort_ready` after a successful promote | `uploaded` |
-| `run_agent` after successful apply, before Streama | `sorting` |
+| `run_agent` after successful apply, before Streama | `sorting` (wired in `runner.py`) |
 | `mark_deferred` | `deferred` + `detail.reason` |
-| start of `run_streama_stage` | `registering` |
-| after `register_sorted_media` per playable title | `pending_approval`, then highlight + `highlighted` |
+| start of `run_streama_stage` | `registering` (wired in `runner.py`) |
+| after `register_sorted_media` per playable title | `pending_approval`, then highlight + `highlighted` — or `available` if highlight is skipped/fails |
+| Streama retry exhaustion (`FAIL_ATTEMPT_LIMIT`) | `failed` |
 
-`already_in_library` is treated as success (playable). `stage: "failed"` is
-posted only after the pending-streama retry path has failed
-`FAIL_ATTEMPT_LIMIT` (10) consecutive times.
+`already_in_library` is treated as success (playable). If the file is playable,
+the portal is moved to **Available** even when Dashboard Highlight is skipped
+or fails. `stage: "failed"` is posted only after the pending-streama retry path
+has failed `FAIL_ATTEMPT_LIMIT` (10) consecutive times.
 
 ## Dashboard Highlights
 

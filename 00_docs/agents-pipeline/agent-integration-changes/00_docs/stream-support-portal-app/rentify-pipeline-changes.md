@@ -1,7 +1,9 @@
 # Rentify pipeline changes (Prelanflix box)
 
-> **Status: not implemented.** The portal queue and API are live; this box still
-> needs a `portal-worker` timer. Portal doc home: [docs/README.md](../../../../README.md).
+> **Status: Done** on Prelanflix (`portal-worker.timer` + `portal-worker.sh`).
+> Live ops: Prelanflix `00_docs/portal-worker.md`. This file is the original
+> contract; prefer the ops doc for current flags (`missing[]` → `piratify add
+> --episodes`, disk `paused`, leftover retries).
 
 Goal: the Prelanflix download/encode/sync box pulls claimable jobs from the
 portal, runs them through `rentify`, and reports progress back — so the portal
@@ -14,8 +16,13 @@ See the existing pipeline docs for CLI/timer behavior that this worker drives:
 - `.cursor/00_docs/encoding.md` (`ENCODE` state, ffmpeg %)
 - `.cursor/00_docs/remote-sync.md` (`READY`/`SYNCED` scp to `00_PRE-SORT`)
 
-> Do not edit those docs until the worker is implemented; then update them to
-> reference the new unit.
+Shipped (do not treat the steps below as the only path): TV
+`missing[]` → `piratify add -f folder --episodes csv --year year title`; empty
+`missing[]` fails (no S01 default); disk below 5 GiB posts `paused` without
+claim; leftovers retry `--episodes` from `portal-jobs.json`; portal `ledger`
+is merged but the worker does not resume from it; no disk janitor.
+
+See Prelanflix `00_docs/` for current CLI/timer behavior.
 
 ## New component: `portal-worker`
 

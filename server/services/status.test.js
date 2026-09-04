@@ -30,6 +30,17 @@ describe("status.shouldAdvance", () => {
 		expect(status.shouldAdvance("failed", "needs_manual_check")).toBe(true)
 	})
 
+	test("always allows paused (capacity) and recovery to claimed/downloading/magnet_ready", () => {
+		expect(status.shouldAdvance("magnet_ready", "paused")).toBe(true)
+		expect(status.shouldAdvance("downloading", "paused")).toBe(true)
+		expect(status.shouldAdvance("paused", "paused")).toBe(true)
+		expect(status.shouldAdvance("paused", "claimed")).toBe(true)
+		expect(status.shouldAdvance("paused", "downloading")).toBe(true)
+		expect(status.shouldAdvance("paused", "magnet_ready")).toBe(true)
+		expect(status.shouldAdvance("available", "paused")).toBe(true)
+		expect(status.shouldAdvance("paused", "available")).toBe(false)
+	})
+
 	test("same stage is idempotent (allowed, e.g. progress updates)", () => {
 		expect(status.shouldAdvance("downloading", "downloading")).toBe(true)
 	})
@@ -49,6 +60,12 @@ describe("status.shouldApplyDerivedStage", () => {
 		expect(status.shouldApplyDerivedStage("uploaded", "downloading")).toBe(true)
 		expect(status.shouldApplyDerivedStage("registering", "syncing")).toBe(true)
 		expect(status.shouldApplyDerivedStage("available", "magnet_ready")).toBe(true)
+	})
+
+	test("paused recovers to claimed/downloading/magnet_ready", () => {
+		expect(status.shouldApplyDerivedStage("paused", "claimed")).toBe(true)
+		expect(status.shouldApplyDerivedStage("paused", "downloading")).toBe(true)
+		expect(status.shouldApplyDerivedStage("paused", "magnet_ready")).toBe(true)
 	})
 
 	test("does not otherwise regress", () => {
@@ -96,6 +113,13 @@ describe("status.displayStatus", () => {
 		expect(
 			status.displayStatus({ queueStatusSource: "derived", pipelineStage: "failed" })
 		).toBe("Failed")
+	})
+
+	test("paused shows Paused (capacity)", () => {
+		expect(status.STAGE_LABELS.paused).toBe("Paused")
+		expect(
+			status.displayStatus({ queueStatusSource: "derived", pipelineStage: "paused" })
+		).toBe("Paused")
 	})
 
 	test("unreleased source miss shows Not Yet Available", () => {

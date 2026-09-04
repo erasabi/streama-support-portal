@@ -18,8 +18,11 @@ const {
 	isTvSeasonFetch,
 	normalizeSeasons,
 	seasonsKey,
+	normalizeMissing,
+	missingKey,
 	planTvSeasons,
 	pendingSeasonsOf,
+	missingCodesForSeasons,
 } = require("./tvSeasons")
 const { lookupLibraryMovie, mediaHasVideo } = require("./streamaLibrary")
 
@@ -88,12 +91,30 @@ function buildFolderName(request, infoHash) {
 	return parts.filter(Boolean).join("-")
 }
 
-function isSameSource(job, sourceUrl, infoHash, seasons) {
+function jobMissingList(job) {
+	const detail = job && job.detail && typeof job.detail === "object" ? job.detail : {}
+	return Array.isArray(detail.missing) ? detail.missing : null
+}
+
+function missingIsSubset(inner, outer) {
+	const a = normalizeMissing(inner)
+	const b = new Set(normalizeMissing(outer) || [])
+	if (!a) return false
+	return a.every((c) => b.has(c))
+}
+
+function isSameSource(job, sourceUrl, infoHash, seasons, missing) {
 	if (!job) return false
 	if (sourceUrl) {
 		return infoHash ? job.infoHash === infoHash : job.sourceUrl === sourceUrl
 	}
 	if (!job.sourceUrl) {
+		const existingMissing = jobMissingList(job)
+		const incoming = Array.isArray(missing) ? missing : null
+		if (existingMissing && incoming) {
+			if (missingKey(existingMissing) === missingKey(incoming)) return true
+			return missingIsSubset(incoming, existingMissing)
+		}
 		return seasonsKey(job.seasons) === seasonsKey(seasons)
 	}
 	return false
@@ -119,14 +140,24 @@ async function emitSubtitleLookup(requestId, { found, url, error }) {
  * SAME source (matched by infoHash when available, else the raw URL) but do
  * allow distinct sources to run in parallel.
  *
- * TV jobs with no sourceUrl carry `seasons` so piratify knows what to fetch.
+ * TV jobs with no sourceUrl carry `seasons` (legacy) and episode-grain
+ * `missing` (`SxxEyy`) so piratify fetches only absent episodes.
  */
 async function createReadyJob(
 	request,
-	{ sourceUrl, mediaType, actor = "portal", seasons, presentSeasons, allowPresentSeasons } = {},
+	{ sourceUrl, mediaType, actor = "portal", seasons, presentSeasons, allowPresentSeasons, missing } = {},
 ) {
 	const url = sourceUrl || null
 	const seasonList = normalizeSeasons(seasons)
+	const explicitMissing = Array.isArray(missing)
+	const missingList = explicitMissing ? normalizeMissing(missing) : null
+	if (!url && explicitMissing && !missingList) {
+		console.error("planner bug: TV job with empty missing[]", {
+			requestId: request && request.id,
+			seasons: seasonList,
+		})
+		return null
+	}
 	if (!url && !seasonList) return null
 	const infoHash = url ? extractInfoHash(url) : null
 
@@ -137,7 +168,7 @@ async function createReadyJob(
 		},
 	})
 	const duplicate = active.find((j) =>
-		isSameSource(j, url, infoHash, seasonList),
+		isSameSource(j, url, infoHash, seasonList, explicitMissing ? missing : undefined),
 	)
 	if (duplicate) {
 		if (status.shouldApplyDerivedStage(request.pipelineStage, "magnet_ready")) {
@@ -147,13 +178,11 @@ async function createReadyJob(
 	}
 
 	const presentList = normalizeSeasons(presentSeasons)
-	const detail =
-		presentList || allowPresentSeasons
-			? {
-					...(presentList ? { presentSeasons: presentList } : {}),
-					...(allowPresentSeasons ? { allowPresentSeasons: true } : {}),
-				}
-			: null
+	const detail = {
+		...(presentList ? { presentSeasons: presentList } : {}),
+		...(allowPresentSeasons ? { allowPresentSeasons: true } : {}),
+		...(missingList ? { missing: missingList } : {}),
+	}
 
 	const job = await db.PipelineJob.create({
 		requestId: request.id,
@@ -164,7 +193,7 @@ async function createReadyJob(
 		claimStatus: "ready",
 		stage: "magnet_ready",
 		seasons: seasonList,
-		detail,
+		detail: Object.keys(detail).length ? detail : null,
 	})
 
 	if (status.shouldApplyDerivedStage(request.pipelineStage, "magnet_ready")) {
@@ -181,6 +210,7 @@ async function createReadyJob(
 			mediaType: job.mediaType,
 			seasons: seasonList || undefined,
 			presentSeasons: presentList || undefined,
+			missing: missingList || undefined,
 		},
 	})
 	return job
@@ -338,9 +368,11 @@ async function markLibraryUncertain(request, libraryStatus) {
 /**
  * Enqueue a TV job: new shows get first + latest aired seasons (not the
  * ones in between). Request Update (`fetchMissing`) auto-queues every aired
- * season that is missing or incomplete. Admin-supplied magnets skip this unless
- * `forceSeasonPlan` is set (leftover magnets from an earlier season must not
- * skip Fetch New Seasons). Uncertain Streama lookups fail closed.
+ * season that is missing or incomplete. Jobs store episode-grain `missing[]`;
+ * complete seasons are recorded on `season_plan` events only. Admin-supplied
+ * magnets skip this unless `forceSeasonPlan` is set (leftover magnets from
+ * an earlier season must not skip Fetch New Seasons). Uncertain Streama
+ * lookups fail closed.
  */
 async function enqueueTvSeasonsJob(request, deps) {
 	if (!request || !isTvMedia(request.mediaType)) return null
@@ -359,6 +391,7 @@ async function enqueueTvSeasonsJob(request, deps) {
 			pending: plan.pending,
 			present: plan.present,
 			complete: plan.complete,
+			missing: plan.missing,
 			libraryStatus: plan.libraryStatus,
 		})
 		await persistStreamaId(request, plan.streamaMediaId)
@@ -371,6 +404,7 @@ async function enqueueTvSeasonsJob(request, deps) {
 				pending: plan.pending,
 				present: plan.present,
 				complete: plan.complete,
+				missing: plan.missing,
 				libraryStatus: plan.libraryStatus,
 			},
 		})
@@ -416,9 +450,7 @@ async function enqueueTvSeasonsJob(request, deps) {
 			sourceUrl: null,
 			mediaType: request.mediaType,
 			seasons: plan.auto,
-			// Worker strips presentSeasons from piratify. Only fully complete
-			// seasons are skipped so missing episodes in a partial season download.
-			presentSeasons: plan.complete,
+			missing: Array.isArray(plan.missing) ? plan.missing : [],
 		})
 	} catch (err) {
 		console.error("tv seasons enqueue:", err.message)
@@ -430,23 +462,35 @@ async function enqueueTvSeasonsJob(request, deps) {
  * Admin picks some or all pending gap seasons. Creates a ready piratify job
  * and drops those seasons from pendingSeasons.
  */
-async function approveTvSeasons(request, seasons, actor = "admin") {
+async function approveTvSeasons(request, seasons, actor = "admin", deps = {}) {
 	if (!request) return null
 	const pending = pendingSeasonsOf(request)
 	const wanted = normalizeSeasons(seasons) || []
 	const approved = wanted.filter((s) => pending.includes(s))
 	if (!approved.length) return null
 	const remaining = pending.filter((s) => !approved.includes(s))
+	let missing = []
+	let airedInSeasons = false
+	try {
+		const planned = await missingCodesForSeasons(request, approved, deps)
+		missing = planned.missing
+		airedInSeasons = planned.airedInSeasons
+	} catch (err) {
+		console.error("tv seasons approve missing:", err.message)
+	}
 	const job = await createReadyJob(request, {
 		sourceUrl: null,
 		mediaType: request.mediaType,
 		seasons: approved,
+		missing,
 		actor,
 		allowPresentSeasons: true,
 	})
-	await request.update({
-		pendingSeasons: remaining.length ? remaining : null,
-	})
+	if (job || airedInSeasons) {
+		await request.update({
+			pendingSeasons: remaining.length ? remaining : null,
+		})
+	}
 	if (job && status.shouldAdvance(request.pipelineStage, "magnet_ready")) {
 		await request.update({ pipelineStage: "magnet_ready" })
 	}
@@ -455,15 +499,30 @@ async function approveTvSeasons(request, seasons, actor = "admin") {
 		jobId: job && job.id,
 		actor,
 		type: "seasons_approved",
-		payload: { seasons: approved, remaining },
+		payload: { seasons: approved, remaining, missing },
 	})
 	await request.reload()
 	return { request, job, seasons: approved, remaining }
 }
 
+function magnetHashesToSkip(request) {
+	const hashes = []
+	if (request.magnetHash) hashes.push(request.magnetHash)
+	for (const url of Array.isArray(request.magnetUrls) ? request.magnetUrls : []) {
+		const h = extractInfoHash(url)
+		if (h) hashes.push(h)
+	}
+	if (request.magnetUrl) {
+		const h = extractInfoHash(request.magnetUrl)
+		if (h) hashes.push(h)
+	}
+	return hashes
+}
+
 /**
  * Run (or re-run) the magnet lookup for a movie request and persist the result.
- * Idempotent: once a magnet is found we never look again.
+ * Idempotent unless `{ force: true }`: once a magnet is found we never look
+ * again, except after a download Error/stall (capped in jobs.js).
  *
  * @returns {Promise<string>} the resulting magnetLookupStatus
  */
@@ -475,11 +534,11 @@ async function runMagnetLookup(request, deps = {}) {
 		}
 		return "not_applicable"
 	}
-	// Never re-look once found or explicitly stopped.
-	if (
-		request.magnetLookupStatus === "found" ||
-		request.magnetLookupStatus === "stopped"
-	) {
+	if (request.magnetLookupStatus === "stopped") {
+		return "stopped"
+	}
+	// Never re-look once found, unless a download failure asked for a replacement.
+	if (request.magnetLookupStatus === "found" && !deps.force) {
 		return request.magnetLookupStatus
 	}
 
@@ -504,7 +563,9 @@ async function runMagnetLookup(request, deps = {}) {
 		await markLibraryUncertain(request, lib.status)
 	}
 
-	const result = await lookupMovieMagnet(request.id)
+	const result = await lookupMovieMagnet(request.id, {
+		excludeHashes: deps.force ? magnetHashesToSkip(request) : [],
+	})
 	const now = new Date()
 
 	if (result.status === "found") {
