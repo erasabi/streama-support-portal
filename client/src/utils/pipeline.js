@@ -111,6 +111,8 @@ export function statusColor(label) {
 		case 'Arrived':
 		case 'Sorting':
 		case 'Subtitles':
+		case 'Add Subtitles':
+		case 'Fix Subtitles':
 		case 'Adding to library':
 			return '#1f6fd6d9'
 		default:

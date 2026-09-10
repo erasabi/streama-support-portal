@@ -94,12 +94,15 @@ identity is unknown — never read it as "ok".
 reject leaves the video in Streama; `no_subtitles_at_upload` still describes
 the Prelanflix inventory only.
 
-Admins can queue the same acquire path later with **Add subtitles** on a
-request. That creates a `PipelineJob` with `detail.kind = subtitle_acquire`.
-`GET /agent/v1/jobs` defaults to `kind=download`, so rentify never claims it.
-Sortify-agent polls `kind=subtitle_acquire`, writes missing `en`/`ru` sidecars
-when the sync gate passes, and attaches them to the existing Streama videos.
-The request stays **Available**.
+Request Update or Report Issue with **Add Subtitles** / **Fix Subtitles**
+queues the same acquire path for movies and shows already in the library.
+That creates a namespaced ticket labeled **Add Subtitles** (not Requested)
+and a `PipelineJob` with `detail.kind = subtitle_acquire`. `GET /agent/v1/jobs`
+defaults to `kind=download`, so rentify never claims it. Sortify-agent polls
+`kind=subtitle_acquire`, writes missing `en`/`ru` sidecars when the sync gate
+passes, and attaches them to the existing Streama videos. The library title
+stays **Available**. When the job finishes, the ticket is archived and leaves
+the queue. A failed job stays on the queue as **Failed**.
 
 `duplicate_dashboard_highlights` fires only on an authoritative
 `highlights.rowCount` from the sortify agent. Without the agent the trace can

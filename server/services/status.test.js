@@ -269,6 +269,30 @@ describe("status.displayStatus", () => {
 		).toBe("Request Update")
 	})
 
+	test("Add Subtitles remedia stays labeled until it fails or is archived", () => {
+		expect(
+			status.displayStatus({
+				queueStatusSource: "admin",
+				queueStatus: "Add Subtitles",
+				pipelineStage: "acquiring_subtitles",
+			})
+		).toBe("Add Subtitles")
+		expect(
+			status.displayStatus({
+				queueStatusSource: "admin",
+				queueStatus: "Add Subtitles",
+				pipelineStage: "failed",
+			})
+		).toBe("Failed")
+		expect(
+			status.displayStatus({
+				queueStatusSource: "admin",
+				queueStatus: "Add Subtitles",
+				archivedAt: new Date(),
+			})
+		).toBe("Archived")
+	})
+
 	test("pending gap seasons show Approve Seasons unless the pipeline is active", () => {
 		expect(
 			status.displayStatus({

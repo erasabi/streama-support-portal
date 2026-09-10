@@ -63,7 +63,13 @@ Set `DB_HOST=localhost` in `.env` when the database container publishes `5432`.
 2. **Request** — create requests. Titles already in Streama hide **Request** and
    show **Request Update** / **Report Issue**. For TV, Request Update defaults to
    **Fetch New Seasons** and Submit returns immediately as **Requested** so the
-   poster appears on Coming Soon (Available is hidden). Season planning runs in
+   poster appears on Coming Soon (Available is hidden). **Add Subtitles** /
+   **Fix Subtitles** on Request Update or Report Issue (movies and TV) queues
+   missing English and Russian sidecars on ElanFlix only — it does not plan
+   seasons, look up a magnet, or move the library title off **Available**. The
+   ticket stays labeled **Add Subtitles** (or **Fix Subtitles**) on the queue
+   until sortify finishes (`ffsubsync` + confidence gate), then it is archived
+   and leaves the queue. Season planning runs in
    the background: every aired season that is incomplete or entirely missing is
    auto-queued. Streama/TVMaze lookups time out instead of hanging Submit.
    Fully complete seasons are skipped. Incomplete seasons enqueue only the
@@ -92,12 +98,12 @@ Set `DB_HOST=localhost` in `.env` when the database container publishes `5432`.
    share the same derived `pipelineStage` / `displayStatus`. The request
    details modal is grouped into **Overview**, **Queue**, **Sources**,
    seasons, planned fetch, **Diagnostics** (trace, dry run with copy-for-agent
-   and saved-run history, and **Add subtitles** for missing en/ru on library
-   files already on ElanFlix), and **History**.
+   and saved-run history), and **History**.
    After sort, sortify fetches missing English and Russian sidecars, aligns
    them with `ffsubsync`, and keeps them only when the sync gate passes
-   (`acquiring_subtitles`). The same path can be queued later from **Add
-   subtitles** without rewinding **Available**.
+   (`acquiring_subtitles`). The same path can be queued later with Request
+   Update / Report Issue → **Add Subtitles** without rewinding **Available**
+   or starting a download.
    A worker may post
    `paused` when Prelanflix disk is below its watermark; the job stays `ready`
    (no lease) and the badge shows **Paused**. Owner and admin

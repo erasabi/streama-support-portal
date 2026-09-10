@@ -6,6 +6,7 @@ const {
 	runMagnetLookup,
 	createReadyJob,
 	enqueueSubtitleAcquireJob,
+	createSubtitleRemediaRequest,
 	enqueueTvSeasonsJob,
 	enqueueTvSeasonUpdate,
 	approveTvSeasons,
@@ -13,6 +14,7 @@ const {
 } = require("../services/requestPipeline")
 const jobs = require("../services/jobs")
 const { isTvMedia, isTvSeasonFetch } = require("../services/tvSeasons")
+const { isSubtitleRemediaMessage } = require("../services/subtitleRemedia")
 const { extractInfoHash } = require("../services/magnetLookup")
 const { displayStatus, ADMIN_LABELS } = require("../services/status")
 const { canViewMagnet, isAdminRequest } = require("../services/auth")
@@ -259,6 +261,20 @@ router.put("/", async function (req, res) {
 			const request = await enqueueTvSeasonUpdate(req.body)
 			if (!request) return res.status(400).json({ error: "missing tmdb id" })
 			return res.status(200).json(toPublicJSON(request))
+		}
+
+		if (
+			isUpdateIssue &&
+			isSubtitleRemediaMessage(req.body.queueMessage)
+		) {
+			const result = await createSubtitleRemediaRequest(
+				req.body,
+				req.body.requestUser || "user"
+			)
+			if (result.error && !result.request) {
+				return res.status(result.status || 400).json({ error: result.error })
+			}
+			return res.status(200).json(toPublicJSON(result.request))
 		}
 
 		// Namespace update/issue rows so they never collide with the pipeline

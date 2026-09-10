@@ -88,8 +88,8 @@ means "not in this mirror", not "does not exist".
 ### 5. Subtitle acquire and register
 
 ElanFlix now has a real acquire path for **missing en/ru** after sort (and via
-portal **Add subtitles**): OpenSubtitles → `ffsubsync` → confidence gate →
-place sidecar → attach in Streama. Fail closed on the subtitle, fail open on
+Request Update / Report Issue **Add Subtitles**): OpenSubtitles → `ffsubsync`
+→ confidence gate → place sidecar → attach in Streama. Fail closed on the subtitle, fail open on
 the video. Trace section `subtitleAcquire` and flag `subtitle_acquire_rejected`
 (info) record discarded downloads. This does **not** change Prelanflix YIFY
 attach (`subtitleUrl` remains English-only) and does not rewrite

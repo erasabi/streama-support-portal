@@ -75,7 +75,7 @@ export default function UpdateExistingMedia(props) {
 			'Fetch New Seasons',
 			'Video Not Working',
 			'Wrong Video',
-			'Add Subitles',
+			'Add Subtitles',
 			'Fix Subtitles'
 		]
 		const getOptions = (value, options) => {

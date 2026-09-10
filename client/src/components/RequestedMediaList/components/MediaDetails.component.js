@@ -26,8 +26,7 @@ import {
 	getRequestDetails,
 	getRequestEvents,
 	saveRequestSources,
-	approveRequestSeasons,
-	addRequestSubtitles
+	approveRequestSeasons
 } from '/src/api'
 import { isAdmin, isSuperuser, matchesUser } from '/src/auth'
 import { UserContext } from '/src/hooks/userContext.hook'
@@ -74,8 +73,6 @@ export default function MediaDetails(props) {
 	const [pickedSeasons, setPickedSeasons] = useState([])
 	const [dryRunOpen, setDryRunOpen] = useState(false)
 	const [dryRunNonce, setDryRunNonce] = useState(0)
-	const [subtitleBusy, setSubtitleBusy] = useState(false)
-	const [subtitleError, setSubtitleError] = useState(null)
 	const sourcesHydratedRef = useRef(false)
 
 	// Latest values for the unmount persistence path (dismiss via click/Escape).
@@ -218,37 +215,6 @@ export default function MediaDetails(props) {
 		}
 	}
 
-	const subtitleAcquire = (details && details.subtitleAcquire) || null
-	const subtitleJobActive =
-		subtitleAcquire &&
-		['ready', 'claimed', 'in_progress'].includes(subtitleAcquire.claimStatus)
-	const subtitleButtonLabel = subtitleBusy
-		? 'Queueing…'
-		: subtitleJobActive && subtitleAcquire.claimStatus === 'ready'
-		? 'Queued — waiting for ElanFlix'
-		: subtitleJobActive
-		? 'Adding subtitles…'
-		: 'Add subtitles'
-
-	const onAddSubtitles = async () => {
-		if (subtitleBusy || subtitleJobActive) return
-		setSubtitleBusy(true)
-		setSubtitleError(null)
-		try {
-			await addRequestSubtitles(id, user)
-			await fetchDetails()
-			if (handleRequestSubmit) handleRequestSubmit()
-		} catch (error) {
-			const msg =
-				error?.response?.data?.error ||
-				error?.message ||
-				'Could not queue subtitles'
-			setSubtitleError(msg === 'already_queued' ? 'Already queued' : msg)
-		} finally {
-			setSubtitleBusy(false)
-		}
-	}
-
 	Searchbar.StatusDropdown = useMemo(() => {
 		const QueueStatusOptions = [
 			'Not Yet Available',
@@ -300,7 +266,7 @@ export default function MediaDetails(props) {
 			'Fetch New Seasons',
 			'Video Not Working',
 			'Wrong Video',
-			'Add Subitles',
+			'Add Subtitles',
 			'Fix Subtitles'
 		]
 		const getOptions = (value, options) => {
@@ -658,29 +624,6 @@ export default function MediaDetails(props) {
 									>
 										Open dry run
 									</button>
-								</div>
-								<div className="diag-block">
-									<p className="block-label">Add subtitles</p>
-									<p className="details-section-hint">
-										Fetch missing English and Russian sidecars for library
-										files already on ElanFlix. Existing .srt files are left
-										alone. Closing this modal does not cancel the job.
-									</p>
-									<button
-										type="button"
-										className="dry-run-open"
-										disabled={subtitleBusy || subtitleJobActive}
-										onMouseDown={(event) => {
-											event.preventDefault()
-											event.stopPropagation()
-											onAddSubtitles()
-										}}
-									>
-										{subtitleButtonLabel}
-									</button>
-									{subtitleError && (
-										<p className="details-section-hint">{subtitleError}</p>
-									)}
 								</div>
 							</div>
 						</DetailsSection>

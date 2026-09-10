@@ -498,7 +498,8 @@ function SubtitleAcquireSection({ subtitleAcquire }) {
 			<Section title="Subtitle acquire" subtitle="no post-sort attempts">
 				<p className="trace-muted">
 					No acquiring_subtitles events yet. Missing en/ru files are fetched on
-					ElanFlix after sort, or via Add subtitles.
+					ElanFlix after sort, or via Request Update / Report Issue → Add
+					Subtitles.
 				</p>
 			</Section>
 		)

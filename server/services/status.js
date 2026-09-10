@@ -2,6 +2,7 @@
 // This is the single source of truth for how a request's status is shown.
 
 const { shouldDisplayNotYetAvailable } = require("./availability")
+const { isSubtitleRemediaLabel } = require("./subtitleRemedia")
 
 // Alternative "no source" outcomes — not a progression. Streama fail-closed
 // must not permanently upgrade Not Yet Available to Check Manually.
@@ -67,6 +68,8 @@ const ADMIN_LABELS = [
 	"Report Issue",
 	"Not Yet Available",
 	"Check Manually",
+	"Add Subtitles",
+	"Fix Subtitles",
 ]
 
 // "failed" can happen at any point and is not part of the linear order.
@@ -185,7 +188,15 @@ function displayStatus(request, now = new Date()) {
 	const isAdminOverride =
 		request.queueStatusSource === "admin" &&
 		ADMIN_LABELS.includes(request.queueStatus)
-	if (isAdminOverride) return request.queueStatus
+	if (isAdminOverride) {
+		if (
+			isSubtitleRemediaLabel(request.queueStatus) &&
+			request.pipelineStage === TERMINAL_FAILED
+		) {
+			return "Failed"
+		}
+		return request.queueStatus
+	}
 	if (
 		hasPendingSeasons(request) &&
 		!ACTIVE_PIPELINE.has(request.pipelineStage)

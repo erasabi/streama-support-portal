@@ -74,6 +74,8 @@ Every request has an `id`:
   `folderName` stays `{title}-{year}-tmdb{id}`.
 - **Issue / non-season update rows:** namespaced (`update:{tmdb}:{ts}` /
   `issue:{tmdb}:{ts}`) so they never collide with a pipeline request.
+  **Add Subtitles** / **Fix Subtitles** use this ticket plus `kind=subtitle_acquire`.
+  `folderName` still uses the canonical `tmdb{id}` so sortify can find library files.
 
 The portal carries that id through the pipeline via a **folder name**:
 
@@ -128,8 +130,8 @@ Rules the portal enforces:
   (`LEASE_STUCK_DOWNLOAD_MS`) and **2h** in encoding/sync/sortify stages
   (`LEASE_STUCK_ENCODE_MS`).
 - An admin status override (`Unavailable`, `Rolling Episodes`,
-  `Complete Collection`, `Request Update`, `Report Issue`) wins over derived
-  progress for display, but events are still recorded. **Archived** (`archivedAt`)
+  `Complete Collection`, `Request Update`, `Report Issue`, `Add Subtitles`,
+  `Fix Subtitles`) wins over derived progress for display, but events are still recorded. **Archived** (`archivedAt`)
   wins over everything.
 - `Unavailable` stops magnet retries and cancels `ready` jobs.
 - Portal records `subtitle_lookup` (English) even when no subtitle is found.

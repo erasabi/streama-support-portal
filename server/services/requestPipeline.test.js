@@ -7,6 +7,16 @@ describe("buildFolderName", () => {
 		expect(buildFolderName(request)).toBe("the-matrix-1999-tmdb603")
 	})
 
+	test("uses the canonical TMDB id for namespaced remedia tickets", () => {
+		expect(
+			buildFolderName({
+				id: "update:603:1787812595606",
+				title: "The Matrix",
+				releaseDate: "1999-03-31",
+			})
+		).toBe("the-matrix-1999-tmdb603")
+	})
+
 	test("adds a short info-hash suffix so multi-source folders stay distinct", () => {
 		const a = buildFolderName(request, "ABCDEF0123456789ABCDEF0123456789ABCDEF01")
 		const b = buildFolderName(request, "1111111122222222333333334444444455555555")

@@ -1,4 +1,4 @@
-const { Op } = require("sequelize")
+const { Op, literal } = require("sequelize")
 const db = require("../database")
 const { appendEvent, appendEventIfChanged } = require("./events")
 const {
@@ -25,8 +25,16 @@ const {
 	pendingSeasonsOf,
 	missingCodesForSeasons,
 } = require("./tvSeasons")
-const { lookupLibraryMovie, mediaHasVideo } = require("./streamaLibrary")
-const { isSubtitleAcquireJob, JOB_KIND_SUBTITLE_ACQUIRE } = require("./jobKind")
+const {
+	isSubtitleAcquireJob,
+	JOB_KIND_SUBTITLE_ACQUIRE,
+} = require("./jobKind")
+const {
+	subtitleRemediaLabel,
+	isSubtitleRemediaRequest,
+	tmdbIdFromRequest,
+} = require("./subtitleRemedia")
+const { lookupLibraryShow, lookupLibraryMovie, mediaHasVideo } = require("./streamaLibrary")
 
 // Recover the portal request id embedded in a pipeline folder name
 // ("...-tmdb603" -> "603").
@@ -88,7 +96,8 @@ function buildFolderName(request, infoHash) {
 	const year = (request.releaseDate || "").slice(0, 4)
 	const parts = [slug]
 	if (/^\d{4}$/.test(year)) parts.push(year)
-	parts.push(`tmdb${request.id}`)
+	const tmdbId = tmdbIdFromRequest(request) || request.id
+	parts.push(`tmdb${tmdbId}`)
 	if (infoHash) parts.push(infoHash.slice(0, 8).toLowerCase())
 	return parts.filter(Boolean).join("-")
 }
@@ -236,21 +245,47 @@ async function createReadyJob(
 	return job
 }
 
+async function findActiveSubtitleJobForTmdb(tmdbId) {
+	if (!tmdbId) return null
+	const id = String(tmdbId).replace(/'/g, "")
+	return db.PipelineJob.findOne({
+		where: {
+			claimStatus: ["ready", "claimed", "in_progress"],
+			[Op.and]: [
+				literal(`detail->>'kind' = '${JOB_KIND_SUBTITLE_ACQUIRE}'`),
+				literal(`detail->>'tmdbId' = '${id}'`),
+			],
+		},
+		order: [["createdAt", "ASC"]],
+	})
+}
+
+async function attachLibraryId(request, tmdbId) {
+	if (!request || request.streamaMediaId) return
+	const probe = { id: tmdbId, streamaMediaId: request.streamaMediaId }
+	try {
+		const lib = isTvMedia(request.mediaType)
+			? await lookupLibraryShow(probe)
+			: await lookupLibraryMovie(probe)
+		if (lib && lib.status === "found" && lib.streamaId) {
+			await persistStreamaId(request, lib.streamaId)
+			await request.reload()
+		}
+	} catch (err) {
+		console.error("subtitle remedia library lookup:", err.message)
+	}
+}
+
 async function enqueueSubtitleAcquireJob(request, actor = "admin") {
-	const tmdbId = canonicalTmdbId(request && request.id)
-	if (!tmdbId || isNamespacedRequestId(request.id)) {
+	const tmdbId = tmdbIdFromRequest(request)
+	if (!tmdbId) {
 		return { error: "tmdb_id_required", status: 400 }
 	}
-	const active = await db.PipelineJob.findAll({
-		where: {
-			requestId: request.id,
-			claimStatus: ["ready", "claimed", "in_progress"],
-		},
-	})
-	const duplicate = active.find((j) => isSubtitleAcquireJob(j))
+	const duplicate = await findActiveSubtitleJobForTmdb(tmdbId)
 	if (duplicate) {
 		return { error: "already_queued", status: 409, job: duplicate }
 	}
+	await attachLibraryId(request, tmdbId)
 	const job = await db.PipelineJob.create({
 		requestId: request.id,
 		mediaType: request.mediaType || null,
@@ -276,6 +311,97 @@ async function enqueueSubtitleAcquireJob(request, actor = "admin") {
 		},
 	})
 	return { job }
+}
+
+async function findOpenSubtitleRemedia(tmdbId) {
+	if (!tmdbId) return null
+	const rows = await db.Request.findAll({
+		where: {
+			archivedAt: { [Op.is]: null },
+			queueStatus: ["Add Subtitles", "Fix Subtitles"],
+		},
+	})
+	return rows.find((row) => tmdbIdFromRequest(row) === String(tmdbId)) || null
+}
+
+/**
+ * Request Update / Report Issue with Add/Fix Subtitles. Creates a ticket that
+ * stays labeled Add Subtitles (not Requested), queues en/ru acquire only, and
+ * never plans seasons or looks up a magnet.
+ */
+async function createSubtitleRemediaRequest(body, actor = "user") {
+	const tmdbId = tmdbIdFromRequest({ id: body && body.id })
+	if (!tmdbId) {
+		return { error: "tmdb_id_required", status: 400 }
+	}
+	const label = subtitleRemediaLabel(body && body.queueMessage)
+	if (!label) {
+		return { error: "tmdb_id_required", status: 400 }
+	}
+	const existing = await findOpenSubtitleRemedia(tmdbId)
+	if (existing) {
+		const queued = await enqueueSubtitleAcquireJob(existing, actor)
+		if (queued.error && queued.error !== "already_queued") {
+			return { error: queued.error, status: queued.status || 400, request: existing }
+		}
+		return { request: existing, job: queued.job, alreadyQueued: !!queued.error }
+	}
+	const fields = fieldsFromBody(body)
+	const incomingStatus = body && body.queueStatus
+	const prefix = incomingStatus === "Report Issue" ? "issue" : "update"
+	const request = await db.Request.create({
+		id: `${prefix}:${tmdbId}:${Date.now()}`,
+		title: fields.title,
+		posterPath: fields.posterPath,
+		originalTitle: fields.originalTitle,
+		releaseDate: fields.releaseDate,
+		adult: fields.adult,
+		mediaType: fields.mediaType,
+		queueStatus: label,
+		queueMessage: label,
+		requestUser: fields.requestUser,
+		queueStatusSource: "admin",
+		pipelineStage: null,
+		magnetLookupStatus: "not_applicable",
+	})
+	await appendEvent({
+		requestId: request.id,
+		actor,
+		type: "update_requested",
+		payload: {
+			requestUser: request.requestUser,
+			queueStatus: label,
+			queueMessage: label,
+			kind: JOB_KIND_SUBTITLE_ACQUIRE,
+		},
+	})
+	const queued = await enqueueSubtitleAcquireJob(request, actor)
+	if (queued.error) {
+		return { error: queued.error, status: queued.status || 400, request }
+	}
+	return { request, job: queued.job }
+}
+
+async function archiveSubtitleRemediaIfDone(requestId) {
+	const request = await db.Request.findByPk(normalizeRequestId(requestId))
+	if (!request || !isSubtitleRemediaRequest(request) || request.archivedAt) return null
+	await request.update({ archivedAt: new Date() })
+	await appendEvent({
+		requestId: request.id,
+		actor: "sortify",
+		type: "archived",
+		payload: { reason: "subtitle_acquire_finished" },
+	})
+	return request
+}
+
+async function markSubtitleRemediaFailed(requestId) {
+	const request = await db.Request.findByPk(normalizeRequestId(requestId))
+	if (!request || !isSubtitleRemediaRequest(request) || request.archivedAt) return null
+	if (status.shouldAdvance(request.pipelineStage, "failed")) {
+		await request.update({ pipelineStage: "failed" })
+	}
+	return request
 }
 
 function fieldsFromBody(body = {}) {
@@ -721,6 +847,9 @@ module.exports = {
 	runMagnetLookup,
 	createReadyJob,
 	enqueueSubtitleAcquireJob,
+	createSubtitleRemediaRequest,
+	archiveSubtitleRemediaIfDone,
+	markSubtitleRemediaFailed,
 	enqueueTvSeasonsJob,
 	enqueueTvSeasonUpdate,
 	approveTvSeasons,
