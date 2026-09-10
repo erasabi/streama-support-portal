@@ -33,7 +33,7 @@ or Sortify agent is unreachable — those calls are optional enrichment under
 | `fetchPlan` | What the portal decided the downloader should fetch after diffing against the Streama library, plus `plannedVsActual` |
 | `jobs` | Per-job claim status, lease, stage, `detail`, `ledger`, and whether any downloader evidence exists at all |
 | `encode` | Per-stage file and subtitle inventory by language, and the encoder's embedded-track report |
-| `subtitleAcquire` | Post-sort / **Add subtitles** attempts: per-language `kept` / `already_present` / `rejected` / `not_found` |
+| `subtitleAcquire` | Post-sort / **Add subtitles** attempts: per-language `kept` / `already_present` / `rejected` / `not_found`; remedia must still `addLocalFile` when status is `already_present` on disk |
 | `sortifyStreama` | Folder `tmdb` vs matcher `apiId` vs Streama title, and every dashboard highlight row |
 | `flags` / `flagSummary` | Auto-detected mismatches (see below) |
 | `events` | The `RequestEvent` timeline inline, so the document needs no follow-up queries |
@@ -81,6 +81,7 @@ rather than re-diagnosing it.
 | `subtitles_lost_between_encode_and_upload` | error | No subs on English-speaking shows |
 | `embedded_tracks_never_probed` | info | No subs on English-speaking shows |
 | `subtitle_acquire_rejected` | info | OpenSubtitles file discarded by the sync gate |
+| `subtitle_acquire_no_library_video` | error | Add Subtitles found no playable files in Streama / STORAGE |
 | `planned_episodes_never_delivered` | warn | Fetch plan vs actual |
 | `whole_season_queued_despite_gap_plan` | warn | Fetch plan vs actual |
 
@@ -100,9 +101,19 @@ That creates a namespaced ticket labeled **Add Subtitles** (not Requested)
 and a `PipelineJob` with `detail.kind = subtitle_acquire`. `GET /agent/v1/jobs`
 defaults to `kind=download`, so rentify never claims it. Sortify-agent polls
 `kind=subtitle_acquire`, writes missing `en`/`ru` sidecars when the sync gate
-passes, and attaches them to the existing Streama videos. The library title
-stays **Available**. When the job finishes, the ticket is archived and leaves
-the queue. A failed job stays on the queue as **Failed**.
+passes, and **always** `addLocalFile`s kept or already-on-disk sidecars onto
+the existing Streama videos (disk presence is not the same as a Streama
+subtitle track). Paths sent to `addLocalFile` must sit under the Streama
+Local Video Files tree (`media/03_STORAGE/...`), not the resolved disk mount
+(`/mnt/<uuid>/...`) — that 406s with “must be contained in the Local Video
+Files setting.” The library title stays **Available**. When the job finishes
+and attach verified, the ticket is archived and leaves the queue. A failed
+job (`no_library_video`, `attach_failed`) stays on the queue as **Failed**.
+
+Post-sort register must discover the same sidecars. TV often lands as
+`show/sNN/release-folder/episode.mp4` with `show/sNN/subs/*.srt`. If show-root
+discovery stops at the release folder, register uploads the video with no
+subs and the player stays empty even though the `.srt` files exist.
 
 `duplicate_dashboard_highlights` fires only on an authoritative
 `highlights.rowCount` from the sortify agent. Without the agent the trace can

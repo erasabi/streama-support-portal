@@ -21,6 +21,7 @@ const { loadPipelinePlanView } = require("./pipelinePlanView")
 const { subtitlesByLanguage } = require("./subtitleInventory")
 const { fetchPrelanflixView, fetchSortifyView } = require("./remoteAgents")
 const { tmdbFromFolder, buildFolderName } = require("./requestPipeline")
+const { canonicalTmdbId } = require("../utils/requestId")
 
 const ARTIFACT_STAGES = ["download", "encode", "upload"]
 const MAX_EVENTS = 400
@@ -64,7 +65,7 @@ function buildIdentity(request, jobs) {
 		.filter((name, i, list) => list.indexOf(name) === i)
 	return {
 		requestId: request.id,
-		tmdbId: request.id,
+		tmdbId: canonicalTmdbId(request.id) || request.id,
 		mediaType: request.mediaType || null,
 		title: request.title || null,
 		year: yearOf(request),
@@ -495,7 +496,7 @@ function flag(code, severity, message, detail) {
  * The known recurrence patterns, checked explicitly so a trace says what is
  * wrong instead of leaving it to be spotted by eye.
  */
-function buildSubtitleAcquire(events) {
+function buildSubtitleAcquire(events, jobs) {
 	const attempts = events
 		.filter((e) => e.type === "acquiring_subtitles")
 		.map((e) => {
@@ -511,6 +512,20 @@ function buildSubtitleAcquire(events) {
 			}
 		})
 		.filter((a) => a.video || Object.keys(a.languages).length)
+	if (!attempts.length) {
+		for (const job of asArray(jobs)) {
+			const acquire = asObject(asObject(job.detail).subtitleAcquire)
+			const languages = asObject(acquire.languages)
+			if (!acquire.video && !Object.keys(languages).length) continue
+			attempts.push({
+				at: job.updatedAt || job.createdAt || null,
+				trigger: acquire.trigger || null,
+				video: acquire.video || null,
+				tmdbId: acquire.tmdbId || null,
+				languages,
+			})
+		}
+	}
 	return { attempts, latest: attempts[0] || null }
 }
 
@@ -713,6 +728,25 @@ function buildFlags({ request, identity, magnetLookup, fetchPlan, jobs, encode, 
 			)
 		)
 	}
+	const skippedNoVideo = []
+	for (const attempt of acquireAttempts) {
+		const languages = asObject(attempt.languages)
+		for (const [language, row] of Object.entries(languages)) {
+			if (row && row.status === "skipped" && row.reason === "no_library_video") {
+				skippedNoVideo.push({ language, tmdbId: attempt.tmdbId || null })
+			}
+		}
+	}
+	if (skippedNoVideo.length) {
+		flags.push(
+			flag(
+				"subtitle_acquire_no_library_video",
+				"error",
+				"Add Subtitles found no library video files. Sorted STORAGE folders usually omit tmdb{id}; sortify must resolve paths from Streama.",
+				{ skipped: skippedNoVideo }
+			)
+		)
+	}
 
 	if (encode.embeddedTrackReports.length === 0 && uploadStage.videoCount > 0) {
 		flags.push(
@@ -810,7 +844,7 @@ async function loadPipelineTrace(request, opts = {}) {
 			fetchSortifyView(
 				{
 					folderName,
-					tmdbId: row.id,
+					tmdbId: canonicalTmdbId(row.id) || row.id,
 					streamaMediaId: row.streamaMediaId,
 				},
 				opts
@@ -819,7 +853,7 @@ async function loadPipelineTrace(request, opts = {}) {
 	}
 
 	const sortifyStreama = buildSortifyStreama(row, events, identity, remoteSortify)
-	const subtitleAcquire = buildSubtitleAcquire(events)
+	const subtitleAcquire = buildSubtitleAcquire(events, jobsPlain)
 
 	const flags = buildFlags({
 		request: row,

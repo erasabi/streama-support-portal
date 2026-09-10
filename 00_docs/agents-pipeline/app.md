@@ -101,9 +101,11 @@ Set `DB_HOST=localhost` in `.env` when the database container publishes `5432`.
    and saved-run history), and **History**.
    After sort, sortify fetches missing English and Russian sidecars, aligns
    them with `ffsubsync`, and keeps them only when the sync gate passes
-   (`acquiring_subtitles`). The same path can be queued later with Request
-   Update / Report Issue → **Add Subtitles** without rewinding **Available**
-   or starting a download.
+   (`acquiring_subtitles`). Streama register then `addLocalFile`s those
+   sidecars, including season `subs/` next to a nested release folder.
+   The same path can be queued later with Request Update / Report Issue →
+   **Add Subtitles** without rewinding **Available** or starting a download;
+   that remedia attaches on-disk sidecars that never made it into Streama.
    A worker may post
    `paused` when Prelanflix disk is below its watermark; the job stays `ready`
    (no lease) and the badge shows **Paused**. Owner and admin

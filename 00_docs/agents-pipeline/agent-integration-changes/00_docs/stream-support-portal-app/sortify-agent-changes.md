@@ -59,7 +59,7 @@ admin Unlinked inbox.
 |---|---|---|
 | `lib/presort_bridge.py::promote_presort_ready` | item promoted PRE-SORT → TO-SORT | `post_event({folderName, stage:"uploaded"})` |
 | `lib/runner.py::run_agent` after successful `apply_plan` (moved to storage, pre-Streama) | files placed | `post_event({folderName, stage:"sorting"})` |
-| `lib/subtitle_acquire.py::acquire_for_planned` | missing en/ru after sort | `post_event({..., stage:"acquiring_subtitles", detail.subtitleAcquire})` |
+| `lib/subtitle_acquire.py::acquire_for_planned` | missing en/ru after sort | `post_event({..., stage:"acquiring_subtitles", detail.subtitleAcquire})` (disk only; register attaches) |
 | `sortify-check` every tick | remedia Add Subtitles jobs | poll `GET /agent/v1/jobs?kind=subtitle_acquire` |
 | `lib/defer_queue.py::mark_deferred` | item deferred | `post_event({folderName, stage:"deferred", detail:{reason}})` |
 | `lib/runner.py::run_streama_stage` start | registration begins | `post_event({..., stage:"registering"})` |

@@ -89,11 +89,19 @@ means "not in this mirror", not "does not exist".
 
 ElanFlix now has a real acquire path for **missing en/ru** after sort (and via
 Request Update / Report Issue **Add Subtitles**): OpenSubtitles → `ffsubsync`
-→ confidence gate → place sidecar → attach in Streama. Fail closed on the subtitle, fail open on
-the video. Trace section `subtitleAcquire` and flag `subtitle_acquire_rejected`
-(info) record discarded downloads. This does **not** change Prelanflix YIFY
-attach (`subtitleUrl` remains English-only) and does not rewrite
-`no_subtitles_at_upload` (that flag is still the upload inventory).
+→ confidence gate → place sidecar → Streama register / `addLocalFile`. Fail
+closed on the subtitle, fail open on the video. **Sidecars on disk are not
+player tracks.** Recurrence: TV nested as `sNN/release-folder/episode.mp4`
+made `subtitle_paths_for_video` miss `sNN/subs/`, so register attached the
+video with no subs; remedia then treated `already_present` on disk as done
+and skipped `addLocalFile`. Register now walks the nested release layout;
+Add Subtitles always attaches kept/on-disk files to the Streama video and
+fails the ticket on `attach_failed`. `addLocalFile` uses the `media/` symlink
+path, not `/mnt/<uuid>/` (Streama 406). Trace section `subtitleAcquire` and flag
+`subtitle_acquire_rejected` (info) record discarded downloads. This does
+**not** change Prelanflix YIFY attach (`subtitleUrl` remains English-only)
+and does not rewrite `no_subtitles_at_upload` (that flag is still the upload
+inventory).
 
 Still open on the Prelanflix / encode side:
 

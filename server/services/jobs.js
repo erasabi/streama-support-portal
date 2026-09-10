@@ -197,7 +197,7 @@ async function recordProgress(jobId, progress) {
 			detail,
 		})
 	}
-	if (subtitleJob && incomingDetail.subtitleAcquire && incomingDetail.finish) {
+	if (subtitleJob && incomingDetail.subtitleAcquire && incomingDetail.finish && stage !== "failed") {
 		const { archiveSubtitleRemediaIfDone } = require("./requestPipeline")
 		await archiveSubtitleRemediaIfDone(job.requestId)
 	} else if (subtitleJob && stage === "failed") {

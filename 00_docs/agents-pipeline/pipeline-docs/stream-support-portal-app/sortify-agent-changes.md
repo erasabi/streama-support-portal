@@ -54,8 +54,8 @@ If an id cannot be resolved, still `post_event` with `folderName` (+ `title` /
 |---|---|
 | `promote_presort_ready` after a successful promote | `uploaded` |
 | `run_agent` after successful apply, before Streama | `sorting` (wired in `runner.py`) |
-| `subtitle_acquire.acquire_for_planned` after sorting | `acquiring_subtitles` + `detail.subtitleAcquire` per video |
-| `sortify-check` every tick | drain `kind=subtitle_acquire` jobs (Request Update Add Subtitles) |
+| `subtitle_acquire.acquire_for_planned` after sorting | `acquiring_subtitles` + `detail.subtitleAcquire` per video (sidecars on disk; Streama attach is register) |
+| `sortify-check` every tick | drain `kind=subtitle_acquire` jobs; remedia `addLocalFile`s on-disk sidecars onto the Streama video |
 | `mark_deferred` | `deferred` + `detail.reason` |
 | start of `run_streama_stage` | `registering` (wired in `runner.py`) |
 | after `register_sorted_media` per playable title | `pending_approval`, then highlight + `highlighted` — or `available` if highlight is skipped/fails |

@@ -43,7 +43,7 @@ function makeTrace({
 	const jobViews = buildJobs(jobs, artifacts)
 	const encode = buildEncode(artifacts, events)
 	const sortifyStreama = buildSortifyStreama(row, events, identity, remoteSortify)
-	const subtitleAcquire = buildSubtitleAcquire(events)
+	const subtitleAcquire = buildSubtitleAcquire(events, jobs)
 	const flags = buildFlags({
 		request: row,
 		identity,
@@ -66,6 +66,15 @@ describe("identity", () => {
 		})
 		expect(identity.expectedFolderName).toBe("detroiters-2017-tmdb69866")
 		expect(identity.folderTmdbIds).toEqual(["69866"])
+	})
+
+	test("canonical TMDB id from a namespaced Add Subtitles ticket", () => {
+		const { identity } = makeTrace({
+			request: { id: "update:270476:1789021540218", title: "Widow's Bay", releaseDate: "2026-01-01" },
+			jobs: [{ id: "j1", folderName: "widow-s-bay-2026-tmdb270476" }],
+		})
+		expect(identity.tmdbId).toBe("270476")
+		expect(identity.expectedFolderName).toBe("widow-s-bay-2026-tmdb270476")
 	})
 })
 
@@ -597,5 +606,30 @@ describe("subtitle acquire", () => {
 		expect(codes(flags)).not.toContain("no_subtitles_at_upload")
 		const row = flags.find((f) => f.code === "subtitle_acquire_rejected")
 		expect(row.severity).toBe("info")
+	})
+
+	test("job detail skip no_library_video is an error flag", () => {
+		const { flags, subtitleAcquire } = makeTrace({
+			request: { pipelineStage: "acquiring_subtitles" },
+			jobs: [
+				{
+					id: "j1",
+					detail: {
+						kind: "subtitle_acquire",
+						subtitleAcquire: {
+							video: null,
+							tmdbId: "270476",
+							trigger: "manual",
+							languages: {
+								en: { status: "skipped", reason: "no_library_video" },
+								ru: { status: "skipped", reason: "no_library_video" },
+							},
+						},
+					},
+				},
+			],
+		})
+		expect(subtitleAcquire.latest.languages.en.reason).toBe("no_library_video")
+		expect(codes(flags)).toContain("subtitle_acquire_no_library_video")
 	})
 })
