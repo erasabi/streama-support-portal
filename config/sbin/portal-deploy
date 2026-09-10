@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Root-only. Restart portal.service (docker-compose up --build) then migrate.
+# No arguments — sudoers matches this path with an empty argv.
+set -euo pipefail
+if [[ $# -ne 0 ]]; then
+	echo "usage: portal-deploy" >&2
+	exit 2
+fi
+
+echo "==> systemctl restart portal.service"
+systemctl restart portal.service
+
+api_http_code() {
+	curl -s -o /dev/null -w '%{http_code}' --max-time 3 "$1" || true
+}
+
+echo "==> waiting for API"
+ok=0
+for _ in $(seq 1 180); do
+	code="$(api_http_code http://127.0.0.1:3000/agent/v1/jobs)"
+	if [[ "$code" != "000" && -n "$code" ]]; then
+		echo "==> API listening (HTTP ${code})"
+		ok=1
+		break
+	fi
+	sleep 3
+done
+if [[ "$ok" != 1 ]]; then
+	echo "portal-deploy: API did not come up" >&2
+	exit 1
+fi
+
+/usr/local/sbin/portal-migrate
+
+echo "==> waiting for /requests/all after migrate"
+ok=0
+code=""
+for _ in $(seq 1 30); do
+	code="$(api_http_code http://127.0.0.1:3000/requests/all)"
+	if [[ "$code" == "200" ]]; then
+		ok=1
+		break
+	fi
+	sleep 2
+done
+if [[ "$ok" != 1 ]]; then
+	echo "portal-deploy: /requests/all not 200 (last HTTP ${code:-none})" >&2
+	exit 1
+fi
+
+echo "portal-deploy: done"

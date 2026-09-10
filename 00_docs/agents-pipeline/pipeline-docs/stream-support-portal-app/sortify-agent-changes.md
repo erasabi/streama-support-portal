@@ -18,7 +18,7 @@ portal:
   enabled: true
   base_url: "http://catalog.gateway.lan_server_name:3000"   # override with PORTAL_BASE_URL
   token: ""                            # matches portal SORTIFY_API_TOKEN
-  events: [uploaded, sorting, deferred, registering, pending_approval, highlighted, failed]
+  events: [uploaded, sorting, deferred, acquiring_subtitles, registering, pending_approval, highlighted, failed]
 ```
 
 Load `PORTAL_BASE_URL` / `PORTAL_TOKEN` from `~/.config/catalog.ssh_alias/portal.env` (see
@@ -31,6 +31,8 @@ Stdlib HTTP (same style as `streama_bridge.StreamaClient`):
 
 - `post_event(payload)` → `POST {base}/agent/v1/events`
 - `get_request_by_tmdb(tmdb_id)` → `GET {base}/agent/v1/requests/by-tmdb/{id}`
+- `list_jobs(status, kind)` → `GET {base}/agent/v1/jobs?status=&kind=`
+- `claim_job` / `heartbeat` / `progress_job` for `kind=subtitle_acquire` remedia jobs
 
 Always `Authorization: Bearer {token}`. Portal failures never break sort /
 apply / Streama registration.
@@ -52,6 +54,8 @@ If an id cannot be resolved, still `post_event` with `folderName` (+ `title` /
 |---|---|
 | `promote_presort_ready` after a successful promote | `uploaded` |
 | `run_agent` after successful apply, before Streama | `sorting` (wired in `runner.py`) |
+| `subtitle_acquire.acquire_for_planned` after sorting | `acquiring_subtitles` + `detail.subtitleAcquire` per video |
+| `sortify-check` every tick | drain `kind=subtitle_acquire` jobs (Add subtitles) |
 | `mark_deferred` | `deferred` + `detail.reason` |
 | start of `run_streama_stage` | `registering` (wired in `runner.py`) |
 | after `register_sorted_media` per playable title | `pending_approval`, then highlight + `highlighted` — or `available` if highlight is skipped/fails |
@@ -78,6 +82,22 @@ has failed `FAIL_ATTEMPT_LIMIT` (10) consecutive times.
 `requestUser` comes from `get_request_by_tmdb`. No portal match → still
 register in Streama; skip highlight (do not invent a user). HTTP **409**
 (“already have a highlight”) is success, then `stage: "highlighted"`.
+
+### Trace fields in `detail`
+
+`POST /agent/v1/events` whitelists top-level payload keys, so anything the
+portal trace needs beyond that contract travels inside `detail`.
+
+| `detail` field | Posted on | Value |
+|---|---|---|
+| `apiId` | `pending_approval`, `highlighted` | matcher `apiId` — lets the portal compare it against folder `tmdb{id}` and detect a wrong-media match |
+| `highlightStatus` | `highlighted` | `created` (201) or `already_exists` (409) |
+| `videoToPlayId` | `highlighted` | the Streama video id sent as `videoToPlay` |
+
+`highlightStatus` exists because 201 and 409 both count as success, so the
+portal could not tell one dashboard row re-reported N times from N real rows.
+`StreamaClient.highlight_on_dashboard_status()` reports which occurred;
+`highlight_on_dashboard()` stays a bool wrapper over it for existing callers.
 
 Portal admin overrides (`Rolling Episodes`, etc.) stay on the portal; sortify
 still posts per-title events.

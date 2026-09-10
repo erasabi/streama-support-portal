@@ -5,6 +5,7 @@ const { appendEvent } = require("../services/events")
 const {
 	runMagnetLookup,
 	createReadyJob,
+	enqueueSubtitleAcquireJob,
 	enqueueTvSeasonsJob,
 	enqueueTvSeasonUpdate,
 	approveTvSeasons,
@@ -16,7 +17,10 @@ const { extractInfoHash } = require("../services/magnetLookup")
 const { displayStatus, ADMIN_LABELS } = require("../services/status")
 const { canViewMagnet, isAdminRequest } = require("../services/auth")
 const { loadPipelinePlanView } = require("../services/pipelinePlanView")
+const { loadPipelineTrace } = require("../services/pipelineTrace")
+const { runDryRun, loadDryRunReport, listDryRuns } = require("../services/pipelineDryRun")
 const { normalizeRequestId, isNamespacedRequestId } = require("../utils/requestId")
+const { isSubtitleAcquireJob } = require("../services/jobKind")
 
 const getDbConnectionStatus = async () => {
 	try {
@@ -112,6 +116,7 @@ async function syncRequestSources(request, urls, actor = "admin") {
 			where: { requestId: request.id, claimStatus: "ready" },
 		})
 		for (const job of jobs) {
+			if (isSubtitleAcquireJob(job)) continue
 			const match = removed.some((u) =>
 				job.infoHash
 					? job.infoHash === extractInfoHash(u)
@@ -142,6 +147,49 @@ router.get("/all", function (req, res) {
 		})
 })
 
+// Admin: rehearse a request without creating anything. Runs the real source
+// lookup plus Streama match/highlight checks, then reports what would happen.
+// Registered before "/:id" routes so "dry-run" is never read as an id.
+router.post("/dry-run", async function (req, res) {
+	if (!isAdminRequest(req)) return res.status(403).json({ error: "admin only" })
+	try {
+		const report = await runDryRun(req.body || {})
+		if (!report.ok) return res.status(400).json(report)
+		res.status(200).json(report)
+	} catch (err) {
+		console.error("dry-run error:", err.message)
+		res.status(500).json({ error: err.message })
+	}
+})
+
+router.get("/dry-runs", async function (req, res) {
+	if (!isAdminRequest(req)) return res.status(403).json({ error: "admin only" })
+	try {
+		const dryRuns = await listDryRuns({
+			tmdbId: req.query.tmdbId,
+			requestId: req.query.requestId,
+		})
+		res.status(200).json({ ok: true, dryRuns })
+	} catch (err) {
+		console.error("dry-run list error:", err.message)
+		res.status(500).json({ error: err.message })
+	}
+})
+
+router.get("/dry-run/:id", async function (req, res) {
+	if (!isAdminRequest(req)) return res.status(403).json({ error: "admin only" })
+	try {
+		const report = await loadDryRunReport(req.params.id)
+		if (!report.ok && report.error === "not found") {
+			return res.status(404).json(report)
+		}
+		res.status(200).json(report)
+	} catch (err) {
+		console.error("dry-run poll error:", err.message)
+		res.status(500).json({ error: err.message })
+	}
+})
+
 router.get("/:id", async function (req, res) {
 	try {
 		const request = await db.Request.findByPk(normalizeRequestId(req.params.id))
@@ -149,6 +197,18 @@ router.get("/:id", async function (req, res) {
 		const detail = toDetailJSON(request, req)
 		if (isAdminRequest(req)) {
 			detail.pipelinePlan = await loadPipelinePlanView(request)
+			const jobRows = await db.PipelineJob.findAll({
+				where: { requestId: request.id },
+				order: [["createdAt", "DESC"]],
+			})
+			const subJob = jobRows.find((j) => isSubtitleAcquireJob(j))
+			detail.subtitleAcquire = subJob
+				? {
+						jobId: subJob.id,
+						claimStatus: subJob.claimStatus,
+						stage: subJob.stage || null,
+				  }
+				: null
 		}
 		res.status(200).json(detail)
 	} catch (err) {
@@ -166,6 +226,24 @@ router.get("/:id/events", async function (req, res) {
 		res.status(200).json(events)
 	} catch (err) {
 		res.status(500).send(JSON.stringify(err))
+	}
+})
+
+// Admin: the full cross-hop trace for one request. Read-only. Self-contained by
+// design -- the whole response is meant to be pasted into a debug agent.
+// `?remote=0` skips the optional Prelanflix/Sortify calls.
+router.get("/:id/trace", async function (req, res) {
+	if (!isAdminRequest(req)) return res.status(403).json({ error: "admin only" })
+	try {
+		const request = await db.Request.findByPk(normalizeRequestId(req.params.id))
+		if (!request) return res.status(404).json({ error: "not found" })
+		const trace = await loadPipelineTrace(request, {
+			includeRemote: req.query.remote !== "0" && req.query.remote !== "false",
+		})
+		res.status(200).json(trace)
+	} catch (err) {
+		console.error("trace error:", err.message)
+		res.status(500).json({ error: err.message })
 	}
 })
 
@@ -428,6 +506,30 @@ router.put("/:id/sources", async function (req, res) {
 })
 
 // Admin queues some or all gap seasons that were held for approval.
+router.post("/:id/subtitles", async function (req, res) {
+	if (!isAdminRequest(req)) return res.status(403).json({ error: "admin only" })
+	try {
+		const request = await db.Request.findByPk(normalizeRequestId(req.params.id))
+		if (!request) return res.status(404).json({ error: "not found" })
+		const result = await enqueueSubtitleAcquireJob(request, "admin")
+		if (result.error) {
+			return res.status(result.status || 400).json({
+				error: result.error,
+				jobId: result.job && result.job.id,
+			})
+		}
+		res.status(200).json({
+			jobId: result.job.id,
+			claimStatus: result.job.claimStatus,
+			stage: result.job.stage,
+			request: toPublicJSON(request),
+		})
+	} catch (err) {
+		console.error("add subtitles error:", err.message)
+		res.status(500).json({ error: err.message })
+	}
+})
+
 router.post("/:id/seasons", async function (req, res) {
 	if (!isAdminRequest(req)) return res.status(403).json({ error: "admin only" })
 	try {

@@ -40,7 +40,8 @@ user request (portal)
    │         a new show. Unreleased titles stay Not Yet Available. Fetch New
    │         Seasons / Request Update sets the row to Requested immediately
    │         (Coming Soon) and plans seasons in the background. Streama lookups
-   │         time out; they do not hang Submit. It does not demote an already-
+   │         query movie/show index by TMDB apiId (not a full page scan). They
+   │         still time-bound and fail closed; they do not hang Submit. It does not demote an already-
    │         Available badge if Streama is down after the card is showing.
    │         New workers fetch `missing[]` and do not subtract `presentSeasons`.
    │         `seasons` stays on the job for legacy workers. Empty `missing[]`
@@ -142,7 +143,7 @@ All requests need the bearer token.
 
 | Method | Path | Body / Query | Returns |
 |---|---|---|---|
-| GET | `/agent/v1/jobs?status=ready` | — | `[{ jobId, requestId, mediaType, folderName, sourceUrl, subtitleUrl, title, requestUser, seasons, missing, presentSeasons, allowPresentSeasons, stage, infoHash, claimStatus, claimedBy, ledger }]` |
+| GET | `/agent/v1/jobs?status=ready` | `kind=download` (default) or `kind=subtitle_acquire` | `[{ jobId, requestId, mediaType, folderName, sourceUrl, subtitleUrl, title, requestUser, seasons, missing, presentSeasons, allowPresentSeasons, kind, tmdbId, streamaMediaId, languages, stage, infoHash, claimStatus, claimedBy, ledger }]` |
 | GET | `/agent/v1/jobs?status=claimed\|in_progress&claimedBy=` | — | Same shape. Worker resumes its own in-flight jobs into `portal-jobs.json`. Disk-paused jobs stay `ready` (no lease). |
 | POST | `/agent/v1/jobs/:id/claim` | `{ claimedBy?, leaseMs? }` | `{ jobId, requestId, folderName, sourceUrl, subtitleUrl, mediaType, seasons, missing, presentSeasons, allowPresentSeasons, leaseUntil, ledger }` or 409 |
 | POST | `/agent/v1/jobs/:id/heartbeat` | `{ leaseMs? }` | `{ jobId, leaseUntil }` |

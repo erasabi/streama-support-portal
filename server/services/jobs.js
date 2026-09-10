@@ -3,7 +3,8 @@ const db = require("../database")
 const { appendEvent, appendEventIfChanged } = require("./events")
 const status = require("./status")
 const { normalizeRequestId } = require("../utils/requestId")
-const { subtitleEventFromDetail } = require("./subtitleEvents")
+const { subtitleEventsFromDetail } = require("./subtitleEvents")
+const { isSubtitleAcquireJob } = require("./jobKind")
 const { noTorrentsDetail } = require("./status")
 const { classifySourceMiss } = require("./availability")
 const {
@@ -38,15 +39,24 @@ async function claimJob(jobId, claimedBy, leaseMs = DEFAULT_LEASE_MS) {
 		}
 	)
 	if (count === 0) return null
-	const job = await db.PipelineJob.findByPk(jobId)
+	let job = await db.PipelineJob.findByPk(jobId)
+	if (isSubtitleAcquireJob(job) && job.stage === "claimed") {
+		await job.update({ stage: "acquiring_subtitles" })
+		job = await db.PipelineJob.findByPk(jobId)
+	}
 	await appendEvent({
 		requestId: job.requestId,
 		jobId: job.id,
-		actor: "pipeline",
+		actor: isSubtitleAcquireJob(job) ? "sortify" : "pipeline",
 		type: "claimed",
-		payload: { claimedBy: job.claimedBy },
+		payload: {
+			claimedBy: job.claimedBy,
+			...(isSubtitleAcquireJob(job) ? { kind: "subtitle_acquire" } : {}),
+		},
 	})
-	await applyStageToRequest(job.requestId, "claimed", null)
+	if (!isSubtitleAcquireJob(job)) {
+		await applyStageToRequest(job.requestId, "claimed", null)
+	}
 	return job
 }
 
@@ -90,8 +100,26 @@ async function recordProgress(jobId, progress) {
 	if (infoHash) updates.infoHash = infoHash
 	if (folderName) updates.folderName = folderName
 
+	const subtitleJob = isSubtitleAcquireJob({
+		detail: updates.detail || job.detail,
+	})
+	const incomingDetail =
+		detail != null && typeof detail === "object" && !Array.isArray(detail)
+			? detail
+			: {}
+
 	// Reflect claim lifecycle from stages.
-	if (stage === "failed") {
+	if (subtitleJob) {
+		if (stage === "failed") {
+			updates.claimStatus = "failed"
+		} else if (incomingDetail.subtitleAcquire && incomingDetail.finish) {
+			updates.claimStatus = "completed"
+			updates.claimedBy = null
+			updates.leaseUntil = null
+		} else if (stage && stage !== "magnet_ready") {
+			updates.claimStatus = "in_progress"
+		}
+	} else if (stage === "failed") {
 		updates.claimStatus = "failed"
 	} else if (stage === "paused") {
 		// Prelanflix owns disk; do not claim or fail. Stay ready until watermark recovers.
@@ -153,17 +181,16 @@ async function recordProgress(jobId, progress) {
 		type: requestStage || "progress",
 		payload: { progressPct, etaSeconds, detail },
 	})
-	const subtitleEvent = subtitleEventFromDetail(detail)
-	if (subtitleEvent) {
+	for (const subtitleEvent of subtitleEventsFromDetail(detail)) {
 		await appendEvent({
 			requestId: job.requestId,
 			jobId: job.id,
-			actor: "pipeline",
+			actor: subtitleJob ? "sortify" : "pipeline",
 			type: subtitleEvent.type,
 			payload: subtitleEvent.payload,
 		})
 	}
-	if (stage) {
+	if (stage && !(subtitleJob && requestStage === "failed")) {
 		await applyStageToRequest(job.requestId, requestStage, {
 			progressPct: progressPct != null ? progressPct : undefined,
 			etaSeconds: etaSeconds != null ? etaSeconds : undefined,
@@ -212,23 +239,26 @@ async function maybeRelookupMovieMagnet(job, failedFromStage) {
 async function releaseJob(jobId, reason) {
 	const job = await db.PipelineJob.findByPk(jobId)
 	if (!job) return null
+	const subtitleJob = isSubtitleAcquireJob(job)
 	await job.update({
 		claimStatus: "ready",
 		claimedBy: null,
 		claimedAt: null,
 		leaseUntil: null,
-		stage: "magnet_ready",
+		stage: subtitleJob ? "acquiring_subtitles" : "magnet_ready",
 	})
 	await appendEvent({
 		requestId: job.requestId,
 		jobId: job.id,
 		actor: "pipeline",
 		type: "released",
-		payload: { reason: reason || null },
+		payload: { reason: reason || null, ...(subtitleJob ? { kind: "subtitle_acquire" } : {}) },
 	})
-	await applyStageToRequest(job.requestId, "magnet_ready", {
-		reason: reason || "released",
-	})
+	if (!subtitleJob) {
+		await applyStageToRequest(job.requestId, "magnet_ready", {
+			reason: reason || "released",
+		})
+	}
 	return job
 }
 
@@ -240,17 +270,19 @@ async function requeueJobsForRequest(requestId, reason) {
 			claimStatus: { [Op.in]: ["failed", "cancelled"] },
 		},
 	})
+	let downloadRequeued = 0
 	for (const job of rows) {
 		const prev =
 			job.detail && typeof job.detail === "object" && !Array.isArray(job.detail)
 				? job.detail
 				: {}
+		const subtitleJob = isSubtitleAcquireJob(job)
 		await job.update({
 			claimStatus: "ready",
 			claimedBy: null,
 			claimedAt: null,
 			leaseUntil: null,
-			stage: "magnet_ready",
+			stage: subtitleJob ? "acquiring_subtitles" : "magnet_ready",
 			detail: { ...prev, stalledSince: null },
 		})
 		await appendEvent({
@@ -258,10 +290,14 @@ async function requeueJobsForRequest(requestId, reason) {
 			jobId: job.id,
 			actor: "admin",
 			type: "requeued",
-			payload: { reason: reason || null },
+			payload: {
+				reason: reason || null,
+				...(subtitleJob ? { kind: "subtitle_acquire" } : {}),
+			},
 		})
+		if (!subtitleJob) downloadRequeued += 1
 	}
-	if (rows.length) {
+	if (downloadRequeued) {
 		await applyStageToRequest(requestId, "magnet_ready", {
 			reason: reason || "requeued",
 		})
@@ -387,23 +423,30 @@ async function reapExpiredLeases() {
 				detail: { ...prev, stalledSince },
 			})
 		} else {
+			const subtitleJob = isSubtitleAcquireJob(job)
 			await job.update({
 				claimStatus: "ready",
 				claimedBy: null,
 				claimedAt: null,
 				leaseUntil: null,
-				stage: "magnet_ready",
+				stage: subtitleJob ? "acquiring_subtitles" : "magnet_ready",
 			})
 			await appendEvent({
 				requestId: job.requestId,
 				jobId: job.id,
 				actor: "portal",
 				type: "lease_expired",
-				payload: { stage: job.stage, requeued: true },
+				payload: {
+					stage: job.stage,
+					requeued: true,
+					...(subtitleJob ? { kind: "subtitle_acquire" } : {}),
+				},
 			})
-			await applyStageToRequest(job.requestId, "magnet_ready", {
-				reason: "lease_expired",
-			})
+			if (!subtitleJob) {
+				await applyStageToRequest(job.requestId, "magnet_ready", {
+					reason: "lease_expired",
+				})
+			}
 		}
 	}
 	return stuck.length

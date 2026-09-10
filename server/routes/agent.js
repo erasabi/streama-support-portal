@@ -5,16 +5,22 @@ const { agentAuth } = require("../services/auth")
 const { appendEvent, appendEventIfChanged } = require("../services/events")
 const jobs = require("../services/jobs")
 const { resolveRequest } = require("../services/requestPipeline")
-const { subtitleEventFromDetail } = require("../services/subtitleEvents")
+const { subtitleEventsFromDetail } = require("../services/subtitleEvents")
+const { jobKind, kindSql, jobDetail } = require("../services/jobKind")
+const { literal, Op } = require("sequelize")
 const { displayStatus, ADMIN_LABELS } = require("../services/status")
 const { normalizeRequestId } = require("../utils/requestId")
 
 function jobLibraryFields(job) {
-	const detail = job && job.detail && typeof job.detail === "object" ? job.detail : {}
+	const detail = jobDetail(job)
 	return {
+		kind: jobKind(job),
 		presentSeasons: Array.isArray(detail.presentSeasons) ? detail.presentSeasons : null,
 		allowPresentSeasons: !!detail.allowPresentSeasons,
 		missing: Array.isArray(detail.missing) ? detail.missing : null,
+		tmdbId: detail.tmdbId || null,
+		streamaMediaId: detail.streamaMediaId || null,
+		languages: Array.isArray(detail.languages) ? detail.languages : null,
 	}
 }
 
@@ -24,10 +30,16 @@ router.use(agentAuth)
 router.get("/v1/jobs", async function (req, res) {
 	try {
 		const status = req.query.status || "ready"
+		const kind = req.query.kind || "download"
 		const jobRows = await db.PipelineJob.findAll({
 			where: {
-				claimStatus: status,
-				...(req.query.claimedBy ? { claimedBy: req.query.claimedBy } : {}),
+				[Op.and]: [
+					{
+						claimStatus: status,
+						...(req.query.claimedBy ? { claimedBy: req.query.claimedBy } : {}),
+					},
+					literal(kindSql(kind)),
+				],
 			},
 			order: [["createdAt", "ASC"]],
 			limit: 50,
@@ -195,8 +207,7 @@ router.post("/v1/events", async function (req, res) {
 
 		// Surface subtitle upload results as their own timeline entries when an
 		// agent reports them in `detail` (best-effort; contract is loose).
-		const subtitleEvent = subtitleEventFromDetail(detail)
-		if (subtitleEvent) {
+		for (const subtitleEvent of subtitleEventsFromDetail(detail)) {
 			await appendEvent({
 				requestId: request.id,
 				actor: req.agent === "sortify" ? "sortify" : "pipeline",
@@ -217,6 +228,58 @@ router.post("/v1/events", async function (req, res) {
 		await jobs.applyArtifactsToRequest(request.id, artifacts)
 
 		res.status(200).json({ linked: true, requestId: request.id })
+	} catch (err) {
+		res.status(500).json({ error: err.message })
+	}
+})
+
+// Admin dry-run tickets for Prelanflix. Worker runs piratify --dry-run only.
+router.get("/v1/dry-runs", async function (req, res) {
+	try {
+		const status = req.query.status || "ready"
+		const rows = await db.PipelineDryRun.findAll({
+			where: { status },
+			order: [["createdAt", "ASC"]],
+			limit: 20,
+		})
+		res.status(200).json(
+			rows.map((row) => ({
+				id: row.id,
+				status: row.status,
+				payload: row.payload || {},
+			}))
+		)
+	} catch (err) {
+		res.status(500).json({ error: err.message })
+	}
+})
+
+router.post("/v1/dry-runs/:id/claim", async function (req, res) {
+	try {
+		const claimedBy = (req.body && req.body.claimedBy) || req.agent || "pipeline"
+		const [count] = await db.PipelineDryRun.update(
+			{ status: "claimed", claimedBy, claimedAt: new Date() },
+			{ where: { id: req.params.id, status: "ready" } }
+		)
+		if (!count) return res.status(409).json({ error: "already claimed or not ready" })
+		const row = await db.PipelineDryRun.findByPk(req.params.id)
+		res.status(200).json({ id: row.id, payload: row.payload || {} })
+	} catch (err) {
+		res.status(500).json({ error: err.message })
+	}
+})
+
+router.post("/v1/dry-runs/:id/result", async function (req, res) {
+	try {
+		const row = await db.PipelineDryRun.findByPk(req.params.id)
+		if (!row) return res.status(404).json({ error: "not found" })
+		const ok = !(req.body && req.body.ok === false)
+		await row.update({
+			status: ok ? "done" : "failed",
+			result: req.body && req.body.result != null ? req.body.result : req.body || {},
+			error: ok ? null : (req.body && (req.body.error || req.body.message)) || "failed",
+		})
+		res.status(200).json({ id: row.id, status: ok ? "done" : "failed" })
 	} catch (err) {
 		res.status(500).json({ error: err.message })
 	}

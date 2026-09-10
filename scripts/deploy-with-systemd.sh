@@ -1,15 +1,23 @@
 #!/usr/bin/env bash
-# Rebuild/restart production portal.service on this VM.
-#
-# Cursor agents run as `catalog.ssh_user` (no docker, no sudo). This script reads
-# DEPLOY_SUDO_PASSWORD from .env or .cursor/deploy.secret, su's to ubuntu,
-# then `sudo systemctl restart portal.service` and runs migrations.
+# Rebuild/restart production portal.service as the catalog SSH user.
+# Requires group portal-deploy (NOPASSWD wrappers). No ubuntu hop, no password.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-python3 "$ROOT/scripts/restart-portal-service.py"
+sudo_n() {
+	if sudo -n "$@" 2>/dev/null; then
+		return 0
+	fi
+	sg portal-deploy -c "sudo -n $(printf '%q ' "$@")"
+}
+
+if [[ "${1:-}" == "--migrate-only" ]]; then
+	sudo_n /usr/local/sbin/portal-migrate
+else
+	sudo_n /usr/local/sbin/portal-deploy
+fi
 
 echo "==> Verifying"
 sleep 2

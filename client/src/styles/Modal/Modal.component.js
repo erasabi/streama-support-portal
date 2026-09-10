@@ -14,6 +14,9 @@ const Modal = () => {
 		// this ensures we dont double toggle by clicking document where
 		// referenced element with onClick is located
 		function handleClickOutside(event) {
+			if (event.target && event.target.closest && event.target.closest('[data-dry-run-overlay]')) {
+				return
+			}
 			if (modalRef.current && !modalRef.current.contains(event.target)) {
 				handleModal()
 			}

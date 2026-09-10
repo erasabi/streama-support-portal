@@ -1,21 +1,35 @@
 ---
-description: Redeploy this portal via ubuntu + sudo; Cursor sessions run as catalog.ssh_user without Docker.
+description: Redeploy portal/Streama as catalog SSH user via passwordless sudo wrappers; no ubuntu hop.
 alwaysApply: true
 ---
 
 # Host deploy (this VM)
 
-Cursor agent shells here run as **`catalog.ssh_user`**. That user is **not** in the `docker` group and **cannot** `sudo`. App code lives in `catalog.remote_root`. Production is **`portal.service`** (root `docker-compose up --build`).
+Cursor agent shells here run as the **catalog SSH user**. That user is **not** in the `docker` group and does **not** get unrestricted sudo. App code lives in catalog `remote_root`. Production units: **`portal.service`** (docker-compose) and **`elanflix.service`** (Streama JAR).
 
-After any change that must go live (server, client, `.env`, migrations):
+## One-time (root)
 
-1. Read gitignored secrets (never commit, never echo in chat):
-   - `.env` → `DEPLOY_USER` (default `ubuntu`) and `DEPLOY_SUDO_PASSWORD`
-   - fallback file `.cursor/deploy.secret` (first line = same password)
-2. Run `catalog.remote_root/scripts/deploy-with-systemd.sh`
-   - The script `su`s to `ubuntu` and `sudo systemctl restart portal.service`, then migrations.
-3. Verify: `GET /agent/v1/jobs` → **401**, `/requests/all` has current fields.
+From a root-capable login (existing `ubuntu` session is fine for this once):
 
-Do **not** stop at “rebuild needs sudo.” Use the secret and the script. If the password is empty, ask the operator to set `DEPLOY_SUDO_PASSWORD` in `.env` and retry.
+```sh
+cd <catalog.remote_root>
+sudo ./scripts/install-portal-sudo.sh <catalog.ssh_user>
+```
 
-Do **not** put the password in git-tracked files, rules, or docs.
+That installs `/etc/sudoers.d/portal-deploy` (group `portal-deploy` only) and `/usr/local/sbin/portal-deploy` / `portal-migrate`. It does **not** add docker, a shell, or `ALL`. Re-login (or `sg portal-deploy`) so the group applies.
+
+## Routine deploy (catalog SSH user, no password)
+
+```sh
+cd <catalog.remote_root>
+./scripts/deploy-with-systemd.sh
+```
+
+That is `sudo -n /usr/local/sbin/portal-deploy` (restart `portal.service` + migrations).
+
+- Portal only migrate: `./scripts/deploy-with-systemd.sh --migrate-only`
+- Streama unit after a new JAR: `sudo -n systemctl restart elanflix.service`
+
+Verify: `GET http://127.0.0.1:3000/agent/v1/jobs` → **401**.
+
+Do **not** `su ubuntu`, do **not** use `DEPLOY_SUDO_PASSWORD`, and do **not** put passwords in git.

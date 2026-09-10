@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Root-only. Run Sequelize migrations in the portal server container.
+# WorkingDirectory comes from portal.service (catalog remote_root). No arguments.
+set -euo pipefail
+if [[ $# -ne 0 ]]; then
+	echo "usage: portal-migrate" >&2
+	exit 2
+fi
+
+ROOT="$(systemctl show -p WorkingDirectory --value portal.service 2>/dev/null || true)"
+ROOT="${ROOT%/}"
+if [[ -z "$ROOT" || ! -f "$ROOT/docker-compose.yml" ]]; then
+	echo "portal-migrate: portal.service WorkingDirectory is missing or has no compose file" >&2
+	exit 1
+fi
+cd "$ROOT"
+
+echo "==> migrations"
+if [[ -x /usr/local/bin/docker-compose ]]; then
+	/usr/local/bin/docker-compose --env-file .env exec -T server npm run migrate
+elif docker compose version >/dev/null 2>&1; then
+	docker compose --env-file .env exec -T server npm run migrate
+else
+	echo "portal-migrate: docker-compose not found" >&2
+	exit 1
+fi

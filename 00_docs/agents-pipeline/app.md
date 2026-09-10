@@ -89,7 +89,16 @@ Set `DB_HOST=localhost` in `.env` when the database container publishes `5432`.
    magnet/URL sources (one pipeline job per unique source). Saved on Update
    or when the details modal is dismissed (Cancel discards).
 5. **Pipeline tracking** — Coming Soon badge, details stepper, and history
-   share the same derived `pipelineStage` / `displayStatus`. A worker may post
+   share the same derived `pipelineStage` / `displayStatus`. The request
+   details modal is grouped into **Overview**, **Queue**, **Sources**,
+   seasons, planned fetch, **Diagnostics** (trace, dry run with copy-for-agent
+   and saved-run history, and **Add subtitles** for missing en/ru on library
+   files already on ElanFlix), and **History**.
+   After sort, sortify fetches missing English and Russian sidecars, aligns
+   them with `ffsubsync`, and keeps them only when the sync gate passes
+   (`acquiring_subtitles`). The same path can be queued later from **Add
+   subtitles** without rewinding **Available**.
+   A worker may post
    `paused` when Prelanflix disk is below its watermark; the job stays `ready`
    (no lease) and the badge shows **Paused**. Owner and admin
    can click **Download**, **Encode**, and **Upload** on the stepper to see
@@ -133,8 +142,6 @@ the same values (`STREAMA_ENDPOINT` → `REACT_APP_STREAMA_ENDPOINT`, etc.).
 | `PIPELINE_API_TOKEN` | agents | Bearer token for Prelanflix `portal-worker` (`/agent/*`) |
 | `SORTIFY_API_TOKEN` | agents | Bearer token for sortify agent (`/agent/*`) |
 | `TMDB_API_KEY` | optional | Server-side movie magnet lookup (has bundled fallback) |
-| `DEPLOY_USER` | this VM | Unix user that can Docker + sudo (`ubuntu`) |
-| `DEPLOY_SUDO_PASSWORD` | this VM | That user's login/sudo password. Gitignored `.env`. Cursor sessions run as `catalog.ssh_user` and cannot talk to Docker otherwise. Alternative: first line of `.cursor/deploy.secret`. |
 
 Agent routes return **401** until `PIPELINE_API_TOKEN` and/or `SORTIFY_API_TOKEN`
 are set. Each agent uses its own token.
@@ -150,29 +157,25 @@ Sortify also reads `PORTAL_BASE_URL` (default in agent config: `http://catalog.g
 
 ## Deploy
 
-This VM's Cursor agent user is **`catalog.ssh_user`** (no `docker` group, no `sudo`). Production is systemd unit **`portal.service`**, which runs `docker-compose --env-file .env up --build` as root from `catalog.remote_root`.
+The catalog SSH user is **not** in `docker` and does not have unrestricted sudo. Production is systemd **`portal.service`** (`docker-compose --env-file .env up --build` as root from catalog `remote_root`). Streama is **`elanflix.service`**.
 
-After app changes, agents must redeploy (do not stop at “needs sudo”):
+**One-time** (root-capable login): `sudo ./scripts/install-portal-sudo.sh <catalog.ssh_user>` — group `portal-deploy`, wrappers in `/usr/local/sbin`, drop-in `/etc/sudoers.d/portal-deploy`. No docker group, no `ALL`.
+
+**Routine** (catalog SSH user, no password):
 
 ```sh
 ./scripts/deploy-with-systemd.sh
 ```
 
-That script reads `DEPLOY_SUDO_PASSWORD` from `.env` (or `.cursor/deploy.secret`), `su`s to `ubuntu`, and runs `scripts/restart-portal-inner.sh`: `sudo systemctl restart portal.service`, wait until `/agent/v1/jobs` responds (401 is healthy — `/requests/all` can 500 until migrations), then `docker-compose exec … npm run migrate`. Migrations only: `python3 scripts/restart-portal-service.py --migrate-only`.
+That runs `sudo -n /usr/local/sbin/portal-deploy` (unit restart + migrations). After a Streama JAR copy: `sudo -n systemctl restart elanflix.service`. Re-login once after the install so group `portal-deploy` is in the session.
 
-If `catalog.ssh_user` is already able to use Docker (or you are logged in as `ubuntu`):
-
-```sh
-./scripts/deploy.sh
-```
-
-Confirm `/agent/v1/jobs` returns **401** (route exists, auth enforced).
+Confirm `/agent/v1/jobs` returns **401** (route exists, auth enforced). Do not `su` to another user or pipe a sudo password.
 
 ## Server API (summary)
 
 | Prefix | Purpose |
 |---|---|
-| `/requests` | CRUD, magnet-gated detail, admin events, multi-source attach (`PUT /:id/sources`) |
+| `/requests` | CRUD, magnet-gated detail, admin events, multi-source attach (`PUT /:id/sources`), admin dry-run (`POST /dry-run`, `GET /dry-run/:id`, `GET /dry-runs`) |
 | `/proxy` | YIFY subtitle URL helper |
 | `/agent` | Bearer-token pipeline API — see [overview.md](agent-integration-changes/00_docs/stream-support-portal-app/overview.md) |
 | `/admin` | History, unlinked pipeline events |
@@ -191,7 +194,9 @@ The portal implementation is complete. Agent-side work:
 - **Sortify** — implemented in `catalog.ssh_alias/agents/sortify-agent` (`lib/portal_bridge.py`).
 - **Prelanflix `portal-worker`** — **Done**. TV jobs with `missing[]` run
   `piratify add -f folder --episodes csv --year year title` on Prelanflix
-  (piratify is not on this host). Ops: Prelanflix `00_docs/portal-worker.md`.
+  (piratify is not on this host). Admin TV dry-run creates a ticket the worker
+  runs as `piratify add --dry-run --json` (no torrent). Ops: Prelanflix
+  `00_docs/portal-worker.md`.
   Contract notes:
   [rentify-pipeline-changes.md](agent-integration-changes/00_docs/stream-support-portal-app/rentify-pipeline-changes.md).
 

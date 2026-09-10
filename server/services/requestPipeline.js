@@ -6,6 +6,7 @@ const {
 	getYifySubtitleUrl,
 	extractInfoHash,
 } = require("./magnetLookup")
+const { searchLogPayload } = require("./magnetSearchLog")
 const {
 	normalizeRequestId,
 	canonicalTmdbId,
@@ -25,6 +26,7 @@ const {
 	missingCodesForSeasons,
 } = require("./tvSeasons")
 const { lookupLibraryMovie, mediaHasVideo } = require("./streamaLibrary")
+const { isSubtitleAcquireJob, JOB_KIND_SUBTITLE_ACQUIRE } = require("./jobKind")
 
 // Recover the portal request id embedded in a pipeline folder name
 // ("...-tmdb603" -> "603").
@@ -135,6 +137,22 @@ async function emitSubtitleLookup(requestId, { found, url, error }) {
 }
 
 /**
+ * Persist the full search attempt log from a magnet lookup (TMDB call, YTS call
+ * with the raw torrent list, subtitle scrape per language, pick + reason).
+ * Emitted on found / not_found / error so the trace can show why a title missed.
+ */
+async function emitMagnetLookupDetail(requestId, search) {
+	const payload = searchLogPayload(search)
+	if (!payload) return
+	await appendEvent({
+		requestId,
+		actor: "portal",
+		type: "magnet_lookup_detail",
+		payload,
+	})
+}
+
+/**
  * Create a claimable pipeline job for a request. A request may have multiple
  * sources (e.g. several magnets); we avoid duplicating an active job for the
  * SAME source (matched by infoHash when available, else the raw URL) but do
@@ -167,8 +185,10 @@ async function createReadyJob(
 			claimStatus: ["ready", "claimed", "in_progress"],
 		},
 	})
-	const duplicate = active.find((j) =>
-		isSameSource(j, url, infoHash, seasonList, explicitMissing ? missing : undefined),
+	const duplicate = active.find(
+		(j) =>
+			!isSubtitleAcquireJob(j) &&
+			isSameSource(j, url, infoHash, seasonList, explicitMissing ? missing : undefined),
 	)
 	if (duplicate) {
 		if (status.shouldApplyDerivedStage(request.pipelineStage, "magnet_ready")) {
@@ -214,6 +234,48 @@ async function createReadyJob(
 		},
 	})
 	return job
+}
+
+async function enqueueSubtitleAcquireJob(request, actor = "admin") {
+	const tmdbId = canonicalTmdbId(request && request.id)
+	if (!tmdbId || isNamespacedRequestId(request.id)) {
+		return { error: "tmdb_id_required", status: 400 }
+	}
+	const active = await db.PipelineJob.findAll({
+		where: {
+			requestId: request.id,
+			claimStatus: ["ready", "claimed", "in_progress"],
+		},
+	})
+	const duplicate = active.find((j) => isSubtitleAcquireJob(j))
+	if (duplicate) {
+		return { error: "already_queued", status: 409, job: duplicate }
+	}
+	const job = await db.PipelineJob.create({
+		requestId: request.id,
+		mediaType: request.mediaType || null,
+		folderName: buildFolderName(request, null),
+		claimStatus: "ready",
+		stage: "acquiring_subtitles",
+		detail: {
+			kind: JOB_KIND_SUBTITLE_ACQUIRE,
+			tmdbId: String(tmdbId),
+			streamaMediaId: request.streamaMediaId || null,
+			languages: ["en", "ru"],
+		},
+	})
+	await appendEvent({
+		requestId: request.id,
+		jobId: job.id,
+		actor,
+		type: "job_created",
+		payload: {
+			kind: JOB_KIND_SUBTITLE_ACQUIRE,
+			folderName: job.folderName,
+			languages: ["en", "ru"],
+		},
+	})
+	return { job }
 }
 
 function fieldsFromBody(body = {}) {
@@ -566,6 +628,9 @@ async function runMagnetLookup(request, deps = {}) {
 	const result = await lookupMovieMagnet(request.id, {
 		excludeHashes: deps.force ? magnetHashesToSkip(request) : [],
 	})
+	// Record every endpoint/query this lookup ran, on every outcome. Without
+	// this a "not found" on a title that does have a magnet is unexplainable.
+	await emitMagnetLookupDetail(request.id, result.search)
 	const now = new Date()
 
 	if (result.status === "found") {
@@ -655,6 +720,7 @@ async function runMagnetLookup(request, deps = {}) {
 module.exports = {
 	runMagnetLookup,
 	createReadyJob,
+	enqueueSubtitleAcquireJob,
 	enqueueTvSeasonsJob,
 	enqueueTvSeasonUpdate,
 	approveTvSeasons,
@@ -664,4 +730,5 @@ module.exports = {
 	isSameSource,
 	resolveRequest,
 	tmdbFromFolder,
+	emitMagnetLookupDetail,
 }

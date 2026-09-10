@@ -6,6 +6,8 @@ to the Prelanflix download pipeline and the ElanFlix Sortify agent.
 | Document | Audience | Contents |
 |---|---|---|
 | [app.md](app.md) | Portal developers / operators | Stack, run, deploy, env vars, features |
+| [pipeline-trace.md](pipeline-trace.md) | Portal admins / debug agents | `GET /requests/:id/trace`, `POST /requests/dry-run`, stored dry-run history, flag→bug-class triage |
+| [recurrence-fix-order.md](recurrence-fix-order.md) | Portal developers | Gated fix order for the six recurring pipeline bugs |
 | [agent-integration-changes/00_docs/stream-support-portal-app/overview.md](agent-integration-changes/00_docs/stream-support-portal-app/overview.md) | Agent authors | End-to-end contract, identity rules, `/agent/v1` API |
 | [agent-integration-changes/00_docs/stream-support-portal-app/rentify-pipeline-changes.md](agent-integration-changes/00_docs/stream-support-portal-app/rentify-pipeline-changes.md) | Prelanflix box | `portal-worker` contract (implemented on Prelanflix; see that host’s `00_docs/portal-worker.md`) |
 | [agent-integration-changes/00_docs/stream-support-portal-app/sortify-agent-changes.md](agent-integration-changes/00_docs/stream-support-portal-app/sortify-agent-changes.md) | ElanFlix box | Sortify portal bridge (implemented) |

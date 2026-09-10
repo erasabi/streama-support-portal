@@ -1,26 +1,28 @@
 #!/usr/bin/env python3
-"""Operator-local helper. Fleetctl never executes this file.
+"""Restart or migrate production via passwordless sudo wrappers.
 
-Restart portal.service with fleetctl. Catalog become uses `sudo -n -u` when set;
-`su` (password) is rejected. Host users and remote_root live in the private
-catalog and gitignored `00_docs/local/` (see `bindings.md`).
-
-The pre-overlay copy is in `00_docs/local/migrated/scripts/`. This tracked
-script is inert — do not put catalog bindings or password `su` flows here.
+Catalog SSH user must be in group portal-deploy
+(`/etc/sudoers.d/portal-deploy`). No ubuntu hop and no password.
 """
 from __future__ import annotations
 
+import subprocess
 import sys
 
 
+def _run(argv: list[str]) -> int:
+	direct = subprocess.run(["sudo", "-n", *argv])
+	if direct.returncode == 0:
+		return 0
+	quoted = " ".join(argv)
+	nested = subprocess.run(["sg", "portal-deploy", "-c", f"sudo -n {quoted}"])
+	return nested.returncode
+
+
 def main() -> int:
-	print(
-		"error: this operator helper is inert in git. "
-		"Use fleetctl to restart portal.service. "
-		"Bindings: 00_docs/local/bindings.md",
-		file=sys.stderr,
-	)
-	return 2
+	if "--migrate-only" in sys.argv:
+		return _run(["/usr/local/sbin/portal-migrate"])
+	return _run(["/usr/local/sbin/portal-deploy"])
 
 
 if __name__ == "__main__":

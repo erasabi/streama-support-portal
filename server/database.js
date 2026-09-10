@@ -266,10 +266,63 @@ PipelineJob.belongsTo(Request, { foreignKey: "requestId", targetKey: "id" })
 Request.hasMany(RequestEvent, { foreignKey: "requestId", sourceKey: "id" })
 RequestEvent.belongsTo(Request, { foreignKey: "requestId", targetKey: "id" })
 
+// Admin TV dry-run tickets (claimed by portal-worker for piratify --dry-run)
+// and stored rehearsal reports (movies / skipped TV, status "stored").
+const PipelineDryRun = sequelize.define("PipelineDryRun", {
+	id: {
+		type: Sequelize.UUID,
+		primaryKey: true,
+		defaultValue: Sequelize.UUIDV4,
+	},
+	status: {
+		type: Sequelize.STRING,
+		allowNull: false,
+		defaultValue: "ready",
+	},
+	payload: {
+		type: Sequelize.JSONB,
+		allowNull: false,
+		defaultValue: {},
+	},
+	result: {
+		type: Sequelize.JSONB,
+		allowNull: true,
+	},
+	claimedBy: {
+		type: Sequelize.STRING,
+		allowNull: true,
+	},
+	claimedAt: {
+		type: Sequelize.DATE,
+		allowNull: true,
+	},
+	error: {
+		type: Sequelize.TEXT,
+		allowNull: true,
+	},
+	tmdbId: {
+		type: Sequelize.STRING,
+		allowNull: true,
+	},
+	mediaType: {
+		type: Sequelize.STRING,
+		allowNull: true,
+	},
+	requestId: {
+		type: Sequelize.STRING,
+		allowNull: true,
+	},
+	verdict: {
+		type: Sequelize.STRING,
+		allowNull: true,
+	},
+})
+
 module.exports = {
 	sequelize: sequelize,
 	Sequelize: Sequelize,
 	Request: Request,
 	PipelineJob: PipelineJob,
 	RequestEvent: RequestEvent,
+	PipelineDryRun: PipelineDryRun,
 }

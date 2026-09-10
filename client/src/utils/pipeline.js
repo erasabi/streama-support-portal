@@ -29,6 +29,7 @@ const STAGE_TO_STEP = {
 	uploaded: 4,
 	sorting: 5,
 	deferred: 5,
+	acquiring_subtitles: 5,
 	registering: 6,
 	pending_approval: 6,
 	available: 7,
@@ -109,6 +110,7 @@ export function statusColor(label) {
 		case 'Uploading':
 		case 'Arrived':
 		case 'Sorting':
+		case 'Subtitles':
 		case 'Adding to library':
 			return '#1f6fd6d9'
 		default:
@@ -137,6 +139,7 @@ const EVENT_LABELS = {
 	subtitle_missing: 'Subtitle missing',
 	subtitle_upload: 'Subtitle uploaded',
 	subtitle_upload_failed: 'Subtitle upload failed',
+	acquiring_subtitles: 'Subtitles',
 	source_attached: 'Source attached',
 	job_created: 'Queued for pipeline',
 	claimed: 'Downloading started',
@@ -180,6 +183,11 @@ export function eventLabel(evtOrType) {
 		const found =
 			typeof evtOrType === 'object' && evtOrType.payload && evtOrType.payload.found
 		return found ? 'Subtitle found' : 'Subtitle missing'
+	}
+	if (type === 'claimed') {
+		const kind =
+			typeof evtOrType === 'object' && evtOrType.payload && evtOrType.payload.kind
+		if (kind === 'subtitle_acquire') return 'Subtitle job claimed'
 	}
 	return EVENT_LABELS[type] || String(type).replace(/_/g, ' ')
 }

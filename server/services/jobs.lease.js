@@ -17,6 +17,7 @@ const PAST_DOWNLOAD = new Set([
 	"syncing",
 	"uploaded",
 	"sorting",
+	"acquiring_subtitles",
 	"registering",
 	"pending_approval",
 ])

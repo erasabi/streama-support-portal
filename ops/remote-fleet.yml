@@ -37,7 +37,6 @@ secrets:
   - name: catalog.remote_root/.env
   - name: PIPELINE_API_TOKEN
   - name: SORTIFY_API_TOKEN
-  - name: DEPLOY_SUDO_PASSWORD
 rollback:
   method: previous_release
   note: production is in-tree docker-compose via portal.service; no fleetctl current/releases layout yet

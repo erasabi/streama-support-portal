@@ -26,12 +26,14 @@ import {
 	getRequestDetails,
 	getRequestEvents,
 	saveRequestSources,
-	approveRequestSeasons
+	approveRequestSeasons,
+	addRequestSubtitles
 } from '/src/api'
 import { isAdmin, isSuperuser, matchesUser } from '/src/auth'
 import { UserContext } from '/src/hooks/userContext.hook'
 import { STEPPER, stageToStep, defaultInventoryStep, inventoryKeyForStep, subtitleLangFromName, magnetDisplayName, groupEpisodeCodes, formatSeasonList, FETCH_MODE_LABELS } from '/src/utils/pipeline'
 import EventTimeline from '/src/components/EventTimeline'
+import PipelineTrace, { DryRunModal } from '/src/components/PipelineTrace'
 
 function cleanSources(list) {
 	const out = []
@@ -70,6 +72,10 @@ export default function MediaDetails(props) {
 	const [events, setEvents] = useState([])
 	const [sources, setSources] = useState([''])
 	const [pickedSeasons, setPickedSeasons] = useState([])
+	const [dryRunOpen, setDryRunOpen] = useState(false)
+	const [dryRunNonce, setDryRunNonce] = useState(0)
+	const [subtitleBusy, setSubtitleBusy] = useState(false)
+	const [subtitleError, setSubtitleError] = useState(null)
 	const sourcesHydratedRef = useRef(false)
 
 	// Latest values for the unmount persistence path (dismiss via click/Escape).
@@ -115,6 +121,22 @@ export default function MediaDetails(props) {
 		(live && live.pipelineStage) ||
 		(details && details.pipelineStage) ||
 		props.pipelineStage
+
+	// What a re-queue of this request would look like today. Read at click time
+	// so edits in the modal (media type, sources) are reflected.
+	const dryRunInput = useCallback(() => {
+		const releaseDate =
+			(details && details.releaseDate) || props.releaseDate || ''
+		return {
+			tmdbId: id,
+			title: (details && details.title) || props.title || '',
+			mediaType: (details && details.mediaType) || props.mediaType || 'movie',
+			year: String(releaseDate).slice(0, 4) || undefined,
+			seasons: pendingSeasons,
+			queueMessage: (details && details.queueMessage) || message.value || '',
+			requestId: id
+		}
+	}, [id, details, props.title, props.mediaType, props.releaseDate, pendingSeasons, message.value])
 
 	const onDelete = () => {
 		skipPersistRef.current = true
@@ -193,6 +215,37 @@ export default function MediaDetails(props) {
 			if (handleRequestSubmit) handleRequestSubmit()
 		} catch (error) {
 			console.log('approve seasons failed:', error?.message)
+		}
+	}
+
+	const subtitleAcquire = (details && details.subtitleAcquire) || null
+	const subtitleJobActive =
+		subtitleAcquire &&
+		['ready', 'claimed', 'in_progress'].includes(subtitleAcquire.claimStatus)
+	const subtitleButtonLabel = subtitleBusy
+		? 'Queueing…'
+		: subtitleJobActive && subtitleAcquire.claimStatus === 'ready'
+		? 'Queued — waiting for ElanFlix'
+		: subtitleJobActive
+		? 'Adding subtitles…'
+		: 'Add subtitles'
+
+	const onAddSubtitles = async () => {
+		if (subtitleBusy || subtitleJobActive) return
+		setSubtitleBusy(true)
+		setSubtitleError(null)
+		try {
+			await addRequestSubtitles(id, user)
+			await fetchDetails()
+			if (handleRequestSubmit) handleRequestSubmit()
+		} catch (error) {
+			const msg =
+				error?.response?.data?.error ||
+				error?.message ||
+				'Could not queue subtitles'
+			setSubtitleError(msg === 'already_queued' ? 'Already queued' : msg)
+		} finally {
+			setSubtitleBusy(false)
 		}
 	}
 
@@ -297,12 +350,12 @@ export default function MediaDetails(props) {
 		}
 		const daysAgo = Math.abs(getDaysDifference(props.createdAt))
 		return (
-			<Card.Text>
+			<span>
 				<span style={daysAgo > 7 ? { color: 'red', fontWeight: 500 } : {}}>
 					{daysAgo}
 				</span>
 				{` ${daysAgo > 1 ? 'days' : 'day'} ago`}
-			</Card.Text>
+			</span>
 		)
 	}, [props.createdAt])
 
@@ -368,10 +421,25 @@ export default function MediaDetails(props) {
 		}
 	}, [])
 
+	const showSources =
+		(isAuth || isUserMatch) &&
+		(magnetUrls.length > 0 || subtitle || isAuth)
+	const showQueue = isUserMatch || isAuth
+
 	return (
 		<Wrapper {...restProps}>
 			<Card className="card">
-				<CardTitle text={props.title} />
+				<header className="details-header">
+					<CardTitle className="details-title" text={props.title} />
+					<button
+						type="button"
+						className="details-close"
+						onClick={onCancel}
+						aria-label="Close details"
+					>
+						×
+					</button>
+				</header>
 				<ProgressTracker
 					current={stageToStep(currentStage)}
 					canView={isAuth || isUserMatch}
@@ -383,32 +451,147 @@ export default function MediaDetails(props) {
 					magnetUrls={magnetUrls}
 				/>
 				<div className="card-scroll">
-				<Card.Content className="card-content">
-					{(isAuth || isUserMatch) && magnetUrls.length > 0 && (
-						<CardField label={magnetUrls.length > 1 ? 'Magnet URLs' : 'Magnet URL'}>
-							<div className="magnet-copies">
-								{magnetUrls.map((u, i) => (
-									<MagnetLinkBtn
-										key={u}
-										onClick={() => handleCopy(`magnet${i}`, u)}
-									>
-										{isCopied === `magnet${i}`
-											? 'Copied!'
-											: magnetUrls.length > 1
-											? `Copy #${i + 1}`
-											: 'Copy Magnet Link'}
-									</MagnetLinkBtn>
-								))}
+					<DetailsSection title="Overview">
+						<div className="meta-grid">
+							<MetaItem label="Requested">{DaysAgo}</MetaItem>
+							{(isUserMatch || isAuth) && (
+								<MetaItem label="Requested by">
+									<CopyText
+										text={props.requestUser}
+										copyValue={
+											!isEmpty(props.requestUser)
+												? `Requested by ${
+														props.requestUser.charAt(0).toUpperCase() +
+														props.requestUser.slice(1)
+												  }`
+												: props.requestUser
+										}
+									/>
+								</MetaItem>
+							)}
+							<MetaItem label="Released">
+								{props.releaseDate || '—'}
+							</MetaItem>
+							<MetaItem label="Media type">
+								{props.mediaType || '—'}
+							</MetaItem>
+						</div>
+					</DetailsSection>
+
+					{showQueue && (
+						<DetailsSection
+							title="Queue"
+							hint="Status and notes for this request"
+						>
+							<div className="form-stack">
+								{isAuth && (
+									<FormField label="Queue status">
+										<div className="form-control">
+											<Searchbar>
+												<Searchbar.TextInput
+													className="searchbar-text-input"
+													placeholder="Queue Status"
+													value={status.value}
+													onChange={status.onChange}
+													onFocus={() => showQueueStatusDropdown.setValue(true)}
+												/>
+											</Searchbar>
+											{showQueueStatusDropdown.value && Searchbar.StatusDropdown}
+										</div>
+									</FormField>
+								)}
+								<FormField label="Request details">
+									<div className="form-control">
+										<Searchbar>
+											<Searchbar.TextInput
+												className="searchbar-text-input"
+												placeholder="Choose or Write Anything"
+												value={message.value}
+												onChange={message.onChange}
+												onFocus={() => showQueueMessageDropdown.setValue(true)}
+											/>
+										</Searchbar>
+										{showQueueMessageDropdown.value && Searchbar.MessageDropdown}
+									</div>
+								</FormField>
 							</div>
-						</CardField>
+						</DetailsSection>
 					)}
+
+					{showSources && (
+						<DetailsSection title="Sources">
+							{(isAuth || isUserMatch) && magnetUrls.length > 0 && (
+								<div className="source-block">
+									<p className="block-label">
+										{magnetUrls.length > 1 ? 'Magnet URLs' : 'Magnet URL'}
+									</p>
+									<div className="magnet-copies">
+										{magnetUrls.map((u, i) => (
+											<MagnetLinkBtn
+												key={u}
+												onClick={() => handleCopy(`magnet${i}`, u)}
+											>
+												{isCopied === `magnet${i}`
+													? 'Copied!'
+													: magnetUrls.length > 1
+													? `Copy #${i + 1}`
+													: 'Copy Magnet Link'}
+											</MagnetLinkBtn>
+										))}
+									</div>
+								</div>
+							)}
+							{(isAuth || isUserMatch) && subtitle && (
+								<div className="source-block">
+									<p className="block-label">Subtitle URL</p>
+									<MagnetLinkBtn onClick={() => handleCopy('subtitle', subtitle)}>
+										{isCopied === 'subtitle' ? 'Copied!' : 'Copy Subtitle Link'}
+									</MagnetLinkBtn>
+								</div>
+							)}
+							{isAuth && (
+								<div className="source-block">
+									<p className="block-label">Attach source</p>
+									<SourceEditor>
+										{sources.map((val, idx) => (
+											<div className="source-row" key={idx}>
+												<Searchbar className="searchbar">
+													<Searchbar.TextInput
+														className="searchbar-text-input"
+														placeholder="magnet:?... or URL"
+														value={val}
+														onChange={(e) => updateSource(idx, e.target.value)}
+													/>
+												</Searchbar>
+												<button
+													type="button"
+													className="src-remove"
+													title="Remove source"
+													onClick={() => removeSource(idx)}
+												>
+													×
+												</button>
+											</div>
+										))}
+										<button
+											type="button"
+											className="src-add"
+											onClick={addSource}
+										>
+											+ Add source
+										</button>
+									</SourceEditor>
+								</div>
+							)}
+						</DetailsSection>
+					)}
+
 					{isAuth && pendingSeasons.length > 0 && (
-						<CardField label="Approve Seasons">
+						<DetailsSection
+							title="Approve seasons"
+							hint="First and latest were queued automatically. Choose which in-between seasons to download."
+						>
 							<SeasonPicker>
-								<p className="season-hint">
-									First and latest were queued automatically. Choose which
-									in-between seasons to download.
-								</p>
 								<div className="season-chips">
 									{pendingSeasons.map((n) => (
 										<label key={n} className="season-chip">
@@ -439,117 +622,84 @@ export default function MediaDetails(props) {
 									</button>
 								</div>
 							</SeasonPicker>
-						</CardField>
+						</DetailsSection>
 					)}
+
 					{isAuth && details && details.pipelinePlan && (
-						<CardField label="Planned Fetch">
+						<DetailsSection title="Planned fetch">
 							<PipelinePlanPanel plan={details.pipelinePlan} />
-						</CardField>
+						</DetailsSection>
 					)}
+
 					{isAuth && (
-						<CardField label="Attach Source">
-							<SourceEditor>
-								{sources.map((val, idx) => (
-									<div className="source-row" key={idx}>
-										<Searchbar className="searchbar">
-											<Searchbar.TextInput
-												className="searchbar-text-input"
-												placeholder="magnet:?... or URL"
-												value={val}
-												onChange={(e) => updateSource(idx, e.target.value)}
-											/>
-										</Searchbar>
-										<button
-											type="button"
-											className="src-remove"
-											title="Remove source"
-											onClick={() => removeSource(idx)}
-										>
-											×
-										</button>
-									</div>
-								))}
-								<button
-									type="button"
-									className="src-add"
-									onClick={addSource}
-								>
-									+ Add source
-								</button>
-							</SourceEditor>
-						</CardField>
+						<DetailsSection
+							title="Diagnostics"
+							hint="Rehearse a re-queue or inspect what already happened"
+						>
+							<div className="diag-stack">
+								<div className="diag-block">
+									<p className="block-label">Pipeline trace</p>
+									<PipelineTrace requestId={id} user={user} />
+								</div>
+								<div className="diag-block">
+									<p className="block-label">Dry run</p>
+									<p className="details-section-hint">
+										Rehearse a re-queue without creating a job.
+									</p>
+									<button
+										type="button"
+										className="dry-run-open"
+										onMouseDown={(event) => {
+											event.preventDefault()
+											event.stopPropagation()
+											setDryRunNonce((n) => n + 1)
+											setDryRunOpen(true)
+										}}
+									>
+										Open dry run
+									</button>
+								</div>
+								<div className="diag-block">
+									<p className="block-label">Add subtitles</p>
+									<p className="details-section-hint">
+										Fetch missing English and Russian sidecars for library
+										files already on ElanFlix. Existing .srt files are left
+										alone. Closing this modal does not cancel the job.
+									</p>
+									<button
+										type="button"
+										className="dry-run-open"
+										disabled={subtitleBusy || subtitleJobActive}
+										onMouseDown={(event) => {
+											event.preventDefault()
+											event.stopPropagation()
+											onAddSubtitles()
+										}}
+									>
+										{subtitleButtonLabel}
+									</button>
+									{subtitleError && (
+										<p className="details-section-hint">{subtitleError}</p>
+									)}
+								</div>
+							</div>
+						</DetailsSection>
 					)}
-					{(isAuth || isUserMatch) && subtitle && (
-						<CardField label="Subtitle URL">
-							<MagnetLinkBtn onClick={() => handleCopy('subtitle', subtitle)}>
-								{isCopied === 'subtitle' ? 'Copied!' : 'Copy Subtitle Link'}
-							</MagnetLinkBtn>
-						</CardField>
-					)}
-					<CardField label="Requested">{DaysAgo}</CardField>
-					{(isUserMatch || isAuth) && (
-						<CardField label="Requested By">
-							<Card.Text>
-								<CopyText
-									text={props.requestUser}
-									copyValue={
-										!isEmpty(props.requestUser)
-											? `Requested by ${
-													props.requestUser.charAt(0).toUpperCase() +
-													props.requestUser.slice(1)
-											  }`
-											: props.requestUser
-									}
-								/>
-							</Card.Text>
-						</CardField>
-					)}
-					<CardField label="Released">
-						<Card.Text>{props.releaseDate}</Card.Text>
-					</CardField>
-					<CardField label="Media Type">
-						<Card.Text>{props.mediaType}</Card.Text>
-					</CardField>
+
 					{isAuth && (
-						<CardField label="Queue Status">
-							<div className="searchbar">
-								<Searchbar>
-									<Searchbar.TextInput
-										className="searchbar-text-input"
-										placeholder="Queue Status"
-										value={status.value}
-										onChange={status.onChange}
-										onFocus={() => showQueueStatusDropdown.setValue(true)}
-									/>
-								</Searchbar>
-								{showQueueStatusDropdown.value && Searchbar.StatusDropdown}
-							</div>
-						</CardField>
+						<DetailsSection title="History">
+							<EventTimeline events={events} />
+						</DetailsSection>
 					)}
-					{(isUserMatch || isAuth) && (
-						<CardField label="Request Details">
-							<div className="searchbar">
-								<Searchbar>
-									<Searchbar.TextInput
-										className="searchbar-text-input"
-										placeholder="Choose or Write Anything"
-										value={message.value}
-										onChange={message.onChange}
-										onFocus={() => showQueueMessageDropdown.setValue(true)}
-									/>
-								</Searchbar>
-								{showQueueMessageDropdown.value && Searchbar.MessageDropdown}
-							</div>
-						</CardField>
-					)}
-				</Card.Content>
-				{isAuth && (
-					<HistorySection>
-						<h4 className="history-heading">History</h4>
-						<EventTimeline events={events} />
-					</HistorySection>
-				)}
 				</div>
+				<DryRunModal
+					key={dryRunNonce}
+					open={dryRunOpen}
+					onClose={() => setDryRunOpen(false)}
+					user={user}
+					getInput={dryRunInput}
+					heading={`Dry run · ${props.title || 'this title'}`}
+				/>
 				<Button.Group className="button-group">
 					<Button className="cancel" onClick={onCancel}>
 						Cancel
@@ -571,6 +721,37 @@ export default function MediaDetails(props) {
 				</Button.Group>
 			</Card>
 		</Wrapper>
+	)
+}
+
+function DetailsSection({ title, hint, children }) {
+	return (
+		<section className="details-section">
+			<header className="details-section-head">
+				<h3 className="details-section-title">{title}</h3>
+				{hint && <p className="details-section-hint">{hint}</p>}
+			</header>
+			<div className="details-section-body">{children}</div>
+		</section>
+	)
+}
+
+function MetaItem({ label, children }) {
+	if (children == null || children === false) return null
+	return (
+		<div className="meta-item">
+			<p className="meta-label">{label}</p>
+			<div className="meta-value">{children}</div>
+		</div>
+	)
+}
+
+function FormField({ label, children }) {
+	return (
+		<div className="form-field">
+			<label>{label}</label>
+			{children}
+		</div>
 	)
 }
 
@@ -993,16 +1174,6 @@ const TrackerWrap = styled.div`
 	}
 `
 
-const HistorySection = styled.div`
-	width: 100%;
-
-	.history-heading {
-		color: white;
-		font-weight: 500;
-		margin: 4px 0 8px;
-	}
-`
-
 export const CardTitle = styled(CopyText)`
 	display: flex;
 	flex-shrink: 0;
@@ -1281,11 +1452,65 @@ const Wrapper = styled.div`
 		display: flex;
 		flex: 1 1 auto;
 		flex-direction: column;
-		gap: 16px;
+		gap: 12px;
 		max-height: 100%;
 		min-height: 0;
 		overflow: hidden;
 		width: 100%;
+	}
+
+	.details-header {
+		align-items: flex-start;
+		display: flex;
+		flex-shrink: 0;
+		gap: 12px;
+		justify-content: space-between;
+	}
+
+	.details-title {
+		flex: 1;
+		justify-content: flex-start;
+		min-width: 0;
+
+		.text {
+			font-size: 22px;
+			line-height: 1.15;
+			text-align: left;
+
+			@media only screen and (min-width: ${(props) =>
+					props.theme.breakpoints.tablet}) {
+				font-size: 32px;
+			}
+		}
+
+		.icon {
+			width: 16px;
+
+			@media only screen and (min-width: ${(props) =>
+					props.theme.breakpoints.tablet}) {
+				width: 22px;
+			}
+		}
+	}
+
+	.details-close {
+		align-items: center;
+		background: ${grey[800]};
+		border: 1px solid ${grey[600]};
+		border-radius: 6px;
+		color: white;
+		cursor: pointer;
+		display: inline-flex;
+		flex-shrink: 0;
+		font-size: 22px;
+		height: 36px;
+		justify-content: center;
+		line-height: 1;
+		width: 36px;
+
+		&:hover {
+			background: ${grey[700]};
+		}
 	}
 
 	.card-scroll {
@@ -1297,36 +1522,147 @@ const Wrapper = styled.div`
 		-webkit-overflow-scrolling: touch;
 	}
 
-	.card-content {
-		margin: 0 auto;
+	.details-section {
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid ${grey[800]};
+		border-radius: 10px;
+		margin-bottom: 12px;
+		padding: 12px 14px 14px;
+	}
+
+	.details-section-head {
+		margin-bottom: 10px;
+	}
+
+	.details-section-title {
+		color: ${grey[300]};
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		margin: 0;
+		text-transform: uppercase;
+	}
+
+	.details-section-hint {
+		color: ${grey[500]};
+		font-size: 12px;
+		margin: 4px 0 0;
+	}
+
+	.details-section-body {
 		width: 100%;
-		max-width: 620px;
+	}
 
-		div.searchbar {
-			width: 150px;
-			@media only screen and (min-width: ${(props) =>
-					props.theme.breakpoints.tablet}) {
-				width: 200px;
-			}
+	.meta-grid {
+		display: grid;
+		gap: 10px 20px;
+		grid-template-columns: 1fr;
+		margin: 0;
 
-			@media only screen and (min-width: ${(props) =>
-					props.theme.breakpoints.laptop}) {
-				width: 250px;
-			}
+		@media only screen and (min-width: ${(props) =>
+				props.theme.breakpoints.tablet}) {
+			grid-template-columns: 1fr 1fr;
+		}
+	}
+
+	.meta-item {
+		.meta-label {
+			color: ${grey[500]};
+			font-size: 11px;
+			font-weight: 600;
+			letter-spacing: 0.04em;
+			margin: 0 0 3px;
+			text-transform: uppercase;
 		}
 
-		.magnet-copies {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 6px;
+		.meta-value {
+			color: white;
+			font-size: 14px;
+			margin: 0;
+			overflow-wrap: anywhere;
+		}
+	}
+
+	.form-stack {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.form-field {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+
+		> label {
+			color: ${grey[400]};
+			font-size: 12px;
+			font-weight: 600;
+		}
+	}
+
+	.form-control {
+		max-width: 420px;
+		position: relative;
+		width: 100%;
+
+		.searchbar,
+		.searchbar > div {
+			width: 100%;
+		}
+	}
+
+	.block-label {
+		color: ${grey[400]};
+		font-size: 12px;
+		font-weight: 600;
+		margin: 0 0 6px;
+	}
+
+	.source-block + .source-block,
+	.diag-block + .diag-block {
+		border-top: 1px solid ${grey[800]};
+		margin-top: 12px;
+		padding-top: 12px;
+	}
+
+	.diag-stack {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.dry-run-open {
+		background: ${grey[800]};
+		border: 1px solid ${grey[600]};
+		border-radius: 4px;
+		color: white;
+		cursor: pointer;
+		font-size: 13px;
+		margin-top: 8px;
+		padding: 8px 12px;
+
+		&:hover {
+			background: ${grey[700]};
 		}
 
-		.searchbar-text-input {
-			--background-color: ${grey[700]};
-			::placeholder {
-				color: white;
-				opacity: 0.5;
-			}
+		&:disabled {
+			cursor: default;
+			opacity: 0.65;
+		}
+	}
+
+	.magnet-copies {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.searchbar-text-input {
+		--background-color: ${grey[700]};
+		width: 100%;
+		::placeholder {
+			color: white;
+			opacity: 0.5;
 		}
 	}
 

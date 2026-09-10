@@ -146,6 +146,45 @@ export async function getRequestEvents(id, user) {
 	}
 }
 
+// Full cross-hop trace for one request (admin only). Pass remote=false to skip
+// the optional Prelanflix/Sortify calls when they are slow or unreachable.
+export async function getRequestTrace(id, user, { remote = true } = {}) {
+	const { data } = await axios.get(
+		`${API_ENDPOINT}/requests/${id}/trace${remote ? '' : '?remote=0'}`,
+		authHeaders(user)
+	)
+	return data
+}
+
+// Rehearse a request without creating anything (admin only).
+export async function dryRunRequest(body, user) {
+	const { data } = await axios.post(
+		`${API_ENDPOINT}/requests/dry-run`,
+		body,
+		{ ...authHeaders(user), timeout: 60000 }
+	)
+	return data
+}
+
+export async function getDryRun(id, user) {
+	const { data } = await axios.get(`${API_ENDPOINT}/requests/dry-run/${id}`, {
+		...authHeaders(user),
+		timeout: 20000
+	})
+	return data
+}
+
+export async function listDryRuns({ tmdbId, requestId } = {}, user) {
+	const params = new URLSearchParams()
+	if (tmdbId) params.set('tmdbId', tmdbId)
+	if (requestId) params.set('requestId', requestId)
+	const { data } = await axios.get(`${API_ENDPOINT}/requests/dry-runs?${params}`, {
+		...authHeaders(user),
+		timeout: 20000
+	})
+	return data
+}
+
 export async function attachRequestSource(id, body, user) {
 	return await axios.post(`${API_ENDPOINT}/requests/${id}/source`, body, {
 		...authHeaders(user)
@@ -159,6 +198,15 @@ export async function saveRequestSources(id, magnetUrls, user) {
 		{ magnetUrls },
 		{ ...authHeaders(user) }
 	)
+}
+
+export async function addRequestSubtitles(id, user) {
+	const { data } = await axios.post(
+		`${API_ENDPOINT}/requests/${id}/subtitles`,
+		{},
+		authHeaders(user)
+	)
+	return data
 }
 
 export async function approveRequestSeasons(id, seasons, user) {

@@ -48,6 +48,24 @@ describe("status.shouldAdvance", () => {
 	test("encoding does not regress Available via shouldAdvance alone", () => {
 		expect(status.shouldAdvance("available", "encoding")).toBe(false)
 	})
+
+	test("acquiring_subtitles sits between sorting and registering", () => {
+		expect(status.stageIndex("acquiring_subtitles")).toBeGreaterThan(
+			status.stageIndex("sorting")
+		)
+		expect(status.stageIndex("registering")).toBeGreaterThan(
+			status.stageIndex("acquiring_subtitles")
+		)
+		expect(status.shouldAdvance("sorting", "acquiring_subtitles")).toBe(true)
+		expect(status.shouldAdvance("acquiring_subtitles", "registering")).toBe(true)
+	})
+
+	test("remedia acquiring_subtitles does not rewind Available", () => {
+		expect(status.shouldAdvance("available", "acquiring_subtitles")).toBe(false)
+		expect(status.shouldApplyDerivedStage("available", "acquiring_subtitles")).toBe(
+			false
+		)
+	})
 })
 
 describe("status.shouldApplyDerivedStage", () => {
@@ -87,6 +105,12 @@ describe("status.displayStatus", () => {
 		expect(
 			status.displayStatus({ queueStatusSource: "derived", pipelineStage: "downloading" })
 		).toBe("Downloading")
+		expect(
+			status.displayStatus({
+				queueStatusSource: "derived",
+				pipelineStage: "acquiring_subtitles",
+			})
+		).toBe("Subtitles")
 	})
 
 	test("pending_approval is treated as adding to library (approval automated)", () => {

@@ -5,7 +5,8 @@
  * "found" means show.json / movie.json loaded.
  */
 const STREAMA_FETCH_MS = 8000
-const STREAMA_INDEX_MS = 10000
+const STREAMA_INDEX_MS = 20000
+const STREAMA_INDEX_PAGE = 200
 
 /**
  * Node's fetch has no default timeout. Streama login + index scans were
@@ -131,9 +132,39 @@ async function streamaLogin(cfg, fetchImpl) {
 	}
 }
 
+function indexRows(data) {
+	return Array.isArray(data) ? data : (data && data.list) || []
+}
+
+function rowApiIdMatches(row, want) {
+	return row && (row.apiId === want || Number(row.apiId) === want)
+}
+
+/**
+ * Prefer Streama's `apiId` filter (one query). Fall back to paging the index
+ * only when the server ignored the param (mixed apiIds + a larger total).
+ */
 async function findIdByApiId(client, indexPath, tmdbId, opts = {}) {
 	const want = Number(tmdbId)
 	if (!Number.isFinite(want)) return null
+	const sep = indexPath.includes("?") ? "&" : "?"
+	const pageSize = opts.pageSize || STREAMA_INDEX_PAGE
+
+	const filtered = await client.getJson(
+		`${indexPath}${sep}max=5&offset=0&apiId=${encodeURIComponent(String(want))}`
+	)
+	const filteredRows = indexRows(filtered)
+	const hit = filteredRows.find((row) => rowApiIdMatches(row, want))
+	if (hit) return Number(hit.id)
+	const filteredTotal =
+		filtered && filtered.total != null ? Number(filtered.total) : filteredRows.length
+	const looksFiltered =
+		filteredRows.length === 0 ||
+		filteredRows.every((row) => rowApiIdMatches(row, want))
+	if (looksFiltered && filteredTotal <= Math.max(filteredRows.length, 5)) {
+		return null
+	}
+
 	const deadline = opts.deadline || Date.now() + STREAMA_INDEX_MS
 	let offset = 0
 	let total = null
@@ -141,19 +172,18 @@ async function findIdByApiId(client, indexPath, tmdbId, opts = {}) {
 		if (Date.now() > deadline) {
 			throw new Error("streama index scan timeout")
 		}
-		const sep = indexPath.includes("?") ? "&" : "?"
 		const data = await client.getJson(
-			`${indexPath}${sep}max=100&offset=${offset}&sort=dateCreated&order=DESC`
+			`${indexPath}${sep}max=${pageSize}&offset=${offset}&sort=dateCreated&order=DESC`
 		)
-		const rows = Array.isArray(data) ? data : data.list || []
+		const rows = indexRows(data)
 		total =
 			data.total != null
 				? data.total
-				: rows.length < 100
+				: rows.length < pageSize
 					? offset + rows.length
-					: offset + 100
+					: offset + pageSize
 		for (const row of rows) {
-			if (row.apiId === want || Number(row.apiId) === want) return Number(row.id)
+			if (rowApiIdMatches(row, want)) return Number(row.id)
 		}
 		if (!rows.length) break
 		offset += rows.length

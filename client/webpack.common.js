@@ -7,7 +7,10 @@ const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
 module.exports = {
 	// set custom port
 	devServer: {
-		port: 8081
+		port: 8081,
+		headers: {
+			'Cache-Control': 'no-store, no-cache, must-revalidate'
+		}
 	},
 	// performance: configure how performance hints are shown
 	performance: {
@@ -20,7 +23,7 @@ module.exports = {
 	// and create a file within it named bundle.js.
 	output: {
 		path: __dirname + '/dist',
-		filename: 'bundle.js'
+		filename: 'bundle.[contenthash:8].js'
 	},
 	resolve: {
 		alias: {

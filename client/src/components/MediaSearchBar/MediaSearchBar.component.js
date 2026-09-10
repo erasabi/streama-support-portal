@@ -1,4 +1,4 @@
-import React, { useMemo, useContext, useState } from 'react'
+import React, { useContext, useState } from 'react'
 import styled from 'styled-components'
 import { isEmpty, debounce } from 'lodash'
 import { useDispatch, useSelector } from 'react-redux'
@@ -9,6 +9,8 @@ import {
 } from '/src/api'
 import { useInput, useClickOutside, useRenderArray } from '/src/hooks'
 import { submitRequestSuccess } from '/src/redux'
+import { isAdmin, isSuperuser } from '/src/auth'
+import { DryRunModal } from '/src/components/PipelineTrace'
 import { UserContext } from '/src/hooks/userContext.hook'
 import { ModalContext, Searchbar, Dropdown } from '/src/styles'
 import { TMDB_ENDPOINT } from '/src/constants'
@@ -31,8 +33,10 @@ const debouncedFetchSearchResults = debounce(fetchSearchResults, 500)
 function MediaSearchbar() {
 	const dispatch = useDispatch()
 	const state = useSelector((state) => state)
-	const { user } = useContext(UserContext)
+	const { user = { username: 'Anonymous' } } = useContext(UserContext)
 	const [isSubmitting, setIsSubmitting] = useState(false)
+	const [dryRunOpen, setDryRunOpen] = useState(false)
+	const [dryRunNonce, setDryRunNonce] = useState(0)
 	let { handleModal } = useContext(ModalContext)
 	const search = useInput('')
 	const selectedMediaExists = useInput(false)
@@ -106,6 +110,11 @@ function MediaSearchbar() {
 		)
 	}
 
+	const launchDryRun = () => {
+		setDryRunNonce((n) => n + 1)
+		setDryRunOpen(true)
+	}
+
 	const onSelectSuggestedMedia = async (selectedMedia) => {
 		const {
 			title,
@@ -119,52 +128,43 @@ function MediaSearchbar() {
 		dispatch({ type: 'SELECT_MEDIA_SUGGESTION', value: selectedMedia })
 		search.setValue(title || original_title || name || original_name)
 		disableSearchBtn.setValue(false)
-		const isAlreadyAdded = await checkDuplicateMediaRequest(
-			title ?? name,
-			release_date ?? first_air_date,
-			media_type
-		)
-		selectedMediaExists.setValue(isAlreadyAdded)
 		suggestions.clear()
+		try {
+			const isAlreadyAdded = await checkDuplicateMediaRequest(
+				title ?? name,
+				release_date ?? first_air_date,
+				media_type
+			)
+			selectedMediaExists.setValue(isAlreadyAdded)
+		} catch (error) {
+			console.log(error)
+		}
 	}
 
-	const MemoizedSuggestedMedia = useMemo(() => {
-		return (
-			suggestions.isNotEmpty && (
-				<Dropdown>
-					<Dropdown.Options ref={dropdownRef} style={{ height: '50vh' }}>
-						{suggestions.value.map((result) => (
-							<Dropdown.Option
-								key={result.id}
-								onClick={() => onSelectSuggestedMedia(result)}
-							>
-								<Dropdown.Image
-									src={
-										result.poster_path
-											? TMDB_ENDPOINT + result.poster_path
-											: ImageNotFound
-									}
-								/>
-								<Dropdown.Title>
-									<span>
-										{result.title ? result.title : result.name} (
-										{result.release_date
-											? parseInt(result.release_date)
-											: parseInt(result.first_air_date)}
-										)
-									</span>
-									{result.media_type === 'movie' && <MovieProjectorIcon />}
-									{result.media_type === 'tv' && <AntennaTvIcon />}
-								</Dropdown.Title>
-							</Dropdown.Option>
-						))}
-					</Dropdown.Options>
-				</Dropdown>
-			)
-		)
-	}, [suggestions.value])
-
 	const requestBusy = isSubmitting
+	const isAuth = isAdmin(user) || isSuperuser(user)
+	const selectedTitle =
+		(state.value && (state.value.title || state.value.name)) || 'this title'
+
+	// Preview the selected suggestion before it is ever created.
+	const dryRunInput = () => {
+		const media = state.value || {}
+		const releaseDate = media.release_date || media.first_air_date || ''
+		return {
+			tmdbId: media.id != null ? String(media.id) : '',
+			title: media.title || media.name || '',
+			mediaType: media.media_type || 'movie',
+			year: String(releaseDate).slice(0, 4) || undefined
+		}
+	}
+
+	const openDryRun = (event) => {
+		if (event) {
+			event.preventDefault()
+			event.stopPropagation()
+		}
+		launchDryRun()
+	}
 
 	return (
 		<Wrapper>
@@ -209,11 +209,61 @@ function MediaSearchbar() {
 						Report Issue
 					</Searchbar.Button>
 				)}
+				{isAuth && !disableSearchBtn.value && state.value?.id != null && (
+					<Searchbar.Button
+						onMouseDown={openDryRun}
+						style={{ backgroundColor: '#455a64' }}
+					>
+						Dry Run
+					</Searchbar.Button>
+				)}
 			</Searchbar>
 			{selectedMediaExists.value && (
 				<AlreadyHint>Already in the library</AlreadyHint>
 			)}
-			{MemoizedSuggestedMedia}
+			<DryRunModal
+				key={dryRunNonce}
+				open={dryRunOpen}
+				onClose={() => setDryRunOpen(false)}
+				user={user}
+				getInput={dryRunInput}
+				heading={`Dry run · ${selectedTitle}`}
+			/>
+			{suggestions.isNotEmpty && (
+				<Dropdown>
+					<Dropdown.Options ref={dropdownRef} style={{ height: '50vh' }}>
+						{suggestions.value.map((result) => (
+							<Dropdown.Option
+								key={result.id}
+								onMouseDown={(event) => {
+									event.preventDefault()
+									event.stopPropagation()
+									onSelectSuggestedMedia(result)
+								}}
+							>
+								<Dropdown.Image
+									src={
+										result.poster_path
+											? TMDB_ENDPOINT + result.poster_path
+											: ImageNotFound
+									}
+								/>
+								<Dropdown.Title>
+									<span>
+										{result.title ? result.title : result.name} (
+										{result.release_date
+											? parseInt(result.release_date)
+											: parseInt(result.first_air_date)}
+										)
+									</span>
+									{result.media_type === 'movie' && <MovieProjectorIcon />}
+									{result.media_type === 'tv' && <AntennaTvIcon />}
+								</Dropdown.Title>
+							</Dropdown.Option>
+						))}
+					</Dropdown.Options>
+				</Dropdown>
+			)}
 		</Wrapper>
 	)
 }

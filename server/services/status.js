@@ -25,6 +25,7 @@ const STAGE_ORDER = [
 	"uploaded",
 	"sorting",
 	"deferred",
+	"acquiring_subtitles",
 	"registering",
 	"pending_approval",
 	"available",
@@ -45,6 +46,7 @@ const STAGE_LABELS = {
 	uploaded: "Arrived",
 	sorting: "Sorting",
 	deferred: "Needs attention",
+	acquiring_subtitles: "Subtitles",
 	registering: "Adding to library",
 	// Approval is fully automated now; treat it as still "adding to library"
 	// rather than a distinct user-facing gate.
@@ -117,6 +119,7 @@ const SORTIFY_COMPLETION_STAGES = new Set([
 	"uploaded",
 	"sorting",
 	"deferred",
+	"acquiring_subtitles",
 	"registering",
 	"pending_approval",
 	"available",
@@ -165,6 +168,7 @@ const ACTIVE_PIPELINE = new Set([
 	"ready_to_sync",
 	"syncing",
 	"sorting",
+	"acquiring_subtitles",
 	"registering",
 	"paused",
 ])
