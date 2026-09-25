@@ -2,7 +2,7 @@
 # Install with: sudo scripts/install-portal-sudo.sh <ssh_user>
 # Do not add docker, visudo, su, or a shell. Do not grant ALL.
 
-Cmnd_Alias PORTAL_SBIN = /usr/local/sbin/portal-deploy, /usr/local/sbin/portal-migrate
+Cmnd_Alias PORTAL_SBIN = /usr/local/sbin/portal-deploy, /usr/local/sbin/portal-migrate, /usr/local/sbin/portal-install-sbin
 Cmnd_Alias PORTAL_CTL = /usr/bin/systemctl restart portal.service, /usr/bin/systemctl start portal.service, /usr/bin/systemctl stop portal.service, /usr/bin/systemctl status portal.service, /bin/systemctl restart portal.service, /bin/systemctl start portal.service, /bin/systemctl stop portal.service, /bin/systemctl status portal.service
 Cmnd_Alias ELANFLIX_CTL = /usr/bin/systemctl restart elanflix.service, /usr/bin/systemctl start elanflix.service, /usr/bin/systemctl stop elanflix.service, /usr/bin/systemctl status elanflix.service, /bin/systemctl restart elanflix.service, /bin/systemctl start elanflix.service, /bin/systemctl stop elanflix.service, /bin/systemctl status elanflix.service
 

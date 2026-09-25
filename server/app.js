@@ -1,5 +1,6 @@
 let createError = require("http-errors")
 let express = require("express")
+let fs = require("fs")
 let path = require("path")
 let cookieParser = require("cookie-parser")
 let logger = require("morgan")
@@ -19,6 +20,9 @@ const { DataTypes } = require("sequelize")
 
 let app = express()
 
+const clientUiPath = path.join(__dirname, "client-ui")
+const hasClientUi = fs.existsSync(path.join(clientUiPath, "index.html"))
+
 // view engine setup
 app.set("views", path.join(__dirname, "views"))
 app.set("view engine", "pug")
@@ -32,11 +36,26 @@ app.use(express.static(path.join(__dirname, "public")))
 // Use CORS module before routes are set up, to allow CORS:
 app.use(cors())
 
-app.use("/", indexRouter)
+if (!hasClientUi) {
+	app.use("/", indexRouter)
+}
 app.use("/requests", requestsRouter)
 app.use("/proxy", proxyRouter)
 app.use("/agent", agentRouter)
 app.use("/admin", adminRouter)
+
+if (hasClientUi) {
+	app.use(express.static(clientUiPath, { index: false }))
+	app.get("/", function (req, res) {
+		res.sendFile(path.join(clientUiPath, "index.html"))
+	})
+	app.get(/^\/(?!requests|proxy|agent|admin).*/, function (req, res, next) {
+		if (req.method !== "GET") return next()
+		res.sendFile(path.join(clientUiPath, "index.html"), function (err) {
+			if (err) next()
+		})
+	})
+}
 
 // Ensure new tables (PipelineJobs, RequestEvents) exist and start the in-process
 // poller (hourly magnet sweep + lease reaper). Column additions to the existing

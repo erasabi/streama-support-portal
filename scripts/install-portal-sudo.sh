@@ -23,6 +23,7 @@ fi
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 install -o root -g root -m 0755 "$ROOT/config/sbin/portal-deploy" /usr/local/sbin/portal-deploy
 install -o root -g root -m 0755 "$ROOT/config/sbin/portal-migrate" /usr/local/sbin/portal-migrate
+install -o root -g root -m 0755 "$ROOT/config/sbin/portal-install-sbin" /usr/local/sbin/portal-install-sbin
 
 TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT

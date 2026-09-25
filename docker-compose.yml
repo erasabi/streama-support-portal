@@ -13,6 +13,12 @@ services:
     build:
       context: .
       dockerfile: ./server/Dockerfile
+      args:
+        NODE_ENV: "${NODE_ENV}"
+        STREAMA_ENDPOINT: "${STREAMA_ENDPOINT}"
+        API_ENDPOINT: "${API_ENDPOINT}"
+        ADMIN_SECRETS: "${ADMIN_SECRETS}"
+        SUPERUSER_SECRETS: "${SUPERUSER_SECRETS}"
     environment:
       NODE_ENV: "${NODE_ENV}"
       DB_SCHEMA: "${DB_SCHEMA}"

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Root-only. Refresh /usr/local/sbin helpers from the fleetctl current release.
+set -euo pipefail
+if [[ $# -ne 0 ]]; then
+	echo "usage: portal-install-sbin" >&2
+	exit 2
+fi
+
+ROOT="${PORTAL_ROOT:-/home/ubuntu/streama-support-portal}"
+CURRENT="$(readlink -f "$ROOT/current" 2>/dev/null || true)"
+if [[ -z "$CURRENT" || ! -d "$CURRENT" ]]; then
+	echo "portal-install-sbin: missing $ROOT/current" >&2
+	exit 1
+fi
+
+install -o root -g root -m 0755 "$CURRENT/config/sbin/portal-deploy" /usr/local/sbin/portal-deploy
+install -o root -g root -m 0755 "$CURRENT/config/sbin/portal-migrate" /usr/local/sbin/portal-migrate
+install -o root -g root -m 0755 "$CURRENT/config/sbin/portal-install-sbin" /usr/local/sbin/portal-install-sbin
+
+echo "portal-install-sbin: updated portal-{deploy,migrate,install-sbin}"
