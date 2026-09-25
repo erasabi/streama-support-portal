@@ -105,8 +105,8 @@ inventory).
 
 Still open on the Prelanflix / encode side:
 
-- **Movies, Russian at download:** fetch **en + ru** from YIFY. `rentify`
-  already supports repeat `-s`; the portal still sends a single English URL.
+- **Movies, Russian at download:** portal stores `subtitleUrl` + `subtitleUrlRu`
+  and `portal-worker` passes `rentify add -s` for each when YIFY has them.
 - **Encode extract:** `SUB_LANGS="en ru"` covers **embedded text tracks only**.
   PGS is still skipped.
 

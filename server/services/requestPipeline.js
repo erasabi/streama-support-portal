@@ -3,7 +3,8 @@ const db = require("../database")
 const { appendEvent, appendEventIfChanged } = require("./events")
 const {
 	lookupMovieMagnet,
-	getYifySubtitleUrl,
+	getYifySubtitleIndex,
+	SUBTITLE_LANGUAGES,
 	extractInfoHash,
 } = require("./magnetLookup")
 const { searchLogPayload } = require("./magnetSearchLog")
@@ -131,13 +132,14 @@ function isSameSource(job, sourceUrl, infoHash, seasons, missing) {
 	return false
 }
 
-async function emitSubtitleLookup(requestId, { found, url, error }) {
+async function emitSubtitleLookup(requestId, { language = "en", found, url, error }) {
+	const lang = language === "ru" ? "ru" : "en"
 	await appendEvent({
 		requestId,
 		actor: "portal",
 		type: "subtitle_lookup",
 		payload: {
-			language: "en",
+			language: lang,
 			found: !!found,
 			url: url || undefined,
 			error: error || undefined,
@@ -768,6 +770,7 @@ async function runMagnetLookup(request, deps = {}) {
 			magnetHash: result.magnetHash,
 			magnetQuality: result.magnetQuality,
 			subtitleUrl: result.subtitleUrl,
+			subtitleUrlRu: result.subtitleUrlRu || null,
 			magnetLookupStatus: "found",
 			magnetLookedUpAt: now,
 			magnetFoundAt: now,
@@ -780,12 +783,20 @@ async function runMagnetLookup(request, deps = {}) {
 			payload: {
 				quality: result.magnetQuality,
 				hasSubtitle: !!result.subtitleUrl,
+				hasSubtitleRu: !!result.subtitleUrlRu,
 			},
 		})
 		await emitSubtitleLookup(request.id, {
+			language: "en",
 			found: !!result.subtitleUrl,
 			url: result.subtitleUrl || undefined,
 			error: result.subtitleUrl ? undefined : "not found",
+		})
+		await emitSubtitleLookup(request.id, {
+			language: "ru",
+			found: !!result.subtitleUrlRu,
+			url: result.subtitleUrlRu || undefined,
+			error: result.subtitleUrlRu ? undefined : "not found",
 		})
 		await createReadyJob(request, {
 			sourceUrl: result.magnetUrl,
@@ -813,18 +824,39 @@ async function runMagnetLookup(request, deps = {}) {
 				payload: { imdbId: result.imdbId || null },
 			})
 			if (result.imdbId) {
-				let subtitleUrl = null
 				let error = null
 				try {
-					subtitleUrl = await getYifySubtitleUrl(result.imdbId)
+					const index = await getYifySubtitleIndex(result.imdbId, SUBTITLE_LANGUAGES)
+					error = index.error || null
+					const english = index.byLanguage.English
+					const russian = index.byLanguage.Russian
+					await emitSubtitleLookup(request.id, {
+						language: "en",
+						found: !!(english && english.url),
+						url: (english && english.url) || undefined,
+						error:
+							error || ((english && english.url) ? undefined : "not found"),
+					})
+					await emitSubtitleLookup(request.id, {
+						language: "ru",
+						found: !!(russian && russian.url),
+						url: (russian && russian.url) || undefined,
+						error:
+							error || ((russian && russian.url) ? undefined : "not found"),
+					})
 				} catch (err) {
 					error = err.message
+					await emitSubtitleLookup(request.id, {
+						language: "en",
+						found: false,
+						error,
+					})
+					await emitSubtitleLookup(request.id, {
+						language: "ru",
+						found: false,
+						error,
+					})
 				}
-				await emitSubtitleLookup(request.id, {
-					found: !!subtitleUrl,
-					url: subtitleUrl || undefined,
-					error: error || (subtitleUrl ? undefined : "not found"),
-				})
 			} else {
 				await emitSubtitleLookup(request.id, {
 					found: false,

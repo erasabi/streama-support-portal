@@ -60,11 +60,39 @@ export function defaultInventoryStep(current) {
 	return null
 }
 
+const SUBTITLE_LANGUAGE_NAMES = {
+	en: 'English',
+	ru: 'Russian',
+	es: 'Spanish',
+	fr: 'French',
+	de: 'German',
+	pt: 'Portuguese',
+	it: 'Italian',
+	uk: 'Ukrainian',
+}
+
+export function formatSubtitleLanguage(code) {
+	if (code == null || code === '') return null
+	const token = String(code).trim().toLowerCase()
+	const base = token.split(/[-_]/)[0]
+	return SUBTITLE_LANGUAGE_NAMES[base] || token.toUpperCase()
+}
+
 export function subtitleLangFromName(name) {
 	if (!name) return null
 	const base = String(name).split('/').pop()
 	const m = String(base).match(/^([a-z]{2}(?:-[a-z]{2,3})?)_/i)
 	return m ? m[1].toLowerCase() : null
+}
+
+/** Human summary for YIFY subtitle URLs queued with a movie torrent. */
+export function yifySubtitleAttachSummary(subtitleUrl, subtitleUrlRu) {
+	const parts = []
+	if (subtitleUrl) parts.push('English')
+	if (subtitleUrlRu) parts.push('Russian')
+	if (!parts.length) return null
+	const noun = parts.length > 1 ? 'URLs' : 'URL'
+	return `YIFY ${parts.join(' + ')} subtitle ${noun} attached`
 }
 
 export function magnetDisplayName(url) {
@@ -182,9 +210,25 @@ export function eventLabel(evtOrType) {
 		}
 	}
 	if (type === 'subtitle_lookup') {
-		const found =
-			typeof evtOrType === 'object' && evtOrType.payload && evtOrType.payload.found
-		return found ? 'Subtitle found' : 'Subtitle missing'
+		const payload =
+			typeof evtOrType === 'object' && evtOrType.payload ? evtOrType.payload : {}
+		const lang = formatSubtitleLanguage(payload.language || 'en')
+		return payload.found ? `${lang} subtitle found` : `${lang} subtitle missing`
+	}
+	if (type === 'subtitle_upload') {
+		const payload =
+			typeof evtOrType === 'object' && evtOrType.payload ? evtOrType.payload : {}
+		return `${formatSubtitleLanguage(payload.language || 'en')} subtitle uploaded`
+	}
+	if (type === 'subtitle_missing') {
+		const payload =
+			typeof evtOrType === 'object' && evtOrType.payload ? evtOrType.payload : {}
+		return `${formatSubtitleLanguage(payload.language || 'en')} subtitle missing`
+	}
+	if (type === 'subtitle_upload_failed') {
+		const payload =
+			typeof evtOrType === 'object' && evtOrType.payload ? evtOrType.payload : {}
+		return `${formatSubtitleLanguage(payload.language || 'en')} subtitle failed`
 	}
 	if (type === 'claimed') {
 		const kind =
@@ -192,6 +236,31 @@ export function eventLabel(evtOrType) {
 		if (kind === 'subtitle_acquire') return 'Subtitle job claimed'
 	}
 	return EVENT_LABELS[type] || String(type).replace(/_/g, ' ')
+}
+
+function eventCollapseKey(evt) {
+	if (!evt || !evt.type) return ''
+	const lang =
+		evt.payload && evt.payload.language ? String(evt.payload.language) : ''
+	if (evt.type === 'subtitle_lookup' || evt.type.startsWith('subtitle_')) {
+		return `${evt.type}:${lang}`
+	}
+	return evt.type
+}
+
+/** Secondary line under a history row (errors, acquire status, etc.). */
+export function eventDetail(evt) {
+	if (!evt || !evt.payload) return null
+	const { type, payload } = evt
+	if (type === 'subtitle_lookup' && payload.error) return payload.error
+	if (type.startsWith('subtitle_')) {
+		const bits = []
+		if (payload.status) bits.push(String(payload.status))
+		if (payload.error) bits.push(String(payload.error))
+		if (payload.video) bits.push(payload.video)
+		return bits.length ? bits.join(' · ') : null
+	}
+	return null
 }
 
 // Filter + collapse consecutive duplicate events for display.
@@ -202,7 +271,11 @@ export function prepareEvents(events = []) {
 	const collapsed = []
 	for (const evt of filtered) {
 		const prev = collapsed[collapsed.length - 1]
-		if (prev && prev.type === evt.type && prev.actor === evt.actor) {
+		if (
+			prev &&
+			prev.actor === evt.actor &&
+			eventCollapseKey(prev) === eventCollapseKey(evt)
+		) {
 			// Keep the most recent timestamp for a run of identical events.
 			continue
 		}

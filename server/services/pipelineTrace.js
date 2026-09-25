@@ -682,8 +682,8 @@ function buildFlags({ request, identity, magnetLookup, fetchPlan, jobs, encode, 
 				"russian_subtitles_absent",
 				ruUpstream && ruUpstream.found ? "error" : "warn",
 				ruUpstream && ruUpstream.found
-					? "Russian subtitles were available upstream but no ru file reached upload. The portal only attaches the English URL."
-					: "No Russian subtitles reached upload. Only embedded Russian text tracks are ever extracted; nothing fetches them.",
+					? "Russian subtitles were available on YIFY but no ru file reached upload (download or encode may have failed)."
+					: "No Russian subtitles reached upload. TV has no YIFY attach; movies rely on YIFY + embedded text tracks.",
 				{
 					uploadLanguages: uploadLangs,
 					russianUpstream: ruUpstream || null,

@@ -178,10 +178,7 @@ describe("subtitle language coverage", () => {
 		expect(index.byLanguage.English.url).toContain("high.zip")
 	})
 
-	// PINS CURRENT BEHAVIOUR (gated fix: "subtitle acquire + register").
-	// The request carries one subtitleUrl, so an available Russian track is
-	// visible in the trace but never attached. Flip this when en+ru ships.
-	test("Russian is recorded but NOT attached to the request today", async () => {
+	test("Russian YIFY URL is returned alongside English for movie lookup", async () => {
 		axios.get
 			.mockResolvedValueOnce({ data: { imdb_id: "tt0133093" } })
 			.mockResolvedValueOnce({
@@ -200,8 +197,8 @@ describe("subtitle language coverage", () => {
 		)
 		expect(russian.found).toBe(true)
 		expect(russian.subtitleUrl).toContain("m-ru.zip")
-		// Only the English URL rides along with the media.
 		expect(result.subtitleUrl).toContain("m-en.zip")
+		expect(result.subtitleUrlRu).toContain("m-ru.zip")
 	})
 })
 

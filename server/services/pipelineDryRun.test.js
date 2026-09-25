@@ -143,7 +143,7 @@ describe("runDryRun", () => {
 		expect(report.flags.map((f) => f.code)).toContain("yts_title_mismatch")
 	})
 
-	test("Russian availability upstream is reported without being attached", async () => {
+	test("Russian YIFY URL is included in subtitle attach forecast for movies", async () => {
 		const withRussian = movieLookup({
 			search: {
 				outcome: "found",
@@ -171,8 +171,13 @@ describe("runDryRun", () => {
 			{ tmdbId: "603", title: "The Matrix", mediaType: "movie" },
 			{ lookupMovieMagnet: withRussian }
 		)
-		expect(report.subtitleForecast.wouldAttach.map((a) => a.language)).toEqual(["en"])
-		expect(report.flags.map((f) => f.code)).toContain("russian_available_but_not_attached")
+		expect(report.subtitleForecast.wouldAttach.map((a) => a.language)).toEqual([
+			"en",
+			"ru",
+		])
+		expect(report.flags.map((f) => f.code)).not.toContain(
+			"russian_available_but_not_attached"
+		)
 	})
 
 	test("a TV request prints the exact piratify command to reproduce on the box", async () => {

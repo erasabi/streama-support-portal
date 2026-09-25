@@ -2,7 +2,7 @@
 import React from 'react'
 import styled from 'styled-components'
 import { grey } from '@mui/material/colors'
-import { eventLabel, prepareEvents } from '/src/utils/pipeline'
+import { eventDetail, eventLabel, prepareEvents } from '/src/utils/pipeline'
 
 function relativeTime(iso) {
 	const date = new Date(iso)
@@ -30,17 +30,23 @@ export default function EventTimeline({ events = [] }) {
 	}
 	return (
 		<Timeline>
-			{rows.map((evt) => (
-				<li key={evt.id}>
-					<span className="evt-type">{eventLabel(evt)}</span>
-					<span className={`evt-actor actor-${evt.actor || 'portal'}`}>
-						{evt.actor || 'portal'}
-					</span>
-					<span className="evt-time" title={new Date(evt.createdAt).toLocaleString()}>
-						{relativeTime(evt.createdAt)}
-					</span>
-				</li>
-			))}
+			{rows.map((evt) => {
+				const detail = eventDetail(evt)
+				return (
+					<li key={evt.id}>
+						<div className="evt-main">
+							<span className="evt-type">{eventLabel(evt)}</span>
+							{detail && <span className="evt-detail">{detail}</span>}
+						</div>
+						<span className={`evt-actor actor-${evt.actor || 'portal'}`}>
+							{evt.actor || 'portal'}
+						</span>
+						<span className="evt-time" title={new Date(evt.createdAt).toLocaleString()}>
+							{relativeTime(evt.createdAt)}
+						</span>
+					</li>
+				)
+			})}
 		</Timeline>
 	)
 }
@@ -65,6 +71,19 @@ const Timeline = styled.ul`
 		font-size: 12px;
 		gap: 8px;
 		padding: 8px 0;
+	}
+	.evt-main {
+		display: flex;
+		flex: 1 1 160px;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+	.evt-detail {
+		color: ${grey[500]};
+		font-size: 11px;
+		font-weight: 400;
+		word-break: break-word;
 	}
 	li:last-child {
 		border-bottom: none;

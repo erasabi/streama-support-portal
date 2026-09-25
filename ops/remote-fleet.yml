@@ -15,6 +15,8 @@ workloads:
     source: remote-inventory
 release:
   method: rsync
+  # Rebuild/restart docker-compose + migrate (needs portal-deploy NOPASSWD).
+  smoke: sg portal-deploy -c "sudo -n /usr/local/sbin/portal-deploy"
   include:
     - '**'
   exclude:

@@ -92,6 +92,10 @@ const Request = sequelize.define("Request", {
 		type: Sequelize.TEXT,
 		allowNull: true,
 	},
+	subtitleUrlRu: {
+		type: Sequelize.TEXT,
+		allowNull: true,
+	},
 	// pending | found | not_found | not_applicable | error | stopped
 	magnetLookupStatus: {
 		type: Sequelize.STRING,

@@ -427,7 +427,7 @@ function forecastEncode(torrentName, { mediaType } = {}) {
 
 /**
  * Which subtitle languages this request would actually acquire, and from where.
- * Reflects today's behaviour: one English URL for movies, nothing for TV.
+ * Movies: English + Russian YIFY URLs when upstream has them; TV: none.
  */
 function forecastSubtitles({ mediaType, search, magnetFound }) {
 	const languages = {}
@@ -472,14 +472,22 @@ function forecastSubtitles({ mediaType, search, magnetFound }) {
 			})
 		}
 		const russian = languages.Russian
-		wouldNotAttach.push({
-			language: "ru",
-			reason: russian && russian.availableUpstream
-				? "available upstream but the portal stores a single English subtitleUrl"
-				: "not available upstream, and nothing fetches Russian for movies",
-			availableUpstream: !!(russian && russian.availableUpstream),
-			url: russian ? russian.url : null,
-		})
+		if (magnetFound && russian && russian.availableUpstream) {
+			wouldAttach.push({
+				language: "ru",
+				via: "request.subtitleUrlRu -> rentify add -s",
+				url: russian.url,
+			})
+		} else {
+			wouldNotAttach.push({
+				language: "ru",
+				reason: russian && russian.availableUpstream
+					? "Russian URL missing on request (lookup error)"
+					: "not available on the YIFY index",
+				availableUpstream: !!(russian && russian.availableUpstream),
+				url: russian ? russian.url : null,
+			})
+		}
 	}
 
 	return { upstreamIndex: languages, wouldAttach, wouldNotAttach }
@@ -803,15 +811,17 @@ async function runDryRun(input = {}, deps = {}) {
 			)
 		)
 	}
+	const ruWouldAttach = subtitleForecast.wouldAttach.some((r) => r.language === "ru")
 	if (
 		subtitleForecast.upstreamIndex.Russian &&
-		subtitleForecast.upstreamIndex.Russian.availableUpstream
+		subtitleForecast.upstreamIndex.Russian.availableUpstream &&
+		!ruWouldAttach
 	) {
 		flags.push(
 			flag(
 				"russian_available_but_not_attached",
 				"warn",
-				"Russian subtitles exist upstream but would not be attached: the portal stores one English subtitleUrl.",
+				"Russian subtitles exist upstream but would not be attached with this magnet result.",
 				subtitleForecast.upstreamIndex.Russian
 			)
 		)

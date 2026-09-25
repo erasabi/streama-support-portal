@@ -44,6 +44,7 @@ function toPublicJSON(request) {
 		magnetUrls,
 		magnetHash,
 		subtitleUrl,
+		subtitleUrlRu,
 		queueEvents,
 		pipelineArtifacts,
 		...safe
@@ -61,6 +62,7 @@ function toDetailJSON(request, req) {
 		delete base.magnetUrls
 		delete base.magnetHash
 		delete base.subtitleUrl
+		delete base.subtitleUrlRu
 		delete base.pipelineArtifacts
 	}
 	return base

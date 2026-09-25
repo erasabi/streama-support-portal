@@ -16,7 +16,8 @@ const {
 // "the magnet is on YTS but the portal missed it" is answerable after the fact.
 
 // Subtitle languages we report on. Only English is attached to the request
-// today (`subtitleUrl` is a single field); Russian is recorded so the trace can
+// `subtitleUrl` (English) and `subtitleUrlRu` on the request; both attach via
+// rentify when present. Russian is still recorded per-language in the search log
 // prove whether it was ever available upstream.
 const SUBTITLE_LANGUAGES = ["English", "Russian"]
 
@@ -188,7 +189,7 @@ async function getYifySubtitleUrl(imdbCode) {
  * the raw torrent list, subtitle scrape per language, pick + reason). Callers
  * persist it so a miss can be explained later.
  *
- * @returns {Promise<{status: string, imdbId?, magnetUrl?, magnetHash?, magnetQuality?, subtitleUrl?, search: Object}>}
+ * @returns {Promise<{status: string, imdbId?, magnetUrl?, magnetHash?, magnetQuality?, subtitleUrl?, subtitleUrlRu?, search: Object}>}
  *   status is one of: "found" | "not_found" | "error"
  */
 async function lookupMovieMagnet(tmdbId, opts = {}) {
@@ -288,8 +289,9 @@ async function lookupMovieMagnet(tmdbId, opts = {}) {
 	recordPick(search, { torrent: best, reason: picked.reason })
 
 	// Subtitle is best-effort; never fail the lookup on subtitle errors.
-	// English is what gets attached; other languages are recorded only.
+	// English + Russian YIFY URLs ride with the movie torrent (rentify -s ×2).
 	let subtitleUrl = null
+	let subtitleUrlRu = null
 	try {
 		const index = await getYifySubtitleIndex(imdbId, SUBTITLE_LANGUAGES)
 		for (const language of SUBTITLE_LANGUAGES) {
@@ -305,7 +307,9 @@ async function lookupMovieMagnet(tmdbId, opts = {}) {
 			})
 		}
 		const english = index.byLanguage.English
+		const russian = index.byLanguage.Russian
 		subtitleUrl = english && english.url ? english.url : null
+		subtitleUrlRu = russian && russian.url ? russian.url : null
 	} catch (error) {
 		recordAttempt(search, {
 			source: "yifysubtitles",
@@ -314,6 +318,7 @@ async function lookupMovieMagnet(tmdbId, opts = {}) {
 			error: error.message,
 		})
 		subtitleUrl = null
+		subtitleUrlRu = null
 	}
 
 	finalizeSearchLog(search, { outcome: "found" })
@@ -325,6 +330,7 @@ async function lookupMovieMagnet(tmdbId, opts = {}) {
 		magnetHash: best.hash || extractInfoHash(best.url),
 		magnetQuality: best.quality || null,
 		subtitleUrl,
+		subtitleUrlRu,
 		search,
 	}
 }

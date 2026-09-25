@@ -37,6 +37,7 @@ router.get("/history", async function (req, res) {
 				delete row.magnetUrl
 				delete row.magnetHash
 				delete row.subtitleUrl
+				delete row.subtitleUrlRu
 				delete row.queueEvents
 				delete row.pipelineArtifacts
 				return { ...row, displayStatus: displayStatus(row) }

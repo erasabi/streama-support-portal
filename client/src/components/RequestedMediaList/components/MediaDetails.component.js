@@ -30,7 +30,19 @@ import {
 } from '/src/api'
 import { isAdmin, isSuperuser, matchesUser } from '/src/auth'
 import { UserContext } from '/src/hooks/userContext.hook'
-import { STEPPER, stageToStep, defaultInventoryStep, inventoryKeyForStep, subtitleLangFromName, magnetDisplayName, groupEpisodeCodes, formatSeasonList, FETCH_MODE_LABELS } from '/src/utils/pipeline'
+import {
+	STEPPER,
+	stageToStep,
+	defaultInventoryStep,
+	inventoryKeyForStep,
+	subtitleLangFromName,
+	formatSubtitleLanguage,
+	yifySubtitleAttachSummary,
+	magnetDisplayName,
+	groupEpisodeCodes,
+	formatSeasonList,
+	FETCH_MODE_LABELS,
+} from '/src/utils/pipeline'
 import EventTimeline from '/src/components/EventTimeline'
 import PipelineTrace, { DryRunModal } from '/src/components/PipelineTrace'
 
@@ -67,6 +79,7 @@ export default function MediaDetails(props) {
 	const dropdownMessageRef = useClickOutside(closeMessageDropdown)
 	const [details, setDetails] = useState(null)
 	const [subtitle, setSubtitle] = useState()
+	const [subtitleRu, setSubtitleRu] = useState()
 	const [isCopied, setCopied] = useState()
 	const [events, setEvents] = useState([])
 	const [sources, setSources] = useState([''])
@@ -330,6 +343,7 @@ export default function MediaDetails(props) {
 			const data = await getRequestDetails(id, user)
 			setDetails(data)
 			setSubtitle(data.subtitleUrl)
+			setSubtitleRu(data.subtitleUrlRu)
 			if (!sourcesHydratedRef.current) {
 				const initial =
 					Array.isArray(data.magnetUrls) && data.magnetUrls.length
@@ -414,6 +428,7 @@ export default function MediaDetails(props) {
 						(details && details.magnetQuality) || props.magnetQuality
 					}
 					subtitleUrl={subtitle}
+					subtitleUrlRu={subtitleRu}
 					magnetUrls={magnetUrls}
 				/>
 				<div className="card-scroll">
@@ -819,6 +834,7 @@ function ProgressTracker({
 	artifacts,
 	magnetQuality,
 	subtitleUrl,
+	subtitleUrlRu,
 	magnetUrls
 }) {
 	const [picked, setPicked] = useState(false)
@@ -875,6 +891,7 @@ function ProgressTracker({
 					bucket={bucket}
 					magnetQuality={magnetQuality}
 					subtitleUrl={subtitleUrl}
+					subtitleUrlRu={subtitleUrlRu}
 					magnetUrls={magnetUrls}
 				/>
 			)}
@@ -893,8 +910,10 @@ function StageInventory({
 	bucket,
 	magnetQuality,
 	subtitleUrl,
+	subtitleUrlRu,
 	magnetUrls
 }) {
+	const yifyAttach = yifySubtitleAttachSummary(subtitleUrl, subtitleUrlRu)
 	const files = (bucket && Array.isArray(bucket.files) ? bucket.files : []).filter(
 		(f) => f && f.name
 	)
@@ -924,11 +943,11 @@ function StageInventory({
 					{!hasFiles && (
 				<div className="inv-empty">
 					<p>{EMPTY_COPY[stepKey] || 'No file inventory captured for this stage.'}</p>
-					{stepKey === 'download' && (magnetQuality || subtitleUrl) && (
+					{stepKey === 'download' && (magnetQuality || yifyAttach) && (
 						<p className="inv-fallback">
 							{magnetQuality ? `Source quality: ${magnetQuality}` : ''}
-							{magnetQuality && subtitleUrl ? ' · ' : ''}
-							{subtitleUrl ? 'YIFY English subtitle URL is attached' : ''}
+							{magnetQuality && yifyAttach ? ' · ' : ''}
+							{yifyAttach || ''}
 						</p>
 					)}
 				</div>
@@ -945,23 +964,24 @@ function StageInventory({
 					))}
 				</ul>
 			)}
-			{(allSubs.length > 0 || (subtitleUrl && !hasFiles && stepKey === 'download')) && (
+			{(allSubs.length > 0 || (yifyAttach && !hasFiles && stepKey === 'download')) && (
 				<div className="inv-subs">
 					<p className="inv-subhead">Subtitles</p>
 					{allSubs.length > 0 ? (
 						<ul className="inv-list">
 							{allSubs.map((f) => {
-								const lang = f.language || subtitleLangFromName(f.name)
+								const langCode = f.language || subtitleLangFromName(f.name)
+								const langLabel = formatSubtitleLanguage(langCode) || langCode
 								return (
 									<li key={f.name}>
 										<span className="inv-name">{f.name}</span>
-										{lang && <span className="inv-lang">{lang}</span>}
+										{langLabel && <span className="inv-lang">{langLabel}</span>}
 									</li>
 								)
 							})}
 						</ul>
 					) : (
-						<p className="inv-fallback">YIFY English subtitle URL is attached</p>
+						<p className="inv-fallback">{yifyAttach}</p>
 					)}
 				</div>
 			)}
