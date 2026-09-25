@@ -35,7 +35,7 @@ export default function EventTimeline({ events = [] }) {
 				return (
 					<li key={evt.id}>
 						<div className="evt-main">
-							<span className="evt-type">{eventLabel(evt)}</span>
+							<span className="evt-type">{evt.displayLabel || eventLabel(evt)}</span>
 							{detail && <span className="evt-detail">{detail}</span>}
 						</div>
 						<span className={`evt-actor actor-${evt.actor || 'portal'}`}>

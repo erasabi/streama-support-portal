@@ -78,6 +78,37 @@ export function formatSubtitleLanguage(code) {
 	return SUBTITLE_LANGUAGE_NAMES[base] || token.toUpperCase()
 }
 
+function subtitleLanguageFromPayload(payload) {
+	if (!payload || typeof payload !== 'object') return 'en'
+	if (payload.language) return String(payload.language).toLowerCase()
+	const url = payload.url
+	if (url && typeof url === 'string') {
+		const lower = url.toLowerCase()
+		if (/-russian-|-rus-/.test(lower)) return 'ru'
+		if (/-english-|-eng-/.test(lower)) return 'en'
+	}
+	return 'en'
+}
+
+function subtitleEventLabel(type, payload) {
+	const lang = formatSubtitleLanguage(subtitleLanguageFromPayload(payload))
+	const p = payload && typeof payload === 'object' ? payload : {}
+	switch (type) {
+		case 'subtitle_lookup':
+			return p.found ? `${lang} subtitle found` : `${lang} subtitle missing`
+		case 'subtitle_found':
+			return `${lang} subtitle found`
+		case 'subtitle_missing':
+			return `${lang} subtitle missing`
+		case 'subtitle_upload':
+			return `${lang} subtitle uploaded`
+		case 'subtitle_upload_failed':
+			return `${lang} subtitle failed`
+		default:
+			return null
+	}
+}
+
 export function subtitleLangFromName(name) {
 	if (!name) return null
 	const base = String(name).split('/').pop()
@@ -209,26 +240,14 @@ export function eventLabel(evtOrType) {
 			return 'Season plan failed (Streama unreachable)'
 		}
 	}
-	if (type === 'subtitle_lookup') {
-		const payload =
-			typeof evtOrType === 'object' && evtOrType.payload ? evtOrType.payload : {}
-		const lang = formatSubtitleLanguage(payload.language || 'en')
-		return payload.found ? `${lang} subtitle found` : `${lang} subtitle missing`
+	if (typeof evtOrType === 'object' && evtOrType.displayLabel) {
+		return evtOrType.displayLabel
 	}
-	if (type === 'subtitle_upload') {
+	if (type.startsWith('subtitle_')) {
 		const payload =
 			typeof evtOrType === 'object' && evtOrType.payload ? evtOrType.payload : {}
-		return `${formatSubtitleLanguage(payload.language || 'en')} subtitle uploaded`
-	}
-	if (type === 'subtitle_missing') {
-		const payload =
-			typeof evtOrType === 'object' && evtOrType.payload ? evtOrType.payload : {}
-		return `${formatSubtitleLanguage(payload.language || 'en')} subtitle missing`
-	}
-	if (type === 'subtitle_upload_failed') {
-		const payload =
-			typeof evtOrType === 'object' && evtOrType.payload ? evtOrType.payload : {}
-		return `${formatSubtitleLanguage(payload.language || 'en')} subtitle failed`
+		const labeled = subtitleEventLabel(type, payload)
+		if (labeled) return labeled
 	}
 	if (type === 'claimed') {
 		const kind =

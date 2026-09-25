@@ -223,11 +223,12 @@ router.get("/:id", async function (req, res) {
 router.get("/:id/events", async function (req, res) {
 	if (!isAdminRequest(req)) return res.status(403).json({ error: "admin only" })
 	try {
+		const { enrichEventRow } = require("../services/subtitleEventDisplay")
 		const events = await db.RequestEvent.findAll({
 			where: { requestId: normalizeRequestId(req.params.id) },
 			order: [["createdAt", "DESC"]],
 		})
-		res.status(200).json(events)
+		res.status(200).json(events.map(enrichEventRow))
 	} catch (err) {
 		res.status(500).send(JSON.stringify(err))
 	}
