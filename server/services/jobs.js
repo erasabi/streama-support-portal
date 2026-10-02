@@ -344,7 +344,20 @@ async function applyStageToRequest(requestId, stage, stageDetail) {
 		status.ADMIN_LABELS.includes(request.queueStatus)
 
 	const updates = {}
-	if (status.SORTIFY_COMPLETION_STAGES.has(stage)) {
+	// A title already in the library stays Available when a later leftover
+	// torrent stalls. The job row still records the failure.
+	if (
+		stage === "failed" &&
+		request.pipelineStage === "available" &&
+		request.streamaMediaId
+	) {
+		if (stageDetail !== undefined) {
+			await request.update({ pipelineStageDetail: stageDetail || null })
+		}
+		return
+	}
+	const appliedStage = status.completionStageForRequest(request, stage)
+	if (status.SORTIFY_COMPLETION_STAGES.has(appliedStage)) {
 		const inflight = await db.PipelineJob.findOne({
 			where: {
 				requestId: normalizeRequestId(requestId),
@@ -356,8 +369,8 @@ async function applyStageToRequest(requestId, stage, stageDetail) {
 		// Available while rentify is still downloading or encoding the rest.
 		if (inflight) return
 	}
-	if (status.shouldApplyDerivedStage(request.pipelineStage, stage)) {
-		updates.pipelineStage = stage
+	if (status.shouldApplyDerivedStage(request.pipelineStage, appliedStage)) {
+		updates.pipelineStage = appliedStage
 	}
 	if (stageDetail !== undefined) {
 		updates.pipelineStageDetail = stageDetail || null

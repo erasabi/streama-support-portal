@@ -181,6 +181,20 @@ function hasPendingSeasons(request) {
 	return Array.isArray(raw) && raw.length > 0
 }
 
+/**
+ * A movie the library already registered should not sit on Arrived after the
+ * downloader finally posts uploaded. Sortify's available event was dropped
+ * while this job was still in_progress at syncing, and it does not retry once
+ * the file has left TO-SORT. TV stays on uploaded so a later episode can still
+ * finish.
+ */
+function completionStageForRequest(request, stage) {
+	if (stage !== "uploaded") return stage
+	if (!request || request.mediaType !== "movie") return stage
+	if (request.streamaMediaId == null || request.streamaMediaId === "") return stage
+	return "available"
+}
+
 function displayStatus(request, now = new Date()) {
 	if (!request) return "Requested"
 	// Archived is terminal for display and wins over everything else.
@@ -246,4 +260,5 @@ module.exports = {
 	displayStatus,
 	noTorrentsDetail,
 	hasPendingSeasons,
+	completionStageForRequest,
 }

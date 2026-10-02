@@ -58,6 +58,18 @@ describe("pickBestTorrent", () => {
 		expect(best.hash).toBe(HASH_B)
 	})
 
+	test("does not replace a tried 1080p with a 3D rip when a flat copy remains", () => {
+		const best = pickBestTorrent(
+			[
+				torrent({ hash: HASH_A, quality: "1080p" }),
+				torrent({ hash: HASH_B, quality: "1080p" }),
+				torrent({ hash: "C".repeat(40), quality: "3D", video_codec: "x264" }),
+			],
+			[HASH_A]
+		)
+		expect(best.hash).toBe(HASH_B)
+	})
+
 	// A title whose only sources have all failed is still a title WITH sources.
 	// Reporting it as "not found" is the magnet-miss taxonomy bug.
 	test("falls back to the full list when every hash is excluded, and says so", () => {

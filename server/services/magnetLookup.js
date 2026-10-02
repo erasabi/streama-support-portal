@@ -33,7 +33,10 @@ const YTS_TIMEOUT_MS = 45000
 const YTS_REQUEST = { timeout: YTS_TIMEOUT_MS, family: 4 }
 
 function qualityOrder(quality) {
-	switch (quality) {
+	const label = String(quality || "")
+	// HSBS/3D rips are not a substitute for a flat 1080p when a download is retried.
+	if (/3d/i.test(label)) return 9
+	switch (label) {
 		case "1080p":
 			return 1
 		case "2160p":

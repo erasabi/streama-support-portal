@@ -68,6 +68,38 @@ describe("status.shouldAdvance", () => {
 	})
 })
 
+describe("status.completionStageForRequest", () => {
+	test("a movie already in Streama finishes as available", () => {
+		expect(
+			status.completionStageForRequest(
+				{ mediaType: "movie", streamaMediaId: 30403 },
+				"uploaded"
+			)
+		).toBe("available")
+	})
+
+	test("leaves other stages and unregistered movies alone", () => {
+		expect(
+			status.completionStageForRequest(
+				{ mediaType: "movie", streamaMediaId: null },
+				"uploaded"
+			)
+		).toBe("uploaded")
+		expect(
+			status.completionStageForRequest(
+				{ mediaType: "tv", streamaMediaId: 12 },
+				"uploaded"
+			)
+		).toBe("uploaded")
+		expect(
+			status.completionStageForRequest(
+				{ mediaType: "movie", streamaMediaId: 1 },
+				"syncing"
+			)
+		).toBe("syncing")
+	})
+})
+
 describe("status.shouldApplyDerivedStage", () => {
 	test("still advances forward", () => {
 		expect(status.shouldApplyDerivedStage("encoding", "uploaded")).toBe(true)
