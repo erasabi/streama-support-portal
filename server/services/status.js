@@ -3,6 +3,7 @@
 
 const { shouldDisplayNotYetAvailable } = require("./availability")
 const { isSubtitleRemediaLabel } = require("./subtitleRemedia")
+const { canonicalTmdbId } = require("../utils/requestId")
 
 // Alternative "no source" outcomes — not a progression. Streama fail-closed
 // must not permanently upgrade Not Yet Available to Check Manually.
@@ -195,6 +196,49 @@ function completionStageForRequest(request, stage) {
 	return "available"
 }
 
+function detailErrorText(detail) {
+	if (!detail || typeof detail !== "object") return ""
+	const err = detail.error || (detail.detail && detail.detail.error) || ""
+	return String(err)
+}
+
+/**
+ * Sortify posts this after subtitle attach cannot find the parent video, even
+ * when the movie itself was registered and highlighted.
+ */
+function isStreamaRegistrationFailure(detail) {
+	return /streama registration failed/i.test(detailErrorText(detail))
+}
+
+/**
+ * A library title must stay Available when a later registration retry reports
+ * failure. `highlightedAt` covers the case where the stored stage was left on
+ * pending_approval by an overlapping sortify post. Download/encode failures
+ * are not this error and still advance to failed.
+ */
+function shouldPreserveLibraryStage(request, stage, stageDetail) {
+	if (stage !== TERMINAL_FAILED || !request) return false
+	if (!isStreamaRegistrationFailure(stageDetail)) return false
+	if (request.highlightedAt) return true
+	return request.pipelineStage === "available"
+}
+
+/**
+ * Persist a Streama id only when the matcher apiId is this request.
+ * Retries often send another movie's importedId with no apiId (or the wrong
+ * one) after the real title is already in the library.
+ */
+function acceptStreamaBinding(request, { streamaMediaId, streamaVideoId, detail } = {}) {
+	const apiId = detail && typeof detail === "object" ? detail.apiId : null
+	const tmdb = canonicalTmdbId(request && request.id)
+	const verified = apiId != null && apiId !== "" && tmdb && String(apiId) === String(tmdb)
+	if (!verified) return {}
+	const binding = {}
+	if (streamaMediaId != null && streamaMediaId !== "") binding.streamaMediaId = streamaMediaId
+	if (streamaVideoId != null && streamaVideoId !== "") binding.streamaVideoId = streamaVideoId
+	return binding
+}
+
 function displayStatus(request, now = new Date()) {
 	if (!request) return "Requested"
 	// Archived is terminal for display and wins over everything else.
@@ -261,4 +305,7 @@ module.exports = {
 	noTorrentsDetail,
 	hasPendingSeasons,
 	completionStageForRequest,
+	isStreamaRegistrationFailure,
+	shouldPreserveLibraryStage,
+	acceptStreamaBinding,
 }

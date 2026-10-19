@@ -414,7 +414,10 @@ export default function MediaDetails(props) {
 					<button
 						type="button"
 						className="details-close"
-						onClick={onCancel}
+						onClick={(event) => {
+							event.stopPropagation()
+							onCancel()
+						}}
 						aria-label="Close details"
 					>
 						×
@@ -659,7 +662,13 @@ export default function MediaDetails(props) {
 					heading={`Dry run · ${props.title || 'this title'}`}
 				/>
 				<Button.Group className="button-group">
-					<Button className="cancel" onClick={onCancel}>
+					<Button
+						className="cancel"
+						onClick={(event) => {
+							event.stopPropagation()
+							onCancel()
+						}}
+					>
 						Cancel
 					</Button>
 					<Button
@@ -1405,8 +1414,9 @@ const PlanPanel = styled.div`
 
 const Wrapper = styled.div`
 	display: flex;
+	flex: 1 1 auto;
 	flex-direction: column;
-	max-height: 100%;
+	height: 100%;
 	min-height: 0;
 	overflow: hidden;
 	width: 100%;
@@ -1416,7 +1426,7 @@ const Wrapper = styled.div`
 		flex: 1 1 auto;
 		flex-direction: column;
 		gap: 12px;
-		max-height: 100%;
+		height: 100%;
 		min-height: 0;
 		overflow: hidden;
 		width: 100%;
@@ -1469,7 +1479,10 @@ const Wrapper = styled.div`
 		height: 36px;
 		justify-content: center;
 		line-height: 1;
+		position: relative;
+		touch-action: manipulation;
 		width: 36px;
+		z-index: 2;
 
 		&:hover {
 			background: ${grey[700]};

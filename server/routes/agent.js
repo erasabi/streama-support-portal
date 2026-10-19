@@ -8,7 +8,7 @@ const { resolveRequest } = require("../services/requestPipeline")
 const { subtitleEventsFromDetail } = require("../services/subtitleEvents")
 const { jobKind, kindSql, jobDetail } = require("../services/jobKind")
 const { literal, Op } = require("sequelize")
-const { displayStatus, ADMIN_LABELS } = require("../services/status")
+const { displayStatus, ADMIN_LABELS, acceptStreamaBinding } = require("../services/status")
 const { normalizeRequestId } = require("../utils/requestId")
 
 function jobLibraryFields(job) {
@@ -191,8 +191,10 @@ router.post("/v1/events", async function (req, res) {
 
 		// Sortify highlight / streama id side-effects.
 		const requestUpdates = {}
-		if (streamaMediaId != null) requestUpdates.streamaMediaId = streamaMediaId
-		if (streamaVideoId != null) requestUpdates.streamaVideoId = streamaVideoId
+		Object.assign(
+			requestUpdates,
+			acceptStreamaBinding(request, { streamaMediaId, streamaVideoId, detail })
+		)
 		if (stage === "highlighted" || stage === "available") {
 			requestUpdates.highlightedAt = new Date()
 		}

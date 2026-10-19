@@ -344,8 +344,15 @@ async function applyStageToRequest(requestId, stage, stageDetail) {
 		status.ADMIN_LABELS.includes(request.queueStatus)
 
 	const updates = {}
-	// A title already in the library stays Available when a later leftover
-	// torrent stalls. The job row still records the failure.
+	// Subtitle retries post "streama registration failed" after the video is
+	// already highlighted. Keep Available. A download stall of a leftover
+	// torrent is the same idea once the row is already Available.
+	if (status.shouldPreserveLibraryStage(request, stage, stageDetail)) {
+		if (request.highlightedAt && request.pipelineStage !== "available") {
+			await request.update({ pipelineStage: "available" })
+		}
+		return
+	}
 	if (
 		stage === "failed" &&
 		request.pipelineStage === "available" &&

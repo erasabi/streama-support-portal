@@ -1,26 +1,21 @@
-import React, { useEffect, useRef, useContext } from 'react'
+import React, { useEffect, useRef, useContext, useState } from 'react'
 import ReactDOM from 'react-dom'
 import { ModalContext } from './Modal.context'
 import styled from 'styled-components'
 
 const Modal = () => {
 	let { modalContent, handleModal, modal } = useContext(ModalContext)
+	const backdropRef = useRef(null)
 	const modalRef = useRef()
+	const [closeArmed, setCloseArmed] = useState(false)
 
 	useEffect(() => {
-		// check that the modal is actually open before event listener setup
-		if (!modal) return
-
-		// this ensures we dont double toggle by clicking document where
-		// referenced element with onClick is located
-		function handleClickOutside(event) {
-			if (event.target && event.target.closest && event.target.closest('[data-dry-run-overlay]')) {
-				return
-			}
-			if (modalRef.current && !modalRef.current.contains(event.target)) {
-				handleModal()
-			}
+		if (!modal) {
+			setCloseArmed(false)
+			return undefined
 		}
+
+		const arm = setTimeout(() => setCloseArmed(true), 350)
 
 		function handleEscape(event) {
 			if (event.key === 'Escape') {
@@ -28,20 +23,46 @@ const Modal = () => {
 			}
 		}
 
-		// if anywhere on document is clicked run function
-		document.addEventListener('mousedown', handleClickOutside)
 		document.addEventListener('keydown', handleEscape)
-		// clean up event listeners on useEffect completion
+		const previousOverflow = document.body.style.overflow
+		document.body.style.overflow = 'hidden'
+
 		return () => {
-			document.removeEventListener('mousedown', handleClickOutside)
+			clearTimeout(arm)
 			document.removeEventListener('keydown', handleEscape)
+			document.body.style.overflow = previousOverflow
 		}
-	}, [modal])
+	}, [modal, handleModal])
+
+	const dismissFromBackdrop = (event) => {
+		if (!closeArmed) return
+		if (
+			event.target &&
+			event.target.closest &&
+			event.target.closest('[data-dry-run-overlay]')
+		) {
+			return
+		}
+		if (event.target !== backdropRef.current) return
+		event.preventDefault()
+		handleModal()
+	}
 
 	return modal
 		? ReactDOM.createPortal(
-				<Backdrop>
-					<Container ref={modalRef}>{modalContent}</Container>
+				<Backdrop
+					ref={backdropRef}
+					role="presentation"
+					onPointerDown={dismissFromBackdrop}
+				>
+					<Container
+						ref={modalRef}
+						role="dialog"
+						aria-modal="true"
+						onPointerDown={(event) => event.stopPropagation()}
+					>
+						{modalContent}
+					</Container>
 				</Backdrop>,
 				document.querySelector('#modal-root')
 		  )
@@ -54,13 +75,23 @@ const Backdrop = styled.div`
 	align-items: center;
 	background-color: #00000082;
 	display: flex;
-	height: 100vh;
-	width: 100vw;
+	height: 100%;
+	inset: 0;
 	justify-content: center;
-	overflow: hidden;
+	overflow-x: hidden;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: max(12px, env(safe-area-inset-top, 0px)) 12px
+		max(12px, env(safe-area-inset-bottom, 0px));
 	position: fixed;
-	top: 0;
+	touch-action: manipulation;
+	width: 100%;
 	z-index: 1000;
+	-webkit-overflow-scrolling: touch;
+
+	@media only screen and (max-width: 599px) {
+		align-items: flex-start;
+	}
 `
 const Container = styled.div`
 	align-items: stretch;
@@ -68,7 +99,9 @@ const Container = styled.div`
 	border-radius: 25px;
 	display: flex;
 	flex-direction: column;
-	max-height: 90vh;
+	flex-shrink: 0;
+	height: min(90dvh, 90vh);
+	max-height: min(90dvh, 90vh);
 	min-height: 0;
 	overflow: hidden;
 	padding: 20px;
@@ -76,6 +109,19 @@ const Container = styled.div`
 
 	@media only screen and (min-width: 600px) {
 		padding: 25px;
+	}
+
+	@media only screen and (max-width: 599px) {
+		height: min(
+			calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)),
+			92dvh,
+			92vh
+		);
+		max-height: min(
+			calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)),
+			92dvh,
+			92vh
+		);
 	}
 
 	> * {

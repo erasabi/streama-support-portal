@@ -432,3 +432,62 @@ describe("availability.classifySourceMiss", () => {
 		expect(isReleaseDateInFuture("2026-12-01", now)).toBe(true)
 	})
 })
+
+describe("registration failure must not un-succeed a library title", () => {
+	const registrationFailed = { detail: { error: "streama registration failed" } }
+
+	test("highlighted title stays available", () => {
+		expect(
+			status.shouldPreserveLibraryStage(
+				{ highlightedAt: "2026-10-05T20:52:36Z", pipelineStage: "pending_approval" },
+				"failed",
+				registrationFailed
+			)
+		).toBe(true)
+	})
+
+	test("available title stays available even before highlight is stored", () => {
+		expect(
+			status.shouldPreserveLibraryStage(
+				{ pipelineStage: "available" },
+				"failed",
+				registrationFailed
+			)
+		).toBe(true)
+	})
+
+	test("a download failure still fails", () => {
+		expect(
+			status.shouldPreserveLibraryStage(
+				{ highlightedAt: "2026-10-05T20:52:36Z", pipelineStage: "available" },
+				"failed",
+				{ detail: { error: "download stalled (no progress)" } }
+			)
+		).toBe(false)
+	})
+
+	test("streama ids are stored only when apiId is this request", () => {
+		expect(
+			status.acceptStreamaBinding(
+				{ id: "969681" },
+				{
+					streamaMediaId: 30430,
+					streamaVideoId: 30430,
+					detail: { apiId: "969681" },
+				}
+			)
+		).toEqual({ streamaMediaId: 30430, streamaVideoId: 30430 })
+		expect(
+			status.acceptStreamaBinding(
+				{ id: "969681", streamaMediaId: 30430 },
+				{ streamaMediaId: 27416, streamaVideoId: 27416, detail: {} }
+			)
+		).toEqual({})
+		expect(
+			status.acceptStreamaBinding(
+				{ id: "435" },
+				{ streamaMediaId: 27416, streamaVideoId: 27416, detail: { apiId: "70981" } }
+			)
+		).toEqual({})
+	})
+})
