@@ -46,6 +46,12 @@ import {
 import EventTimeline from '/src/components/EventTimeline'
 import PipelineTrace, { DryRunModal } from '/src/components/PipelineTrace'
 
+// Stable identity for signed-out visitors. Using a module-level constant (instead
+// of a default inside the destructure) keeps `user` referentially stable across
+// renders. A fresh object each render changed `fetchDetails`, which re-fired the
+// details effect in a tight loop and made the modal unresponsive on touch browsers.
+const ANONYMOUS_USER = { username: 'Anonymous' }
+
 function cleanSources(list) {
 	const out = []
 	for (const raw of list || []) {
@@ -65,7 +71,8 @@ export default function MediaDetails(props) {
 		onClosed,
 		...restProps
 	} = props
-	const { user = { username: 'Anonymous' } } = useContext(UserContext)
+	const { user: contextUser } = useContext(UserContext) ?? {}
+	const user = contextUser ?? ANONYMOUS_USER
 	const isUserMatch = matchesUser(user, requestUser)
 	const isAuth = isAdmin(user) || isSuperuser(user)
 	let { handleModal } = useContext(ModalContext)
