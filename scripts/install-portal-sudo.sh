@@ -24,6 +24,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 install -o root -g root -m 0755 "$ROOT/config/sbin/portal-deploy" /usr/local/sbin/portal-deploy
 install -o root -g root -m 0755 "$ROOT/config/sbin/portal-migrate" /usr/local/sbin/portal-migrate
 install -o root -g root -m 0755 "$ROOT/config/sbin/portal-install-sbin" /usr/local/sbin/portal-install-sbin
+install -o root -g root -m 0755 "$ROOT/config/sbin/portal-holiday-highlights" /usr/local/sbin/portal-holiday-highlights
 
 TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT
@@ -36,5 +37,5 @@ visudo -c -f /etc/sudoers.d/portal-deploy
 groupadd --force portal-deploy
 usermod -aG portal-deploy "$SSH_USER"
 
-echo "Installed /etc/sudoers.d/portal-deploy and /usr/local/sbin/portal-{deploy,migrate}."
+echo "Installed /etc/sudoers.d/portal-deploy and /usr/local/sbin/portal-{deploy,migrate,holiday-highlights}."
 echo "User $SSH_USER is in group portal-deploy (re-login or: sg portal-deploy -c 'sudo -n -l')."

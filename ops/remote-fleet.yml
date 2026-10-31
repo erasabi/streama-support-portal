@@ -13,6 +13,11 @@ workloads:
     unit: portal.service
     scope: system
     source: remote-inventory
+  - name: holiday-highlights.timer
+    kind: timer
+    unit: holiday-highlights.timer
+    scope: system
+    source: repo
 release:
   method: rsync
   # Rebuild/restart docker-compose + migrate (needs portal-deploy NOPASSWD).

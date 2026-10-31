@@ -2,8 +2,9 @@
 # Install with: sudo scripts/install-portal-sudo.sh <ssh_user>
 # Do not add docker, visudo, su, or a shell. Do not grant ALL.
 
-Cmnd_Alias PORTAL_SBIN = /usr/local/sbin/portal-deploy, /usr/local/sbin/portal-migrate, /usr/local/sbin/portal-install-sbin
+Cmnd_Alias PORTAL_SBIN = /usr/local/sbin/portal-deploy, /usr/local/sbin/portal-migrate, /usr/local/sbin/portal-install-sbin, /usr/local/sbin/portal-holiday-highlights
 Cmnd_Alias PORTAL_CTL = /usr/bin/systemctl restart portal.service, /usr/bin/systemctl start portal.service, /usr/bin/systemctl stop portal.service, /usr/bin/systemctl status portal.service, /bin/systemctl restart portal.service, /bin/systemctl start portal.service, /bin/systemctl stop portal.service, /bin/systemctl status portal.service
 Cmnd_Alias ELANFLIX_CTL = /usr/bin/systemctl restart elanflix.service, /usr/bin/systemctl start elanflix.service, /usr/bin/systemctl stop elanflix.service, /usr/bin/systemctl status elanflix.service, /bin/systemctl restart elanflix.service, /bin/systemctl start elanflix.service, /bin/systemctl stop elanflix.service, /bin/systemctl status elanflix.service
+Cmnd_Alias HOLIDAY_CTL = /usr/bin/systemctl restart holiday-highlights.service, /usr/bin/systemctl start holiday-highlights.service, /usr/bin/systemctl stop holiday-highlights.service, /usr/bin/systemctl status holiday-highlights.service, /usr/bin/systemctl enable holiday-highlights.timer, /usr/bin/systemctl disable holiday-highlights.timer, /usr/bin/systemctl restart holiday-highlights.timer, /usr/bin/systemctl start holiday-highlights.timer, /usr/bin/systemctl stop holiday-highlights.timer, /usr/bin/systemctl status holiday-highlights.timer, /bin/systemctl restart holiday-highlights.service, /bin/systemctl start holiday-highlights.service, /bin/systemctl stop holiday-highlights.service, /bin/systemctl status holiday-highlights.service, /bin/systemctl enable holiday-highlights.timer, /bin/systemctl disable holiday-highlights.timer, /bin/systemctl restart holiday-highlights.timer, /bin/systemctl start holiday-highlights.timer, /bin/systemctl stop holiday-highlights.timer, /bin/systemctl status holiday-highlights.timer
 
-%portal-deploy ALL=(root) NOPASSWD: PORTAL_SBIN, PORTAL_CTL, ELANFLIX_CTL
+%portal-deploy ALL=(root) NOPASSWD: PORTAL_SBIN, PORTAL_CTL, ELANFLIX_CTL, HOLIDAY_CTL

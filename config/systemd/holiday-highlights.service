@@ -1,0 +1,21 @@
+[Unit]
+Description=Streama holiday dashboard highlights reconcile
+After=network-online.target elanflix.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=__PORTAL_TREE__
+EnvironmentFile=-__PORTAL_ROOT__/.env
+Environment=TZ=America/New_York
+Environment=HOLIDAY_HIGHLIGHTS_DATA=__PORTAL_ROOT__/data/holiday-highlights
+Environment=HOLIDAY_HIGHLIGHTS_ENV=__PORTAL_ROOT__/.env
+Environment=STREAMA_URL=http://127.0.0.1:8080
+# Host job talks to the Streama JAR, not STREAMA_ENDPOINT / host.docker.internal.
+ExecStart=/usr/bin/python3 __PORTAL_TREE__/scripts/holiday_highlights.py reconcile
+StandardOutput=append:__PORTAL_ROOT__/data/holiday-highlights/last-run.log
+StandardError=append:__PORTAL_ROOT__/data/holiday-highlights/last-run.log
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

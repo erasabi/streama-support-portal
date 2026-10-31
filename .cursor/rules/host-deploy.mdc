@@ -29,6 +29,7 @@ That is `sudo -n /usr/local/sbin/portal-deploy` (restart `portal.service` + migr
 
 - Portal only migrate: `./scripts/deploy-with-systemd.sh --migrate-only`
 - Streama unit after a new JAR: `sudo -n systemctl restart elanflix.service`
+- Holiday highlights timer: `sudo -n /usr/local/sbin/portal-holiday-highlights` (also run from `portal-deploy`)
 
 Verify: `GET http://127.0.0.1:3000/agent/v1/jobs` → **401**.
 

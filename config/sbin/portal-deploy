@@ -79,4 +79,10 @@ if /usr/local/bin/docker-compose --env-file "$ENV_FILE" -f "$ROOT/current/docker
 	/usr/local/bin/docker-compose --env-file "$ENV_FILE" -f "$ROOT/current/docker-compose.yml" down || true
 fi
 
+if [[ -f "$COMPOSE_DIR/config/sbin/portal-holiday-highlights" ]]; then
+	echo "==> holiday highlights timer"
+	install -o root -g root -m 0755 "$COMPOSE_DIR/config/sbin/portal-holiday-highlights" /usr/local/sbin/portal-holiday-highlights
+	PORTAL_ROOT="$ROOT" /usr/local/sbin/portal-holiday-highlights
+fi
+
 echo "portal-deploy: done"

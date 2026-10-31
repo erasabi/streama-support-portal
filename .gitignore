@@ -284,6 +284,9 @@ __pycache__/
 bak_*
 *.bak
 
+# Holiday highlight runtime state (backups + state.json live on the host)
+/data/holiday-highlights/*.json
+
 # Cursor ephemeral plans (rules/ may be committed for shared VM deploy guidance)
 .cursor/plans/
 .cursor/*.plan.md

@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Root-only. Install holiday-highlights.service/.timer from the portal tree.
+# WorkingDirectory and EnvironmentFile are filled from PORTAL_ROOT on this host.
+set -euo pipefail
+if [[ $# -ne 0 ]]; then
+	echo "usage: portal-holiday-highlights" >&2
+	exit 2
+fi
+
+ROOT="${PORTAL_ROOT:-/home/ubuntu/streama-support-portal}"
+CURRENT="$(readlink -f "$ROOT/current" 2>/dev/null || true)"
+TREE="$ROOT"
+if [[ -n "$CURRENT" && -f "$CURRENT/scripts/holiday_highlights.py" ]]; then
+	TREE="$CURRENT"
+fi
+if [[ ! -f "$TREE/scripts/holiday_highlights.py" ]]; then
+	echo "portal-holiday-highlights: missing $TREE/scripts/holiday_highlights.py" >&2
+	exit 1
+fi
+
+UNIT_DIR="$TREE/config/systemd"
+if [[ ! -f "$UNIT_DIR/holiday-highlights.service" || ! -f "$UNIT_DIR/holiday-highlights.timer" ]]; then
+	echo "portal-holiday-highlights: missing unit templates in $UNIT_DIR" >&2
+	exit 1
+fi
+
+DATA="$ROOT/data/holiday-highlights"
+install -d -o root -g root -m 0755 "$DATA"
+
+render() {
+	local src="$1"
+	local dest="$2"
+	sed -e "s#__PORTAL_ROOT__#${ROOT}#g" -e "s#__PORTAL_TREE__#${TREE}#g" "$src" >"$dest"
+	chmod 0644 "$dest"
+}
+
+render "$UNIT_DIR/holiday-highlights.service" /etc/systemd/system/holiday-highlights.service
+render "$UNIT_DIR/holiday-highlights.timer" /etc/systemd/system/holiday-highlights.timer
+
+systemctl daemon-reload
+systemctl enable holiday-highlights.timer
+systemctl start holiday-highlights.timer
+# Seed or no-op immediately so October does not wait until 04:00.
+if ! systemctl start holiday-highlights.service; then
+	{
+		echo "----- journalctl holiday-highlights.service $(date -Is) -----"
+		journalctl -u holiday-highlights.service -n 80 --no-pager || true
+	} >>"$DATA/last-run.log"
+	echo "portal-holiday-highlights: first reconcile failed (see $DATA/last-run.log)" >&2
+fi
+
+HOLIDAY_HIGHLIGHTS_DATA="$DATA" HOLIDAY_HIGHLIGHTS_ENV="$ROOT/.env" \
+	/usr/bin/python3 "$TREE/scripts/holiday_highlights.py" status || true
+echo "portal-holiday-highlights: timer enabled (TREE=$TREE DATA=$DATA)"

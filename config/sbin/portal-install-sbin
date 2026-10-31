@@ -8,13 +8,21 @@ fi
 
 ROOT="${PORTAL_ROOT:-/home/ubuntu/streama-support-portal}"
 CURRENT="$(readlink -f "$ROOT/current" 2>/dev/null || true)"
-if [[ -z "$CURRENT" || ! -d "$CURRENT" ]]; then
-	echo "portal-install-sbin: missing $ROOT/current" >&2
+TREE="$ROOT"
+if [[ -n "$CURRENT" && -d "$CURRENT/config/sbin" ]]; then
+	TREE="$CURRENT"
+fi
+if [[ ! -d "$TREE/config/sbin" ]]; then
+	echo "portal-install-sbin: missing $TREE/config/sbin" >&2
 	exit 1
 fi
 
-install -o root -g root -m 0755 "$CURRENT/config/sbin/portal-deploy" /usr/local/sbin/portal-deploy
-install -o root -g root -m 0755 "$CURRENT/config/sbin/portal-migrate" /usr/local/sbin/portal-migrate
-install -o root -g root -m 0755 "$CURRENT/config/sbin/portal-install-sbin" /usr/local/sbin/portal-install-sbin
+install -o root -g root -m 0755 "$TREE/config/sbin/portal-deploy" /usr/local/sbin/portal-deploy
+install -o root -g root -m 0755 "$TREE/config/sbin/portal-migrate" /usr/local/sbin/portal-migrate
+install -o root -g root -m 0755 "$TREE/config/sbin/portal-install-sbin" /usr/local/sbin/portal-install-sbin
+if [[ -f "$TREE/config/sbin/portal-holiday-highlights" ]]; then
+	install -o root -g root -m 0755 "$TREE/config/sbin/portal-holiday-highlights" /usr/local/sbin/portal-holiday-highlights
+	/usr/local/sbin/portal-holiday-highlights
+fi
 
-echo "portal-install-sbin: updated portal-{deploy,migrate,install-sbin}"
+echo "portal-install-sbin: updated portal-{deploy,migrate,install-sbin,holiday-highlights} from $TREE"
