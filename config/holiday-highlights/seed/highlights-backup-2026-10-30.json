@@ -1,6 +1,6 @@
 {
   "backedUpAt": "2026-10-30",
-  "count": 42,
+  "count": 38,
   "raw": [
     {
       "id": 2717,
@@ -2255,8 +2255,8 @@
       "isCompleted": false
     },
     {
-      "id": 2792,
-      "dateCreated": "2026-09-30T05:21:41Z",
+      "id": 2796,
+      "dateCreated": "2026-10-02T04:36:54Z",
       "movie": null,
       "tvShow": {
         "id": 1792,
@@ -2379,12 +2379,12 @@
         "inWatchlist": false
       },
       "description": "Requested by Anonymous",
-      "videoToPlayId": 30408,
+      "videoToPlayId": 30419,
       "isCompleted": false
     },
     {
-      "id": 2793,
-      "dateCreated": "2026-09-30T07:40:17Z",
+      "id": 2814,
+      "dateCreated": "2026-10-28T16:25:46Z",
       "movie": null,
       "tvShow": {
         "id": 1793,
@@ -2506,8 +2506,8 @@
         },
         "inWatchlist": false
       },
-      "description": "Requested by Anonymous",
-      "videoToPlayId": 30411,
+      "description": "Requested by olia",
+      "videoToPlayId": 30512,
       "isCompleted": false
     },
     {
@@ -2792,134 +2792,6 @@
       },
       "description": "Requested by arasabi",
       "videoToPlayId": 30418,
-      "isCompleted": false
-    },
-    {
-      "id": 2796,
-      "dateCreated": "2026-10-02T04:36:54Z",
-      "movie": null,
-      "tvShow": {
-        "id": 1792,
-        "mediaType": "tvShow",
-        "dateCreated": "2026-09-30T05:21:40Z",
-        "lastUpdated": "2026-09-30T05:21:40Z",
-        "poster_path": "https://image.tmdb.org/t/p/w300//mFU6ZPAs6g8Y9Eld28GULJYt3rC.jpg",
-        "backdrop_path": "/31XWoLd3AHW6MLy9i2DSbFZOPuH.jpg",
-        "first_air_date": "2022-10-28",
-        "name": "The Devil's Hour",
-        "overview": "Lucy wakes every night at exactly 3:33am. Nothing in her life has made sense for a long time. But the answers are out there, somewhere, at the end of a trail of brutal murders.",
-        "apiId": "157061",
-        "imdb_id": "tt14379784",
-        "original_language": "en",
-        "vote_average": 7.26,
-        "vote_count": 329,
-        "popularity": 10.5687,
-        "manualInput": false,
-        "poster_image_src": null,
-        "hasFiles": true,
-        "firstEpisode": {
-          "id": 30419,
-          "air_date": "2022-10-28",
-          "apiId": "3488016",
-          "dateCreated": "2026-10-02T04:36:51Z",
-          "deleted": false,
-          "episodeString": "s01e01",
-          "episode_number": 1,
-          "files": [
-            {
-              "id": 29185
-            },
-            {
-              "id": 29184
-            },
-            {
-              "id": 29176
-            }
-          ],
-          "imdb_id": null,
-          "intro_end": null,
-          "intro_start": null,
-          "lastUpdated": "2026-10-02T04:36:56Z",
-          "name": "3.33",
-          "original_language": null,
-          "outro_start": null,
-          "overview": "Lucy wakes every night at exactly 3:33am. Nothing in her life has made sense for a long time. But the answers are out there, somewhere, at the end of a trail of brutal murders.",
-          "popularity": null,
-          "reportCount": null,
-          "seasonEpisodeMerged": 10011001,
-          "season_number": 1,
-          "show": {
-            "id": 1792
-          },
-          "still_image": null,
-          "still_path": "/6lcslvwrg4JZSb0Pm1Sz4LdX866.jpg",
-          "vote_average": 6.107,
-          "vote_count": 28
-        },
-        "inWatchlist": false
-      },
-      "media": {
-        "id": 1792,
-        "mediaType": "tvShow",
-        "dateCreated": "2026-09-30T05:21:40Z",
-        "lastUpdated": "2026-09-30T05:21:40Z",
-        "poster_path": "https://image.tmdb.org/t/p/w300//mFU6ZPAs6g8Y9Eld28GULJYt3rC.jpg",
-        "backdrop_path": "/31XWoLd3AHW6MLy9i2DSbFZOPuH.jpg",
-        "first_air_date": "2022-10-28",
-        "name": "The Devil's Hour",
-        "overview": "Lucy wakes every night at exactly 3:33am. Nothing in her life has made sense for a long time. But the answers are out there, somewhere, at the end of a trail of brutal murders.",
-        "apiId": "157061",
-        "imdb_id": "tt14379784",
-        "original_language": "en",
-        "vote_average": 7.26,
-        "vote_count": 329,
-        "popularity": 10.5687,
-        "manualInput": false,
-        "poster_image_src": null,
-        "hasFiles": true,
-        "firstEpisode": {
-          "id": 30419,
-          "air_date": "2022-10-28",
-          "apiId": "3488016",
-          "dateCreated": "2026-10-02T04:36:51Z",
-          "deleted": false,
-          "episodeString": "s01e01",
-          "episode_number": 1,
-          "files": [
-            {
-              "id": 29185
-            },
-            {
-              "id": 29184
-            },
-            {
-              "id": 29176
-            }
-          ],
-          "imdb_id": null,
-          "intro_end": null,
-          "intro_start": null,
-          "lastUpdated": "2026-10-02T04:36:56Z",
-          "name": "3.33",
-          "original_language": null,
-          "outro_start": null,
-          "overview": "Lucy wakes every night at exactly 3:33am. Nothing in her life has made sense for a long time. But the answers are out there, somewhere, at the end of a trail of brutal murders.",
-          "popularity": null,
-          "reportCount": null,
-          "seasonEpisodeMerged": 10011001,
-          "season_number": 1,
-          "show": {
-            "id": 1792
-          },
-          "still_image": null,
-          "still_path": "/6lcslvwrg4JZSb0Pm1Sz4LdX866.jpg",
-          "vote_average": 6.107,
-          "vote_count": 28
-        },
-        "inWatchlist": false
-      },
-      "description": "Requested by Anonymous",
-      "videoToPlayId": 30419,
       "isCompleted": false
     },
     {
@@ -4097,314 +3969,6 @@
       "isCompleted": false
     },
     {
-      "id": 2804,
-      "dateCreated": "2026-10-15T16:04:32Z",
-      "movie": null,
-      "tvShow": {
-        "id": 1607,
-        "mediaType": "tvShow",
-        "dateCreated": "2024-12-23T00:45:19Z",
-        "lastUpdated": "2024-12-23T00:45:19Z",
-        "poster_path": "https://image.tmdb.org/t/p/w300//59SVNwLfoMnZPPB6ukW6dlPxAdI.jpg",
-        "backdrop_path": "/oxv9a3dJvs4aAi5ctB4pQSdTji3.jpg",
-        "first_air_date": "2022-09-21",
-        "name": "Star Wars: Andor",
-        "overview": "In an era filled with danger, deception and intrigue, Cassian Andor will discover the difference he can make in the struggle against the tyrannical Galactic Empire. He embarks on a path that is destined to turn him into a rebel hero.",
-        "apiId": "83867",
-        "imdb_id": "tt9253284",
-        "original_language": "en",
-        "vote_average": 8.2,
-        "vote_count": 1239,
-        "popularity": 79.231,
-        "manualInput": false,
-        "poster_image_src": null,
-        "hasFiles": true,
-        "firstEpisode": {
-          "id": 26045,
-          "air_date": "2022-09-21",
-          "apiId": "2625077",
-          "dateCreated": "2024-12-23T00:45:20Z",
-          "deleted": true,
-          "episodeString": "s01e01",
-          "episode_number": 1,
-          "files": [
-            {
-              "id": 24873
-            },
-            {
-              "id": 29268
-            },
-            {
-              "id": 29262
-            },
-            {
-              "id": 29267
-            },
-            {
-              "id": 29266
-            },
-            {
-              "id": 29263
-            },
-            {
-              "id": 29264
-            },
-            {
-              "id": 29261
-            },
-            {
-              "id": 29265
-            }
-          ],
-          "imdb_id": null,
-          "intro_end": null,
-          "intro_start": null,
-          "lastUpdated": "2026-10-19T02:22:36Z",
-          "name": "Kassa",
-          "original_language": null,
-          "outro_start": null,
-          "overview": "Cassian Andor's reckless search for answers about his past makes him a wanted man.",
-          "popularity": null,
-          "reportCount": null,
-          "seasonEpisodeMerged": 10011001,
-          "season_number": 1,
-          "show": {
-            "id": 1607
-          },
-          "still_image": null,
-          "still_path": "/8g951txsYhXLg8Rr18fBm2q0fBA.jpg",
-          "vote_average": 7.538,
-          "vote_count": 65
-        },
-        "inWatchlist": false
-      },
-      "media": {
-        "id": 1607,
-        "mediaType": "tvShow",
-        "dateCreated": "2024-12-23T00:45:19Z",
-        "lastUpdated": "2024-12-23T00:45:19Z",
-        "poster_path": "https://image.tmdb.org/t/p/w300//59SVNwLfoMnZPPB6ukW6dlPxAdI.jpg",
-        "backdrop_path": "/oxv9a3dJvs4aAi5ctB4pQSdTji3.jpg",
-        "first_air_date": "2022-09-21",
-        "name": "Star Wars: Andor",
-        "overview": "In an era filled with danger, deception and intrigue, Cassian Andor will discover the difference he can make in the struggle against the tyrannical Galactic Empire. He embarks on a path that is destined to turn him into a rebel hero.",
-        "apiId": "83867",
-        "imdb_id": "tt9253284",
-        "original_language": "en",
-        "vote_average": 8.2,
-        "vote_count": 1239,
-        "popularity": 79.231,
-        "manualInput": false,
-        "poster_image_src": null,
-        "hasFiles": true,
-        "firstEpisode": {
-          "id": 26045,
-          "air_date": "2022-09-21",
-          "apiId": "2625077",
-          "dateCreated": "2024-12-23T00:45:20Z",
-          "deleted": true,
-          "episodeString": "s01e01",
-          "episode_number": 1,
-          "files": [
-            {
-              "id": 24873
-            },
-            {
-              "id": 29268
-            },
-            {
-              "id": 29262
-            },
-            {
-              "id": 29267
-            },
-            {
-              "id": 29266
-            },
-            {
-              "id": 29263
-            },
-            {
-              "id": 29264
-            },
-            {
-              "id": 29261
-            },
-            {
-              "id": 29265
-            }
-          ],
-          "imdb_id": null,
-          "intro_end": null,
-          "intro_start": null,
-          "lastUpdated": "2026-10-19T02:22:36Z",
-          "name": "Kassa",
-          "original_language": null,
-          "outro_start": null,
-          "overview": "Cassian Andor's reckless search for answers about his past makes him a wanted man.",
-          "popularity": null,
-          "reportCount": null,
-          "seasonEpisodeMerged": 10011001,
-          "season_number": 1,
-          "show": {
-            "id": 1607
-          },
-          "still_image": null,
-          "still_path": "/8g951txsYhXLg8Rr18fBm2q0fBA.jpg",
-          "vote_average": 7.538,
-          "vote_count": 65
-        },
-        "inWatchlist": false
-      },
-      "description": "Requested by aggro",
-      "videoToPlayId": 26045,
-      "isCompleted": false
-    },
-    {
-      "id": 2805,
-      "dateCreated": "2026-10-16T04:00:56Z",
-      "movie": {
-        "id": 30459,
-        "mediaType": "movie",
-        "dateCreated": "2026-10-16T04:00:03Z",
-        "lastUpdated": "2026-10-16T04:00:56Z",
-        "poster_path": "https://image.tmdb.org/t/p/w300//lYWEXbQgRTR4ZQleSXAgRbxAjvq.jpg",
-        "release_date": "2025-12-19",
-        "title": "Marty Supreme",
-        "overview": "Marty Mauser, a young man with a dream no one respects, goes to hell and back in pursuit of greatness.",
-        "apiId": "1317288",
-        "original_language": "en",
-        "vote_average": 7.366,
-        "vote_count": 2285,
-        "popularity": 64.0938,
-        "imdb_id": "tt32916440",
-        "poster_image_src": null,
-        "backdrop_image_src": null,
-        "genre": [
-          {
-            "id": 7,
-            "apiId": 18,
-            "name": "Drama"
-          },
-          {
-            "id": 17,
-            "apiId": 53,
-            "name": "Thriller"
-          }
-        ],
-        "files": [
-          {
-            "id": 29285,
-            "name": null,
-            "sha256Hex": null,
-            "src": "/file/serve/29285.mp4",
-            "externalLink": null,
-            "localFile": "/home/ubuntu/elanflix/media/03_STORAGE/marty.supreme.2025/Marty.Supreme.(2025).streama.mp4",
-            "originalFilename": "Marty.Supreme.(2025).streama.mp4",
-            "extension": ".mp4",
-            "contentType": "video/mp4",
-            "size": 1354051884,
-            "dateCreated": "2026-10-16T04:00:03Z",
-            "quality": null,
-            "subtitleLabel": null,
-            "subtitleSrcLang": null
-          }
-        ],
-        "subtitles": [
-          {
-            "id": 29286,
-            "name": null,
-            "sha256Hex": null,
-            "src": "/file/serve/29286.srt",
-            "externalLink": null,
-            "localFile": "/home/ubuntu/elanflix/media/03_STORAGE/marty.supreme.2025/subs/marty.supreme.2025_Marty.Supreme.2025.HYBRID.1080p.BluRay.x264.AAC5.1-[YTS.BZ].srt",
-            "originalFilename": "marty.supreme.2025_Marty.Supreme.2025.HYBRID.1080p.BluRay.x264.AAC5.1-[YTS.BZ].srt",
-            "extension": ".srt",
-            "contentType": "application/x-subrip",
-            "size": 188413,
-            "dateCreated": "2026-10-16T04:00:56Z",
-            "quality": null,
-            "subtitleLabel": "[YTS.BZ]",
-            "subtitleSrcLang": null
-          }
-        ],
-        "hasFiles": true,
-        "inWatchlist": false
-      },
-      "tvShow": null,
-      "media": {
-        "id": 30459,
-        "mediaType": "movie",
-        "dateCreated": "2026-10-16T04:00:03Z",
-        "lastUpdated": "2026-10-16T04:00:56Z",
-        "poster_path": "https://image.tmdb.org/t/p/w300//lYWEXbQgRTR4ZQleSXAgRbxAjvq.jpg",
-        "release_date": "2025-12-19",
-        "title": "Marty Supreme",
-        "overview": "Marty Mauser, a young man with a dream no one respects, goes to hell and back in pursuit of greatness.",
-        "apiId": "1317288",
-        "original_language": "en",
-        "vote_average": 7.366,
-        "vote_count": 2285,
-        "popularity": 64.0938,
-        "imdb_id": "tt32916440",
-        "poster_image_src": null,
-        "backdrop_image_src": null,
-        "genre": [
-          {
-            "id": 7,
-            "apiId": 18,
-            "name": "Drama"
-          },
-          {
-            "id": 17,
-            "apiId": 53,
-            "name": "Thriller"
-          }
-        ],
-        "files": [
-          {
-            "id": 29285,
-            "name": null,
-            "sha256Hex": null,
-            "src": "/file/serve/29285.mp4",
-            "externalLink": null,
-            "localFile": "/home/ubuntu/elanflix/media/03_STORAGE/marty.supreme.2025/Marty.Supreme.(2025).streama.mp4",
-            "originalFilename": "Marty.Supreme.(2025).streama.mp4",
-            "extension": ".mp4",
-            "contentType": "video/mp4",
-            "size": 1354051884,
-            "dateCreated": "2026-10-16T04:00:03Z",
-            "quality": null,
-            "subtitleLabel": null,
-            "subtitleSrcLang": null
-          }
-        ],
-        "subtitles": [
-          {
-            "id": 29286,
-            "name": null,
-            "sha256Hex": null,
-            "src": "/file/serve/29286.srt",
-            "externalLink": null,
-            "localFile": "/home/ubuntu/elanflix/media/03_STORAGE/marty.supreme.2025/subs/marty.supreme.2025_Marty.Supreme.2025.HYBRID.1080p.BluRay.x264.AAC5.1-[YTS.BZ].srt",
-            "originalFilename": "marty.supreme.2025_Marty.Supreme.2025.HYBRID.1080p.BluRay.x264.AAC5.1-[YTS.BZ].srt",
-            "extension": ".srt",
-            "contentType": "application/x-subrip",
-            "size": 188413,
-            "dateCreated": "2026-10-16T04:00:56Z",
-            "quality": null,
-            "subtitleLabel": "[YTS.BZ]",
-            "subtitleSrcLang": null
-          }
-        ],
-        "hasFiles": true,
-        "inWatchlist": false
-      },
-      "description": "Requested by billy",
-      "videoToPlayId": 30459,
-      "isCompleted": false
-    },
-    {
       "id": 2806,
       "dateCreated": "2026-10-19T13:31:29Z",
       "movie": null,
@@ -4566,6 +4130,150 @@
       },
       "description": "Requested by olia",
       "videoToPlayId": 30460,
+      "isCompleted": false
+    },
+    {
+      "id": 2805,
+      "dateCreated": "2026-10-16T04:00:56Z",
+      "movie": {
+        "id": 30459,
+        "mediaType": "movie",
+        "dateCreated": "2026-10-16T04:00:03Z",
+        "lastUpdated": "2026-10-16T04:00:56Z",
+        "poster_path": "https://image.tmdb.org/t/p/w300//lYWEXbQgRTR4ZQleSXAgRbxAjvq.jpg",
+        "release_date": "2025-12-19",
+        "title": "Marty Supreme",
+        "overview": "Marty Mauser, a young man with a dream no one respects, goes to hell and back in pursuit of greatness.",
+        "apiId": "1317288",
+        "original_language": "en",
+        "vote_average": 7.366,
+        "vote_count": 2285,
+        "popularity": 64.0938,
+        "imdb_id": "tt32916440",
+        "poster_image_src": null,
+        "backdrop_image_src": null,
+        "genre": [
+          {
+            "id": 7,
+            "apiId": 18,
+            "name": "Drama"
+          },
+          {
+            "id": 17,
+            "apiId": 53,
+            "name": "Thriller"
+          }
+        ],
+        "files": [
+          {
+            "id": 29285,
+            "name": null,
+            "sha256Hex": null,
+            "src": "/file/serve/29285.mp4",
+            "externalLink": null,
+            "localFile": "/home/ubuntu/elanflix/media/03_STORAGE/marty.supreme.2025/Marty.Supreme.(2025).streama.mp4",
+            "originalFilename": "Marty.Supreme.(2025).streama.mp4",
+            "extension": ".mp4",
+            "contentType": "video/mp4",
+            "size": 1354051884,
+            "dateCreated": "2026-10-16T04:00:03Z",
+            "quality": null,
+            "subtitleLabel": null,
+            "subtitleSrcLang": null
+          }
+        ],
+        "subtitles": [
+          {
+            "id": 29286,
+            "name": null,
+            "sha256Hex": null,
+            "src": "/file/serve/29286.srt",
+            "externalLink": null,
+            "localFile": "/home/ubuntu/elanflix/media/03_STORAGE/marty.supreme.2025/subs/marty.supreme.2025_Marty.Supreme.2025.HYBRID.1080p.BluRay.x264.AAC5.1-[YTS.BZ].srt",
+            "originalFilename": "marty.supreme.2025_Marty.Supreme.2025.HYBRID.1080p.BluRay.x264.AAC5.1-[YTS.BZ].srt",
+            "extension": ".srt",
+            "contentType": "application/x-subrip",
+            "size": 188413,
+            "dateCreated": "2026-10-16T04:00:56Z",
+            "quality": null,
+            "subtitleLabel": "[YTS.BZ]",
+            "subtitleSrcLang": null
+          }
+        ],
+        "hasFiles": true,
+        "inWatchlist": false
+      },
+      "tvShow": null,
+      "media": {
+        "id": 30459,
+        "mediaType": "movie",
+        "dateCreated": "2026-10-16T04:00:03Z",
+        "lastUpdated": "2026-10-16T04:00:56Z",
+        "poster_path": "https://image.tmdb.org/t/p/w300//lYWEXbQgRTR4ZQleSXAgRbxAjvq.jpg",
+        "release_date": "2025-12-19",
+        "title": "Marty Supreme",
+        "overview": "Marty Mauser, a young man with a dream no one respects, goes to hell and back in pursuit of greatness.",
+        "apiId": "1317288",
+        "original_language": "en",
+        "vote_average": 7.366,
+        "vote_count": 2285,
+        "popularity": 64.0938,
+        "imdb_id": "tt32916440",
+        "poster_image_src": null,
+        "backdrop_image_src": null,
+        "genre": [
+          {
+            "id": 7,
+            "apiId": 18,
+            "name": "Drama"
+          },
+          {
+            "id": 17,
+            "apiId": 53,
+            "name": "Thriller"
+          }
+        ],
+        "files": [
+          {
+            "id": 29285,
+            "name": null,
+            "sha256Hex": null,
+            "src": "/file/serve/29285.mp4",
+            "externalLink": null,
+            "localFile": "/home/ubuntu/elanflix/media/03_STORAGE/marty.supreme.2025/Marty.Supreme.(2025).streama.mp4",
+            "originalFilename": "Marty.Supreme.(2025).streama.mp4",
+            "extension": ".mp4",
+            "contentType": "video/mp4",
+            "size": 1354051884,
+            "dateCreated": "2026-10-16T04:00:03Z",
+            "quality": null,
+            "subtitleLabel": null,
+            "subtitleSrcLang": null
+          }
+        ],
+        "subtitles": [
+          {
+            "id": 29286,
+            "name": null,
+            "sha256Hex": null,
+            "src": "/file/serve/29286.srt",
+            "externalLink": null,
+            "localFile": "/home/ubuntu/elanflix/media/03_STORAGE/marty.supreme.2025/subs/marty.supreme.2025_Marty.Supreme.2025.HYBRID.1080p.BluRay.x264.AAC5.1-[YTS.BZ].srt",
+            "originalFilename": "marty.supreme.2025_Marty.Supreme.2025.HYBRID.1080p.BluRay.x264.AAC5.1-[YTS.BZ].srt",
+            "extension": ".srt",
+            "contentType": "application/x-subrip",
+            "size": 188413,
+            "dateCreated": "2026-10-16T04:00:56Z",
+            "quality": null,
+            "subtitleLabel": "[YTS.BZ]",
+            "subtitleSrcLang": null
+          }
+        ],
+        "hasFiles": true,
+        "inWatchlist": false
+      },
+      "description": "Requested by billy",
+      "videoToPlayId": 30459,
       "isCompleted": false
     },
     {
@@ -5401,250 +5109,6 @@
       "isCompleted": false
     },
     {
-      "id": 2813,
-      "dateCreated": "2026-10-28T12:55:39Z",
-      "movie": null,
-      "tvShow": {
-        "id": 816,
-        "mediaType": "tvShow",
-        "dateCreated": "2021-06-29T14:59:08Z",
-        "lastUpdated": "2021-06-29T14:59:08Z",
-        "poster_path": "https://image.tmdb.org/t/p/w300//kf8927kloA6JGHIElH7sHwE40Xn.jpg",
-        "backdrop_path": "/nPJzHu6ujC4kscHqkRiTjfUT7Yj.jpg",
-        "first_air_date": "2015-02-15",
-        "name": "Fauda",
-        "overview": "A top Israeli agent comes out of retirement to hunt for a Palestinian militant he thought he'd killed, setting a chaotic chain of events into motion.",
-        "apiId": "69557",
-        "imdb_id": "tt4565380",
-        "original_language": "he",
-        "vote_average": 7.4,
-        "vote_count": 72,
-        "popularity": 23.941,
-        "manualInput": false,
-        "poster_image_src": null,
-        "hasFiles": true,
-        "firstEpisode": {
-          "id": 7692,
-          "air_date": "2015-02-15",
-          "apiId": "1255321",
-          "dateCreated": "2021-06-29T14:59:08Z",
-          "deleted": false,
-          "episodeString": "s01e01",
-          "episode_number": 1,
-          "files": [
-            {
-              "id": 7539
-            }
-          ],
-          "imdb_id": null,
-          "intro_end": null,
-          "intro_start": null,
-          "lastUpdated": "2021-06-29T14:59:08Z",
-          "name": "Episode 1",
-          "original_language": null,
-          "outro_start": null,
-          "overview": "Discovering that Abu Ahmed will attend his brother's wedding, Doron joins his old team for a covert strike, but the plan quickly goes off the rails.",
-          "popularity": null,
-          "reportCount": null,
-          "seasonEpisodeMerged": 10011001,
-          "season_number": 1,
-          "show": {
-            "id": 816
-          },
-          "still_image": null,
-          "still_path": "/AdejqyNyanaCEU4lIZH6sqU6vBZ.jpg",
-          "vote_average": 7.5,
-          "vote_count": 2
-        },
-        "inWatchlist": false
-      },
-      "media": {
-        "id": 816,
-        "mediaType": "tvShow",
-        "dateCreated": "2021-06-29T14:59:08Z",
-        "lastUpdated": "2021-06-29T14:59:08Z",
-        "poster_path": "https://image.tmdb.org/t/p/w300//kf8927kloA6JGHIElH7sHwE40Xn.jpg",
-        "backdrop_path": "/nPJzHu6ujC4kscHqkRiTjfUT7Yj.jpg",
-        "first_air_date": "2015-02-15",
-        "name": "Fauda",
-        "overview": "A top Israeli agent comes out of retirement to hunt for a Palestinian militant he thought he'd killed, setting a chaotic chain of events into motion.",
-        "apiId": "69557",
-        "imdb_id": "tt4565380",
-        "original_language": "he",
-        "vote_average": 7.4,
-        "vote_count": 72,
-        "popularity": 23.941,
-        "manualInput": false,
-        "poster_image_src": null,
-        "hasFiles": true,
-        "firstEpisode": {
-          "id": 7692,
-          "air_date": "2015-02-15",
-          "apiId": "1255321",
-          "dateCreated": "2021-06-29T14:59:08Z",
-          "deleted": false,
-          "episodeString": "s01e01",
-          "episode_number": 1,
-          "files": [
-            {
-              "id": 7539
-            }
-          ],
-          "imdb_id": null,
-          "intro_end": null,
-          "intro_start": null,
-          "lastUpdated": "2021-06-29T14:59:08Z",
-          "name": "Episode 1",
-          "original_language": null,
-          "outro_start": null,
-          "overview": "Discovering that Abu Ahmed will attend his brother's wedding, Doron joins his old team for a covert strike, but the plan quickly goes off the rails.",
-          "popularity": null,
-          "reportCount": null,
-          "seasonEpisodeMerged": 10011001,
-          "season_number": 1,
-          "show": {
-            "id": 816
-          },
-          "still_image": null,
-          "still_path": "/AdejqyNyanaCEU4lIZH6sqU6vBZ.jpg",
-          "vote_average": 7.5,
-          "vote_count": 2
-        },
-        "inWatchlist": false
-      },
-      "description": "Requested by olia",
-      "videoToPlayId": 30500,
-      "isCompleted": false
-    },
-    {
-      "id": 2814,
-      "dateCreated": "2026-10-28T16:25:46Z",
-      "movie": null,
-      "tvShow": {
-        "id": 1793,
-        "mediaType": "tvShow",
-        "dateCreated": "2026-09-30T07:40:14Z",
-        "lastUpdated": "2026-09-30T07:40:14Z",
-        "poster_path": "https://image.tmdb.org/t/p/w300//oCutmhFznao1Pzy6wM1C32kxAEu.jpg",
-        "backdrop_path": "/cVQXO6EpAaYLp14037tXyqfsSy3.jpg",
-        "first_air_date": "2016-10-11",
-        "name": "Channel Zero",
-        "overview": "A horror anthology series inspired by “Creepypasta” online tales.",
-        "apiId": "67752",
-        "imdb_id": "tt4820370",
-        "original_language": "en",
-        "vote_average": 7.0,
-        "vote_count": 325,
-        "popularity": 15.8286,
-        "manualInput": false,
-        "poster_image_src": null,
-        "hasFiles": true,
-        "firstEpisode": {
-          "id": 30411,
-          "air_date": "2016-10-11",
-          "apiId": "1221532",
-          "dateCreated": "2026-09-30T07:40:14Z",
-          "deleted": false,
-          "episodeString": "s01e01",
-          "episode_number": 1,
-          "files": [
-            {
-              "id": 29162
-            },
-            {
-              "id": 29155
-            },
-            {
-              "id": 29161
-            }
-          ],
-          "imdb_id": null,
-          "intro_end": null,
-          "intro_start": null,
-          "lastUpdated": "2026-09-30T07:40:18Z",
-          "name": "You Have to Go Inside",
-          "original_language": null,
-          "outro_start": null,
-          "overview": "Child psychologist Mike Painter investigates the 1988 murders of several children, including his twin brother, which may involve a children's TV show that has started airing again.",
-          "popularity": null,
-          "reportCount": null,
-          "seasonEpisodeMerged": 10011001,
-          "season_number": 1,
-          "show": {
-            "id": 1793
-          },
-          "still_image": null,
-          "still_path": "/oWGKb1koqMUd17Nw5BxKMFTqNQI.jpg",
-          "vote_average": 7.0,
-          "vote_count": 29
-        },
-        "inWatchlist": false
-      },
-      "media": {
-        "id": 1793,
-        "mediaType": "tvShow",
-        "dateCreated": "2026-09-30T07:40:14Z",
-        "lastUpdated": "2026-09-30T07:40:14Z",
-        "poster_path": "https://image.tmdb.org/t/p/w300//oCutmhFznao1Pzy6wM1C32kxAEu.jpg",
-        "backdrop_path": "/cVQXO6EpAaYLp14037tXyqfsSy3.jpg",
-        "first_air_date": "2016-10-11",
-        "name": "Channel Zero",
-        "overview": "A horror anthology series inspired by “Creepypasta” online tales.",
-        "apiId": "67752",
-        "imdb_id": "tt4820370",
-        "original_language": "en",
-        "vote_average": 7.0,
-        "vote_count": 325,
-        "popularity": 15.8286,
-        "manualInput": false,
-        "poster_image_src": null,
-        "hasFiles": true,
-        "firstEpisode": {
-          "id": 30411,
-          "air_date": "2016-10-11",
-          "apiId": "1221532",
-          "dateCreated": "2026-09-30T07:40:14Z",
-          "deleted": false,
-          "episodeString": "s01e01",
-          "episode_number": 1,
-          "files": [
-            {
-              "id": 29162
-            },
-            {
-              "id": 29155
-            },
-            {
-              "id": 29161
-            }
-          ],
-          "imdb_id": null,
-          "intro_end": null,
-          "intro_start": null,
-          "lastUpdated": "2026-09-30T07:40:18Z",
-          "name": "You Have to Go Inside",
-          "original_language": null,
-          "outro_start": null,
-          "overview": "Child psychologist Mike Painter investigates the 1988 murders of several children, including his twin brother, which may involve a children's TV show that has started airing again.",
-          "popularity": null,
-          "reportCount": null,
-          "seasonEpisodeMerged": 10011001,
-          "season_number": 1,
-          "show": {
-            "id": 1793
-          },
-          "still_image": null,
-          "still_path": "/oWGKb1koqMUd17Nw5BxKMFTqNQI.jpg",
-          "vote_average": 7.0,
-          "vote_count": 29
-        },
-        "inWatchlist": false
-      },
-      "description": "Requested by olia",
-      "videoToPlayId": 30512,
-      "isCompleted": false
-    },
-    {
       "id": 2815,
       "dateCreated": "2026-10-28T17:27:18Z",
       "movie": null,
@@ -6123,19 +5587,19 @@
       "title": "The Devil Wears Prada 2"
     },
     {
-      "notificationId": 2792,
+      "notificationId": 2796,
       "description": "Requested by Anonymous",
       "mediaType": "tvShow",
       "mediaId": 1792,
-      "videoToPlayId": 30408,
+      "videoToPlayId": 30419,
       "title": "The Devil's Hour"
     },
     {
-      "notificationId": 2793,
-      "description": "Requested by Anonymous",
+      "notificationId": 2814,
+      "description": "Requested by olia",
       "mediaType": "tvShow",
       "mediaId": 1793,
-      "videoToPlayId": 30411,
+      "videoToPlayId": 30512,
       "title": "Channel Zero"
     },
     {
@@ -6153,14 +5617,6 @@
       "mediaId": 30418,
       "videoToPlayId": 30418,
       "title": "Pacific Rim: Uprising"
-    },
-    {
-      "notificationId": 2796,
-      "description": "Requested by Anonymous",
-      "mediaType": "tvShow",
-      "mediaId": 1792,
-      "videoToPlayId": 30419,
-      "title": "The Devil's Hour"
     },
     {
       "notificationId": 2797,
@@ -6219,11 +5675,11 @@
       "title": "Lanterns"
     },
     {
-      "notificationId": 2804,
-      "description": "Requested by aggro",
+      "notificationId": 2806,
+      "description": "Requested by olia",
       "mediaType": "tvShow",
       "mediaId": 1607,
-      "videoToPlayId": 26045,
+      "videoToPlayId": 30460,
       "title": "Star Wars: Andor"
     },
     {
@@ -6233,14 +5689,6 @@
       "mediaId": 30459,
       "videoToPlayId": 30459,
       "title": "Marty Supreme"
-    },
-    {
-      "notificationId": 2806,
-      "description": "Requested by olia",
-      "mediaType": "tvShow",
-      "mediaId": 1607,
-      "videoToPlayId": 30460,
-      "title": "Star Wars: Andor"
     },
     {
       "notificationId": 2807,
@@ -6289,22 +5737,6 @@
       "mediaId": 1797,
       "videoToPlayId": 30497,
       "title": "Dragon Ball Super: Beerus"
-    },
-    {
-      "notificationId": 2813,
-      "description": "Requested by olia",
-      "mediaType": "tvShow",
-      "mediaId": 816,
-      "videoToPlayId": 30500,
-      "title": "Fauda"
-    },
-    {
-      "notificationId": 2814,
-      "description": "Requested by olia",
-      "mediaType": "tvShow",
-      "mediaId": 1793,
-      "videoToPlayId": 30512,
-      "title": "Channel Zero"
     },
     {
       "notificationId": 2815,

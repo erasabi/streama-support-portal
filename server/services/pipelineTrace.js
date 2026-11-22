@@ -444,8 +444,9 @@ function buildSortifyStreama(request, events, identity, remoteSortify) {
 			reportedApiIds,
 		},
 		highlights: {
-			// Streama only 409s on (media + videoToPlay), so a second highlight
-			// for another episode of the same show is allowed today.
+			// Streama only 409s on (media + videoToPlay). Sortify will not post a
+			// second row for the same show, and holiday dedupe deletes older
+			// rows. Extra rows still count until that cleanup runs.
 			//
 			// rowCount is the only authoritative count. Event count is NOT a row
 			// count: the sortify bridge posts `highlighted` on a 409 too, because
@@ -644,7 +645,7 @@ function buildFlags({ request, identity, magnetLookup, fetchPlan, jobs, encode, 
 			flag(
 				"duplicate_dashboard_highlights",
 				"error",
-				`${hl.rowCount} dashboard highlights exist for this media. Streama only rejects a duplicate when media AND videoToPlay match, so re-runs and new episodes create extra rows.`,
+				`${hl.rowCount} dashboard highlights exist for this media. Sortify keeps one row per show, and holiday dedupe deletes the older rows.`,
 				{ rowCount: hl.rowCount, distinctVideoIds: hl.distinctVideoIds }
 			)
 		)

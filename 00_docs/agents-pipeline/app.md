@@ -209,3 +209,11 @@ The portal implementation is complete. Agent-side work:
   [rentify-pipeline-changes.md](agent-integration-changes/00_docs/stream-support-portal-app/rentify-pipeline-changes.md).
 
 Contract and API reference: [overview.md](agent-integration-changes/00_docs/stream-support-portal-app/overview.md).
+
+Re-requesting an archived title clears `pipelineStageDetail` and sets the stage
+back to `requested`. TV then runs the season plan again (`forceSeasonPlan`).
+If that plan throws, the portal stores `season_plan_failed` and
+`pipelineStageDetail.detail.error` instead of leaving a silent Requested row.
+The in-process poller retries TV rows that are still `requested`, have no
+ready/claimed/in-progress job, are older than two minutes, and are not marked
+`pipelineStageDetail.seasonPlan = idle`.

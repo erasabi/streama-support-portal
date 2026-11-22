@@ -570,8 +570,9 @@ async function forecastStreamaMatch({ title, tmdbId, mediaType, folderName }, de
 }
 
 /**
- * Would a dashboard highlight be created, deduped, or duplicated?
- * Streama returns 409 only when media AND videoToPlay both match.
+ * Would a dashboard highlight be created or treated as already highlighted?
+ * Sortify keeps one row per movie or show. Streama itself still 409s only
+ * when media and videoToPlay both match.
  */
 function forecastHighlight(streamaMatch, { mediaType }) {
 	if (!streamaMatch || streamaMatch.status !== "ok") {
@@ -602,16 +603,11 @@ function forecastHighlight(streamaMatch, { mediaType }) {
 	if (!existing.length) {
 		return { outcome: "new_highlight", reason: "no existing highlight for this media" }
 	}
-	if (isTvMedia(mediaType)) {
-		return {
-			outcome: "likely_duplicate",
-			reason: `${existing.length} highlight(s) already exist. A new episode has a different videoToPlay, so Streama will not 409 and a second dashboard row is created.`,
-			existingCount: existing.length,
-		}
-	}
 	return {
 		outcome: "likely_409_treated_as_success",
-		reason: "a highlight exists for this movie and videoToPlay would match",
+		reason: isTvMedia(mediaType)
+			? "a highlight already exists for this show. A later episode is not added as another dashboard row."
+			: "a highlight exists for this movie and would be treated as already highlighted",
 		existingCount: existing.length,
 	}
 }

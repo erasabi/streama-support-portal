@@ -300,6 +300,7 @@ router.put("/", async function (req, res) {
 					queueStatus: incomingStatus,
 					queueStatusSource: "derived",
 					pipelineStage: "requested",
+					pipelineStageDetail: null,
 					magnetLookupStatus: "pending",
 					requestUser: req.body.requestUser || existing.requestUser,
 				})

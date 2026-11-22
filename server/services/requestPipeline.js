@@ -632,6 +632,10 @@ async function enqueueTvSeasonsJob(request, deps) {
 					request.pipelineStage === "requested"
 				) {
 					await request.update({ pipelineStage: "available" })
+				} else if (!plan.libraryUncertain && request.pipelineStage === "requested") {
+					// Nothing to queue. Remember that so the hourly sweep does not
+					// write another season_plan for the same idle row.
+					await request.update({ pipelineStageDetail: { seasonPlan: "idle" } })
 				}
 			}
 			return null
@@ -644,8 +648,58 @@ async function enqueueTvSeasonsJob(request, deps) {
 		})
 	} catch (err) {
 		console.error("tv seasons enqueue:", err.message)
+		try {
+			await appendEvent({
+				requestId: request.id,
+				actor: "portal",
+				type: "season_plan_failed",
+				payload: { error: err.message },
+			})
+			await request.update({
+				pipelineStageDetail: {
+					detail: { error: `season plan failed: ${err.message}` },
+				},
+			})
+		} catch (logErr) {
+			console.error("tv seasons enqueue log:", logErr.message)
+		}
 		return null
 	}
+}
+
+/**
+ * TV rows left on Requested with no live job (re-request whose season plan
+ * threw, or a plan that never created a job). Movies are retried by the magnet
+ * sweep; this is the TV counterpart. Idle plans are skipped.
+ */
+async function retryStuckTvRequests() {
+	const cutoff = new Date(Date.now() - 2 * 60 * 1000)
+	const due = await db.Request.findAll({
+		where: {
+			mediaType: ["tv", "tvshow", "show"],
+			archivedAt: { [Op.is]: null },
+			pipelineStage: "requested",
+			updatedAt: { [Op.lt]: cutoff },
+		},
+		limit: 25,
+		order: [["updatedAt", "ASC"]],
+	})
+	let n = 0
+	for (const request of due) {
+		const detail = request.pipelineStageDetail
+		if (detail && detail.seasonPlan === "idle") continue
+		const active = await db.PipelineJob.count({
+			where: {
+				requestId: request.id,
+				claimStatus: ["ready", "claimed", "in_progress"],
+			},
+		})
+		if (active) continue
+		await enqueueTvSeasonsJob(request, { forceSeasonPlan: true })
+		n += 1
+	}
+	if (n) console.log(`tv enqueue sweep: processed ${n} request(s)`)
+	return n
 }
 
 /**
@@ -883,6 +937,7 @@ module.exports = {
 	archiveSubtitleRemediaIfDone,
 	markSubtitleRemediaFailed,
 	enqueueTvSeasonsJob,
+	retryStuckTvRequests,
 	enqueueTvSeasonUpdate,
 	approveTvSeasons,
 	promoteOrphanTvSeasonUpdates,

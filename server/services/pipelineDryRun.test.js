@@ -458,13 +458,12 @@ describe("forecastHighlight", () => {
 		expect(out.outcome).toBe("new_highlight")
 	})
 
-	// A new episode has a different videoToPlay, so Streama's 409 never fires.
-	test("an existing highlight on a show predicts a duplicate, not a 409", () => {
+	test("an existing highlight on a show is not a second dashboard row", () => {
 		const out = forecastHighlight(
 			{ status: "ok", highlights: [{ id: 1 }] },
 			{ mediaType: "tv" }
 		)
-		expect(out.outcome).toBe("likely_duplicate")
+		expect(out.outcome).toBe("likely_409_treated_as_success")
 	})
 
 	test("an existing highlight on a movie predicts a 409", () => {

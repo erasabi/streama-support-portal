@@ -1,6 +1,6 @@
 const { Op } = require("sequelize")
 const db = require("../database")
-const { runMagnetLookup, promoteOrphanTvSeasonUpdates } = require("./requestPipeline")
+const { runMagnetLookup, promoteOrphanTvSeasonUpdates, retryStuckTvRequests } = require("./requestPipeline")
 const { reapExpiredLeases } = require("./jobs")
 
 // Hourly magnet retry for movies still awaiting a source, plus lease reaping so
@@ -45,8 +45,16 @@ function start() {
 		promoteOrphanTvSeasonUpdates().catch((err) =>
 			console.error("tv season update backfill:", err.message)
 		)
+		retryStuckTvRequests().catch((err) =>
+			console.error("tv enqueue sweep:", err.message)
+		)
 		runMagnetSweep()
-		setInterval(runMagnetSweep, HOUR_MS)
+		setInterval(() => {
+			retryStuckTvRequests().catch((err) =>
+				console.error("tv enqueue sweep:", err.message)
+			)
+			runMagnetSweep()
+		}, HOUR_MS)
 	}, jitter)
 
 	setInterval(() => {

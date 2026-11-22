@@ -53,9 +53,14 @@ Manual:
 ```sh
 python3 scripts/holiday_highlights.py status
 python3 scripts/holiday_highlights.py reconcile --dry-run
+python3 scripts/holiday_highlights.py dedupe --dry-run
 sudo -n systemctl status holiday-highlights.timer
 sudo -n systemctl start holiday-highlights.service
 ```
+
+## One highlight per media
+
+Streama stores a highlight per episode video, so a show can appear several times. `dedupe` keeps the newest row for each movie or show and deletes the older rows through Streama's existing delete API. The daily reconcile does the same when no holiday season is active. Restore and season apply also skip a second row for a media id already in that batch. Sortify does not add another highlight when that media is already on the dashboard.
 
 ## This October
 

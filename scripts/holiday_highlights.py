@@ -490,10 +490,98 @@ def delete_highlights(client: Streama, items: list[dict[str, Any]]) -> int:
     return deleted
 
 
+def highlight_identity(item: dict[str, Any]) -> tuple[str, Any] | None:
+    """Media key for a highlight list row or a restore row."""
+    media_type = item.get("mediaType")
+    media_id = item.get("mediaId")
+    media = item.get("media") if isinstance(item.get("media"), dict) else None
+    if media_id is None and media:
+        media_id = media.get("id")
+        media_type = media_type or media.get("mediaType")
+    if item.get("tvShow") and media_id is None:
+        shown = item["tvShow"] if isinstance(item.get("tvShow"), dict) else {}
+        media_type = "tvShow"
+        media_id = shown.get("id")
+    elif item.get("genericVideo") and media_id is None:
+        shown = item["genericVideo"] if isinstance(item.get("genericVideo"), dict) else {}
+        media_type = "genericVideo"
+        media_id = shown.get("id")
+    elif item.get("movie") and media_id is None and media_type != "genericVideo":
+        shown = item["movie"] if isinstance(item.get("movie"), dict) else {}
+        media_type = media_type or "movie"
+        media_id = shown.get("id")
+    if media_type is None or media_id is None:
+        return None
+    return (str(media_type), media_id)
+
+
+def highlight_row_id(item: dict[str, Any]) -> int:
+    raw = item.get("id", item.get("notificationId"))
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return 0
+
+
+def partition_highlights(
+    items: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Keep the newest highlight for each media. Older rows for that media are extras."""
+    groups: dict[tuple[str, Any], list[dict[str, Any]]] = {}
+    loose: list[dict[str, Any]] = []
+    for item in items:
+        key = highlight_identity(item)
+        if key is None:
+            loose.append(item)
+            continue
+        groups.setdefault(key, []).append(item)
+    keep: list[dict[str, Any]] = []
+    drop: list[dict[str, Any]] = []
+    for rows in groups.values():
+        ranked = sorted(rows, key=highlight_row_id)
+        keep.append(ranked[-1])
+        drop.extend(ranked[:-1])
+    keep.extend(loose)
+    return keep, drop
+
+
+def highlight_title(item: dict[str, Any]) -> str:
+    media = item.get("media") if isinstance(item.get("media"), dict) else {}
+    return str(
+        item.get("title")
+        or media.get("title")
+        or media.get("name")
+        or item.get("mediaId")
+        or item.get("id")
+        or ""
+    )
+
+
+def dedupe_highlights(client: Streama, *, dry_run: bool) -> tuple[int, int]:
+    current = list_highlights(client)
+    _keep, drop = partition_highlights(current)
+    print(f"{len(current)} highlights, {len(current) - len(drop)} media, {len(drop)} extra")
+    for item in drop:
+        print(
+            f"  drop {item.get('id')} {highlight_title(item)} video {item.get('videoToPlayId')}"
+        )
+    if dry_run or not drop:
+        return len(drop), 0
+    deleted = delete_highlights(client, drop)
+    print(f"deleted {deleted}")
+    return len(drop), deleted
+
+
 def create_highlights(
     client: Streama, rows: list[dict[str, Any]], description: str | None = None
 ) -> dict[str, int]:
-    counts = {"created": 0, "already": 0, "failed": 0}
+    rows, dropped = partition_highlights(rows)
+    if dropped:
+        print(
+            f"skip {len(dropped)} duplicate highlight(s) already covered by another row in this batch",
+            file=sys.stderr,
+        )
+    counts = {"created": 0, "already": 0, "failed": 0, "skipped_duplicate": len(dropped)}
     for item in rows:
         body: dict[str, Any] = {
             "mediaId": item["mediaId"],
@@ -830,6 +918,7 @@ def cmd_reconcile(args: argparse.Namespace) -> int:
         restore_backup(client, cfg, state, dry_run=args.dry_run)
         return 0
     print("idle")
+    dedupe_highlights(client, dry_run=args.dry_run)
     return 0
 
 
@@ -847,6 +936,12 @@ def cmd_status(_: argparse.Namespace) -> int:
             indent=2,
         )
     )
+    return 0
+
+
+def cmd_dedupe(args: argparse.Namespace) -> int:
+    client = connect()
+    dedupe_highlights(client, dry_run=args.dry_run)
     return 0
 
 
@@ -874,6 +969,10 @@ def main() -> int:
     sd = sub.add_parser("seed", help="record an already-applied season without swapping")
     sd.add_argument("--dry-run", action="store_true")
     sd.set_defaults(func=cmd_seed)
+
+    dd = sub.add_parser("dedupe", help="keep the newest highlight for each media and delete the rest")
+    dd.add_argument("--dry-run", action="store_true")
+    dd.set_defaults(func=cmd_dedupe)
 
     args = parser.parse_args()
     return args.func(args)

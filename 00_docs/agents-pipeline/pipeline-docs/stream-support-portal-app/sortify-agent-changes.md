@@ -83,6 +83,12 @@ has failed `FAIL_ATTEMPT_LIMIT` (10) consecutive times.
 register in Streama; skip highlight (do not invent a user). HTTP **409**
 (“already have a highlight”) is success, then `stage: "highlighted"`.
 
+If that movie or show already has any dashboard highlight, sortify does not
+post another one, including when the new file is a different episode. It
+reports `already_exists` and deletes older rows for that same media, leaving
+the newest. Streama's own 409 still requires the same episode video; this
+check is in the agent, not in Streama.
+
 ### Trace fields in `detail`
 
 `POST /agent/v1/events` whitelists top-level payload keys, so anything the

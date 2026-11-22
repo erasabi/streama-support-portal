@@ -46,19 +46,15 @@ so the portal's identity contract is dropped at exactly the point it matters.
 
 ### 2. Highlight idempotency — duplicate dashboard rows
 
-Treat an existing highlight on the same Streama movie/show as success. Streama
-returns 409 only when media **and** `videoToPlay` match, so a TV re-run or a new
-episode creates a second dashboard row.
+One dashboard row per movie or show. Streama still returns 409 only when the
+media **and** `videoToPlay` match, so the app is left alone. Sortify treats any
+existing highlight for that media as already highlighted and does not post
+another row. `holiday_highlights.py dedupe` (and the daily idle reconcile)
+deletes older rows for the same media and keeps the newest.
 
-- **Confirmed by:** `duplicate_dashboard_highlights`
-- **Probe:** highlight idempotency per movie/show (or per portal request), not
-  per episode video
-- **Detection is now wired:** `highlightStatus` in `detail` separates a created
-  row from a 409, so the trace counts rows rather than attempts. Streama's
-  409-on-`(media, videoToPlay)` semantics are unchanged.
-- **Open product question:** whether a new season should intentionally bump the
-  dashboard. Do not guess — ask before collapsing rows.
-- **Lives in:** Streama `NotificationQueueController`, sortify agent
+- **Confirmed by:** `duplicate_dashboard_highlights` while extra rows are still stored
+- **Probe:** one highlight row per movie/show, not per episode video
+- **Lives in:** sortify `StreamaClient.highlight_on_dashboard_status`, `scripts/holiday_highlights.py`
 
 ### 3. Download contract — "Downloading" with nothing downloading
 
